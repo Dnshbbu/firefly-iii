@@ -75,6 +75,12 @@ if page == "CSV Preprocessing":
                 )
 
                 rule3 = st.checkbox(
+                    "Remove Savings transactions",
+                    value=True,
+                    help="Removes lines where Product='Savings'"
+                )
+
+                rule4 = st.checkbox(
                     "Format dates to m/d/Y (e.g., 9/13/2025)",
                     value=True,
                     help="Converts 'Started Date' and 'Completed Date' columns to m/d/Y format for Firefly III import"
@@ -98,6 +104,12 @@ if page == "CSV Preprocessing":
                     processed_df = processed_df[~mask]
 
                 if rule3:
+                    mask = processed_df['Product'] == 'Savings'
+                    removed_count = mask.sum()
+                    removed_rows.append(f"Rule 3: Removed {removed_count} 'Savings' product rows")
+                    processed_df = processed_df[~mask]
+
+                if rule4:
                     # Convert dates from YYYY-MM-DD HH:MM:SS to m/d/Y
                     def convert_date(date_str):
                         try:

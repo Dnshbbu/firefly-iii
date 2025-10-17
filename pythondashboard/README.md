@@ -55,9 +55,10 @@ streamlit run app.py
 **Preprocessing rules:**
 - Removes transactions with Description='Saving vault topup prefunding wallet'
 - Removes internal transfers where Product='Deposit' AND Description='To Flexible Cash Funds'
+- Removes all transactions where Product='Savings'
 - Converts 'Started Date' and 'Completed Date' from `YYYY-MM-DD HH:MM:SS` to `m/d/Y` format (e.g., 9/13/2025)
 
-These rules remove duplicate internal accounting entries and format dates correctly for Firefly III import.
+These rules remove duplicate internal accounting entries and savings account movements that are tracked separately, and format dates correctly for Firefly III import.
 
 ### Trading 212 (T212)
 **Preprocessing rules:**
