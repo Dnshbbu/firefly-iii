@@ -28,3 +28,9 @@ public/v1/js/webhooks
 resources/assets/v2/node_modules
 resources/assets/v2/build
 public/v2/i18n
+
+
+statements/**
+docker-setup/.db.env
+.gitignore
+docker-setup/.importer.env
