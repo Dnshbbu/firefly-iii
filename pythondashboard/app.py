@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 import os
 from pathlib import Path
+from datetime import datetime
 
 # Page configuration
 st.set_page_config(
@@ -39,8 +40,19 @@ if page == "CSV Preprocessing":
 
             # Detect bank type based on columns
             bank_type = "Unknown"
-            if all(col in df.columns for col in ['Type', 'Product', 'Description', 'Amount', 'Currency']):
+
+            # Get column names (stripped for comparison)
+            columns = df.columns.tolist()
+            columns_stripped = [col.strip() for col in columns]
+
+            if all(col in columns for col in ['Type', 'Product', 'Started Date', 'Completed Date', 'Description', 'Amount', 'Currency']):
                 bank_type = "Revolut"
+            elif all(col in columns for col in ['Action', 'Time', 'ID', 'Total', 'Currency (Total)']):
+                bank_type = "T212"
+            elif all(col in columns_stripped for col in ['Posted Account', 'Posted Transactions Date', 'Debit Amount', 'Credit Amount']):
+                bank_type = "AIB"
+                # Find the actual column name (with or without leading space)
+                aib_date_col = [col for col in columns if col.strip() == 'Posted Transactions Date'][0]
 
             st.info(f"Detected bank type: **{bank_type}**")
 
@@ -62,9 +74,16 @@ if page == "CSV Preprocessing":
                     help="Removes lines where Product='Deposit' AND Description='To Flexible Cash Funds'"
                 )
 
+                rule3 = st.checkbox(
+                    "Format dates to m/d/Y (e.g., 9/13/2025)",
+                    value=True,
+                    help="Converts 'Started Date' and 'Completed Date' columns to m/d/Y format for Firefly III import"
+                )
+
                 # Apply preprocessing
                 processed_df = df.copy()
                 removed_rows = []
+                applied_rules = []
 
                 if rule1:
                     mask = processed_df['Description'] == 'Saving vault topup prefunding wallet'
@@ -78,6 +97,21 @@ if page == "CSV Preprocessing":
                     removed_rows.append(f"Rule 2: Removed {removed_count} 'Deposit' + 'To Flexible Cash Funds' rows")
                     processed_df = processed_df[~mask]
 
+                if rule3:
+                    # Convert dates from YYYY-MM-DD HH:MM:SS to m/d/Y
+                    def convert_date(date_str):
+                        try:
+                            # Try parsing with time
+                            dt = pd.to_datetime(date_str)
+                            # Format as m/d/Y (no leading zeros)
+                            return f"{dt.month}/{dt.day}/{dt.year}"
+                        except:
+                            return date_str
+
+                    processed_df['Started Date'] = processed_df['Started Date'].apply(convert_date)
+                    processed_df['Completed Date'] = processed_df['Completed Date'].apply(convert_date)
+                    applied_rules.append("Date formatting: Converted 'Started Date' and 'Completed Date' to m/d/Y format")
+
                 # Show results
                 st.subheader("Preprocessing Results")
 
@@ -89,9 +123,134 @@ if page == "CSV Preprocessing":
                 with col3:
                     st.metric("Final Rows", len(processed_df))
 
-                if removed_rows:
+                if removed_rows or applied_rules:
                     st.markdown("**Applied rules:**")
-                    for rule in removed_rows:
+                    for rule in removed_rows + applied_rules:
+                        st.markdown(f"- {rule}")
+
+                st.subheader("Processed Data")
+                st.dataframe(processed_df, use_container_width=True)
+
+                # Download button
+                csv = processed_df.to_csv(index=False)
+
+                # Generate output filename
+                original_filename = uploaded_file.name
+                if original_filename.endswith('.csv'):
+                    base_name = original_filename[:-4]
+                    output_filename = f"{base_name}_processed.csv"
+                else:
+                    output_filename = f"{original_filename}_processed.csv"
+
+                st.download_button(
+                    label="Download Processed CSV",
+                    data=csv,
+                    file_name=output_filename,
+                    mime='text/csv',
+                    use_container_width=True
+                )
+
+            elif bank_type == "T212":
+                st.markdown("**T212-specific rules:**")
+
+                rule1 = st.checkbox(
+                    "Format dates to m/d/Y (e.g., 9/13/2025)",
+                    value=True,
+                    help="Converts 'Time' column to m/d/Y format for Firefly III import (Note: T212 dates are typically already in correct format)"
+                )
+
+                # Apply preprocessing
+                processed_df = df.copy()
+                applied_rules = []
+
+                if rule1:
+                    # Convert dates - they should already be in m/d/Y format, but ensure consistency
+                    def convert_date(date_str):
+                        try:
+                            dt = pd.to_datetime(date_str)
+                            # Format as m/d/Y (no leading zeros)
+                            return f"{dt.month}/{dt.day}/{dt.year}"
+                        except:
+                            return date_str
+
+                    processed_df['Time'] = processed_df['Time'].apply(convert_date)
+                    applied_rules.append("Date formatting: Ensured 'Time' column is in m/d/Y format")
+
+                # Show results
+                st.subheader("Preprocessing Results")
+
+                col1, col2 = st.columns(2)
+                with col1:
+                    st.metric("Original Rows", original_row_count)
+                with col2:
+                    st.metric("Final Rows", len(processed_df))
+
+                if applied_rules:
+                    st.markdown("**Applied rules:**")
+                    for rule in applied_rules:
+                        st.markdown(f"- {rule}")
+
+                st.subheader("Processed Data")
+                st.dataframe(processed_df, use_container_width=True)
+
+                # Download button
+                csv = processed_df.to_csv(index=False)
+
+                # Generate output filename
+                original_filename = uploaded_file.name
+                if original_filename.endswith('.csv'):
+                    base_name = original_filename[:-4]
+                    output_filename = f"{base_name}_processed.csv"
+                else:
+                    output_filename = f"{original_filename}_processed.csv"
+
+                st.download_button(
+                    label="Download Processed CSV",
+                    data=csv,
+                    file_name=output_filename,
+                    mime='text/csv',
+                    use_container_width=True
+                )
+
+            elif bank_type == "AIB":
+                st.markdown("**AIB-specific rules:**")
+
+                rule1 = st.checkbox(
+                    "Format dates to d/m/Y (e.g., 13/9/2025)",
+                    value=True,
+                    help="Converts 'Posted Transactions Date' column to d/m/Y format for Firefly III import"
+                )
+
+                # Apply preprocessing
+                processed_df = df.copy()
+                applied_rules = []
+
+                if rule1:
+                    # Convert dates from dd/mm/yyyy to d/m/Y (no leading zeros)
+                    def convert_date(date_str):
+                        try:
+                            # Parse date - could be dd/mm/yyyy format
+                            dt = pd.to_datetime(date_str, dayfirst=True)
+                            # Format as d/m/Y (no leading zeros)
+                            return f"{dt.day}/{dt.month}/{dt.year}"
+                        except:
+                            return date_str
+
+                    processed_df[aib_date_col] = processed_df[aib_date_col].apply(convert_date)
+                    applied_rules.append("Date formatting: Converted 'Posted Transactions Date' to d/m/Y format")
+
+                # Show results
+                st.subheader("Preprocessing Results")
+
+                col1, col2 = st.columns(2)
+                with col1:
+                    st.metric("Original Rows", original_row_count)
+                with col2:
+                    st.metric("Final Rows", len(processed_df))
+
+                if applied_rules:
+                    st.markdown("**Applied rules:**")
+                    for rule in applied_rules:
                         st.markdown(f"- {rule}")
 
                 st.subheader("Processed Data")

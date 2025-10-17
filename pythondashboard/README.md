@@ -55,8 +55,21 @@ streamlit run app.py
 **Preprocessing rules:**
 - Removes transactions with Description='Saving vault topup prefunding wallet'
 - Removes internal transfers where Product='Deposit' AND Description='To Flexible Cash Funds'
+- Converts 'Started Date' and 'Completed Date' from `YYYY-MM-DD HH:MM:SS` to `m/d/Y` format (e.g., 9/13/2025)
 
-These rules remove duplicate internal accounting entries that would otherwise create incorrect double entries in Firefly III.
+These rules remove duplicate internal accounting entries and format dates correctly for Firefly III import.
+
+### Trading 212 (T212)
+**Preprocessing rules:**
+- Ensures 'Time' column is in `m/d/Y` format (e.g., 9/13/2025)
+
+T212 exports typically already have the correct date format, but this ensures consistency.
+
+### AIB (Allied Irish Banks)
+**Preprocessing rules:**
+- Converts 'Posted Transactions Date' from `dd/mm/yyyy` to `d/m/Y` format (e.g., 13/9/2025)
+
+This removes leading zeros from dates to match the format expected by Firefly III import configurations.
 
 ## Adding New Bank Rules
 
