@@ -1,12 +1,24 @@
 # Firefly III Dashboard
 
-A Streamlit-based dashboard for preprocessing CSV files before importing into Firefly III, with plans for future analytics and visualization features.
+A comprehensive Streamlit-based dashboard for managing and visualizing your Firefly III personal finance data.
 
-This directory consolidates all CSV preprocessing tools, bank statement files, and import configurations in one place for easy management.
+This directory provides two main tools:
+1. **Net Worth Dashboard** - Real-time visualization of your financial position via Firefly III API
+2. **CSV Preprocessor** - Clean and prepare bank statement CSV files for import
+
+All CSV preprocessing tools, bank statement files, and import configurations are consolidated in one place for easy management.
 
 ## Features
 
-### CSV Preprocessing (Current)
+### 📊 Net Worth Dashboard (NEW!)
+- **Real-time API Integration** - Connect directly to your Firefly III instance
+- **Net Worth Calculation** - Automatic calculation by currency
+- **Interactive Charts** - Visual breakdown by account type and individual accounts
+- **Account Overview** - Detailed table of all asset and liability accounts
+- **Export Capabilities** - Download account data as CSV
+- **Filtering Options** - Filter by account type, active status, and balance
+
+### 📄 CSV Preprocessing
 - Upload CSV files from your bank statements
 - Automatically detect bank type (currently supports Revolut, Revolut Credit Card, T212, and AIB)
 - Apply preprocessing rules to clean up data:
@@ -15,14 +27,6 @@ This directory consolidates all CSV preprocessing tools, bank statement files, a
   - Format dates to match Firefly III import configurations
   - Clean data for easier import
 - Download processed CSV files ready for Firefly III Data Importer
-
-### Future Dashboard Features (Planned)
-- Interactive visualizations of Firefly III data
-- Account balances and trends
-- Budget tracking
-- Transaction analytics
-- Category spending breakdown
-- Net worth over time
 
 ## Installation
 
@@ -34,19 +38,48 @@ pip install -r requirements.txt
 
 ## Usage
 
-### Preprocessing CSV Files
+### Starting the Dashboard
 
-1. Start the Streamlit dashboard:
+1. Start the Streamlit application:
 ```bash
 cd pythondashboard
-streamlit run app.py
+streamlit run Home.py
 ```
 
 2. Open your browser to the URL shown (usually `http://localhost:8501`)
 
-3. Upload a CSV file from the `statements/<BankName>/` folder
+3. Use the sidebar to navigate between:
+   - **📊 Net Worth** - View your financial dashboard
+   - **📄 CSV Preprocessor** - Prepare CSV files for import
 
-4. Review the detected bank type and preprocessing rules
+### Using the Net Worth Dashboard
+
+1. **Generate API Token** in Firefly III:
+   - Go to your Firefly III instance (e.g., `http://192.168.0.242`)
+   - Navigate to **Profile → OAuth → Personal Access Tokens**
+   - Click **Create New Token**
+   - Give it a name (e.g., "Streamlit Dashboard")
+   - Copy the generated token
+
+2. **Configure Connection** in the sidebar:
+   - Enter your Firefly III URL (e.g., `http://192.168.0.242`)
+   - Paste the API token
+   - Click **Connect**
+
+3. **View Your Data**:
+   - Net worth summary by currency
+   - Account type breakdown (pie chart)
+   - Individual account balances (bar chart)
+   - Detailed account table with filters
+   - Export data to CSV
+
+### Preprocessing CSV Files
+
+1. Navigate to the **CSV Preprocessor** page using the sidebar
+
+2. Upload a CSV file from the `statements/<BankName>/` folder
+
+3. Review the detected bank type and preprocessing rules
 
 5. Toggle rules on/off as needed
 
