@@ -7,7 +7,7 @@ st.set_page_config(
     layout="wide"
 )
 
-# Compact CSS styling
+# Compact CSS styling for dark mode
 st.markdown("""
 <style>
     /* Reduce padding and margins */
@@ -52,6 +52,15 @@ View your overall financial position with:
 - Asset breakdown by account type
 - Interactive charts and visualizations
 - Account balance tracking
+
+### 📈 Cash Flow Dashboard
+Analyze your income and expenses over time:
+- Income vs. expenses visualization
+- Category spending breakdown
+- Income sources analysis
+- Cash flow trends and waterfall charts
+- Customizable date ranges and aggregation periods
+- Transaction filtering and export
 
 ### 📄 CSV Preprocessor
 Prepare bank statement CSV files for import:

@@ -6,7 +6,9 @@
       "Bash(python test_revolut_cc.py)",
       "WebFetch(domain:docs.firefly-iii.org)",
       "Bash(mkdir -p /mnt/c/Users/StdUser/Desktop/MyProjects/firefly-iii/pythondashboard/pages)",
-      "Bash(python3 -m pip install -r requirements.txt --quiet)"
+      "Bash(python3 -m pip install -r requirements.txt --quiet)",
+      "Read(//mnt/c/Users/StdUser/Pictures/Screenshots/**)",
+      "Bash(mkdir -p /mnt/c/Users/StdUser/Desktop/MyProjects/firefly-iii/pythondashboard/Docs)"
     ],
     "deny": [],
     "ask": []

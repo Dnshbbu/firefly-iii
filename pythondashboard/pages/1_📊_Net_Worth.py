@@ -1,10 +1,12 @@
 import streamlit as st
+import streamlit.components.v1 as components
 import pandas as pd
 import requests
 import plotly.graph_objects as go
 import plotly.express as px
 from datetime import datetime
 from typing import Dict, List, Optional
+import json
 
 # Page configuration
 st.set_page_config(
@@ -13,7 +15,7 @@ st.set_page_config(
     layout="wide"
 )
 
-# Compact CSS styling
+# Compact CSS styling with gridstack integration and dark mode support
 st.markdown("""
 <style>
     .block-container {
@@ -196,8 +198,130 @@ def create_account_breakdown_chart(df: pd.DataFrame) -> go.Figure:
     return fig
 
 
+def create_gridstack_dashboard(widgets_html: str, height: int = 800) -> None:
+    """Create a gridstack.js dashboard with draggable/resizable widgets - dark mode compatible"""
+
+    gridstack_component = f"""
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/gridstack@9.4.0/dist/gridstack.min.css" />
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/gridstack@9.4.0/dist/gridstack-extra.min.css" />
+        <script src="https://cdn.jsdelivr.net/npm/gridstack@9.4.0/dist/gridstack-all.js"></script>
+        <style>
+            body {{
+                margin: 0;
+                padding: 10px;
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+                background: #0e1117;
+                color: #fafafa;
+            }}
+            .grid-stack {{
+                background: #0e1117;
+            }}
+            .grid-stack-item-content {{
+                background: #262730;
+                border: 1px solid rgba(250, 250, 250, 0.1);
+                border-radius: 8px;
+                padding: 15px;
+                box-shadow: 0 2px 8px rgba(0,0,0,0.5);
+                overflow: auto;
+            }}
+            .widget-header {{
+                font-size: 1.1rem;
+                font-weight: 600;
+                margin-bottom: 10px;
+                color: #fafafa;
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                cursor: move;
+                border-bottom: 1px solid rgba(250, 250, 250, 0.1);
+                padding-bottom: 8px;
+            }}
+            .drag-handle {{
+                color: #b0b0b0;
+                font-size: 0.9rem;
+            }}
+            .grid-stack-item.grid-stack-item-moving .grid-stack-item-content {{
+                box-shadow: 0 4px 16px rgba(0,0,0,0.5);
+                border-color: rgba(250, 250, 250, 0.2);
+            }}
+            .widget-content {{
+                font-size: 0.95rem;
+                color: #e0e0e0;
+            }}
+            .metric {{
+                text-align: center;
+                padding: 20px;
+            }}
+            .metric-value {{
+                font-size: 2rem;
+                font-weight: 700;
+                color: #fafafa;
+            }}
+            .metric-label {{
+                font-size: 0.9rem;
+                color: #b0b0b0;
+                margin-top: 5px;
+            }}
+            table {{
+                color: #e0e0e0;
+            }}
+            th {{
+                background: rgba(250, 250, 250, 0.05) !important;
+                color: #fafafa !important;
+            }}
+            tr:hover {{
+                background: rgba(250, 250, 250, 0.03);
+            }}
+        </style>
+    </head>
+    <body>
+        <div class="grid-stack">
+            {widgets_html}
+        </div>
+
+        <script>
+            GridStack.init({{
+                float: true,
+                cellHeight: '70px',
+                minRow: 1,
+                margin: 10,
+                resizable: {{
+                    handles: 'e, se, s, sw, w'
+                }}
+            }});
+        </script>
+    </body>
+    </html>
+    """
+
+    components.html(gridstack_component, height=height, scrolling=True)
+
+
+def create_widget(title: str, content: str, x: int, y: int, w: int, h: int, widget_id: str = "") -> str:
+    """Create a single gridstack widget"""
+    return f"""
+    <div class="grid-stack-item" gs-x="{x}" gs-y="{y}" gs-w="{w}" gs-h="{h}" gs-id="{widget_id}">
+        <div class="grid-stack-item-content">
+            <div class="widget-header">
+                {title}
+                <span class="drag-handle">⋮⋮</span>
+            </div>
+            <div class="widget-content">
+                {content}
+            </div>
+        </div>
+    </div>
+    """
+
+
 # Main app
 st.title("📊 Net Worth Dashboard")
+
+# Add layout toggle
+use_gridstack = st.sidebar.checkbox("🎨 Use Draggable Dashboard Layout", value=False, help="Enable drag-and-drop widgets")
 
 # Sidebar for API configuration
 st.sidebar.header("🔧 API Configuration")
@@ -322,27 +446,96 @@ try:
 
             st.divider()
 
-            # Display charts
-            col1, col2 = st.columns(2)
-
-            with col1:
-                st.plotly_chart(create_account_type_chart(df), use_container_width=True)
-
-            with col2:
-                # Account type summary table
-                st.subheader("Account Type Summary")
+            # Display charts - either gridstack or regular layout
+            if use_gridstack:
+                # Prepare data for widgets
                 type_summary = df[df['include_net_worth'] == True].groupby('type').agg({
                     'current_balance': 'sum',
                     'name': 'count'
                 }).rename(columns={'name': 'count', 'current_balance': 'total_balance'})
                 type_summary = type_summary.reset_index()
-                type_summary['total_balance'] = type_summary['total_balance'].apply(lambda x: f"{x:,.2f}")
-                st.dataframe(type_summary, use_container_width=True, hide_index=True)
 
-            st.divider()
+                # Create table HTML (dark mode)
+                type_table_html = "<table style='width:100%; border-collapse: collapse;'>"
+                type_table_html += "<tr style='background: rgba(250, 250, 250, 0.05);'><th style='padding:8px; text-align:left; color: #fafafa;'>Type</th><th style='padding:8px; text-align:right; color: #fafafa;'>Count</th><th style='padding:8px; text-align:right; color: #fafafa;'>Total</th></tr>"
+                for _, row in type_summary.iterrows():
+                    type_table_html += f"<tr style='border-bottom: 1px solid rgba(250, 250, 250, 0.1);'><td style='padding:8px; color: #e0e0e0;'>{row['type']}</td><td style='padding:8px; text-align:right; color: #e0e0e0;'>{row['count']}</td><td style='padding:8px; text-align:right; color: #e0e0e0;'>{row['total_balance']:,.2f}</td></tr>"
+                type_table_html += "</table>"
 
-            # Account breakdown chart
-            st.plotly_chart(create_account_breakdown_chart(df), use_container_width=True)
+                # Account balance list (dark mode)
+                df_active = df[(df['active'] == True) & (df['current_balance'] != 0)].copy()
+                df_active = df_active.sort_values('current_balance', ascending=False)
+
+                accounts_html = "<div style='max-height: 400px; overflow-y: auto;'>"
+                for _, acc in df_active.head(10).iterrows():
+                    color = '#4ade80' if acc['current_balance'] >= 0 else '#f87171'  # Green-400 / Red-400
+                    accounts_html += f"<div style='padding: 8px; border-bottom: 1px solid rgba(250, 250, 250, 0.1); display: flex; justify-content: space-between;'>"
+                    accounts_html += f"<span style='color: #e0e0e0;'>{acc['name']}</span>"
+                    accounts_html += f"<span style='color: {color}; font-weight: 600;'>{acc['current_balance']:,.2f} {acc['currency_code']}</span>"
+                    accounts_html += "</div>"
+                accounts_html += "</div>"
+
+                # Create gridstack widgets
+                widgets = ""
+
+                # Net worth widget(s)
+                widget_y = 0
+                for idx, (currency, total) in enumerate(net_worth.items()):
+                    color = '#4ade80' if total >= 0 else '#f87171'  # Green-400 / Red-400
+                    content = f"""
+                    <div class="metric">
+                        <div class="metric-value" style="color: {color};">{total:,.2f}</div>
+                        <div class="metric-label">{currency}</div>
+                    </div>
+                    """
+                    widgets += create_widget(f"💰 Net Worth ({currency})", content, idx * 3, widget_y, 3, 2, f"net-worth-{currency}")
+
+                widget_y = 2
+
+                # Account type summary widget
+                widgets += create_widget("📊 Account Type Summary", type_table_html, 0, widget_y, 6, 4, "type-summary")
+
+                # Top accounts widget
+                widgets += create_widget("🏦 Top Accounts", accounts_html, 6, widget_y, 6, 4, "top-accounts")
+
+                # Info widget (dark mode)
+                info_html = f"""
+                <div style='padding: 10px; color: #e0e0e0;'>
+                    <p style='margin: 8px 0;'><strong style='color: #fafafa;'>Total Accounts:</strong> {len(df)}</p>
+                    <p style='margin: 8px 0;'><strong style='color: #fafafa;'>Active Accounts:</strong> {len(df[df['active'] == True])}</p>
+                    <p style='margin: 8px 0;'><strong style='color: #fafafa;'>Asset Accounts:</strong> {len(df[df['type'] == 'asset'])}</p>
+                    <p style='margin: 8px 0;'><strong style='color: #fafafa;'>Liability Accounts:</strong> {len(df[df['type'] == 'liabilities'])}</p>
+                </div>
+                """
+                widgets += create_widget("ℹ️ Account Statistics", info_html, 0, widget_y + 4, 4, 3, "stats")
+
+                # Create the gridstack dashboard
+                create_gridstack_dashboard(widgets, height=900)
+
+                st.info("💡 **Tip:** Drag widgets by their headers and resize them by their corners to customize your dashboard!")
+
+            else:
+                # Regular Streamlit layout
+                col1, col2 = st.columns(2)
+
+                with col1:
+                    st.plotly_chart(create_account_type_chart(df), use_container_width=True)
+
+                with col2:
+                    # Account type summary table
+                    st.subheader("Account Type Summary")
+                    type_summary = df[df['include_net_worth'] == True].groupby('type').agg({
+                        'current_balance': 'sum',
+                        'name': 'count'
+                    }).rename(columns={'name': 'count', 'current_balance': 'total_balance'})
+                    type_summary = type_summary.reset_index()
+                    type_summary['total_balance'] = type_summary['total_balance'].apply(lambda x: f"{x:,.2f}")
+                    st.dataframe(type_summary, use_container_width=True, hide_index=True)
+
+                st.divider()
+
+                # Account breakdown chart
+                st.plotly_chart(create_account_breakdown_chart(df), use_container_width=True)
 
             st.divider()
 

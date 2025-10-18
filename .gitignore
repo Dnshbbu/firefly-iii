@@ -35,3 +35,4 @@ docker-setup/.db.env
 .gitignore
 docker-setup/.importer.env
 pythondashboard/statements/**
+pythondashboard/utils/__pycache__/**
