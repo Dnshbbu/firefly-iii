@@ -14,8 +14,8 @@ st.set_page_config(
 st.title("🔥 Firefly III CSV Preprocessor")
 st.markdown("---")
 
-# Get the statements folder path (relative to the project root)
-STATEMENTS_FOLDER = Path(__file__).parent.parent / "statements"
+# Get the statements folder path (within pythondashboard directory)
+STATEMENTS_FOLDER = Path(__file__).parent / "statements"
 
 # Sidebar for navigation
 st.sidebar.title("Navigation")
@@ -45,7 +45,9 @@ if page == "CSV Preprocessing":
             columns = df.columns.tolist()
             columns_stripped = [col.strip() for col in columns]
 
-            if all(col in columns for col in ['Type', 'Product', 'Started Date', 'Completed Date', 'Description', 'Amount', 'Currency']):
+            if all(col in columns for col in ['Type', 'Started Date', 'Completed Date', 'Description', 'Amount', 'Fee', 'Balance']) and 'Product' not in columns:
+                bank_type = "Revolut Credit Card"
+            elif all(col in columns for col in ['Type', 'Product', 'Started Date', 'Completed Date', 'Description', 'Amount', 'Currency']):
                 bank_type = "Revolut"
             elif all(col in columns for col in ['Action', 'Time', 'ID', 'Total', 'Currency (Total)']):
                 bank_type = "T212"
@@ -250,6 +252,70 @@ if page == "CSV Preprocessing":
 
                     processed_df[aib_date_col] = processed_df[aib_date_col].apply(convert_date)
                     applied_rules.append("Date formatting: Converted 'Posted Transactions Date' to d/m/Y format")
+
+                # Show results
+                st.subheader("Preprocessing Results")
+
+                col1, col2 = st.columns(2)
+                with col1:
+                    st.metric("Original Rows", original_row_count)
+                with col2:
+                    st.metric("Final Rows", len(processed_df))
+
+                if applied_rules:
+                    st.markdown("**Applied rules:**")
+                    for rule in applied_rules:
+                        st.markdown(f"- {rule}")
+
+                st.subheader("Processed Data")
+                st.dataframe(processed_df, use_container_width=True)
+
+                # Download button
+                csv = processed_df.to_csv(index=False)
+
+                # Generate output filename
+                original_filename = uploaded_file.name
+                if original_filename.endswith('.csv'):
+                    base_name = original_filename[:-4]
+                    output_filename = f"{base_name}_processed.csv"
+                else:
+                    output_filename = f"{original_filename}_processed.csv"
+
+                st.download_button(
+                    label="Download Processed CSV",
+                    data=csv,
+                    file_name=output_filename,
+                    mime='text/csv',
+                    use_container_width=True
+                )
+
+            elif bank_type == "Revolut Credit Card":
+                st.markdown("**Revolut Credit Card-specific rules:**")
+
+                rule1 = st.checkbox(
+                    "Format dates to m/d/Y (e.g., 9/13/2025)",
+                    value=True,
+                    help="Converts 'Started Date' and 'Completed Date' columns to m/d/Y format for Firefly III import"
+                )
+
+                # Apply preprocessing
+                processed_df = df.copy()
+                applied_rules = []
+
+                if rule1:
+                    # Convert dates from YYYY-MM-DD HH:MM:SS to m/d/Y
+                    def convert_date(date_str):
+                        try:
+                            # Try parsing with time
+                            dt = pd.to_datetime(date_str)
+                            # Format as m/d/Y (no leading zeros)
+                            return f"{dt.month}/{dt.day}/{dt.year}"
+                        except:
+                            return date_str
+
+                    processed_df['Started Date'] = processed_df['Started Date'].apply(convert_date)
+                    processed_df['Completed Date'] = processed_df['Completed Date'].apply(convert_date)
+                    applied_rules.append("Date formatting: Converted 'Started Date' and 'Completed Date' to m/d/Y format")
 
                 # Show results
                 st.subheader("Preprocessing Results")

@@ -339,53 +339,68 @@ docker-compose down
 - The cron job runs daily at 3 AM to process recurring transactions
 - Volumes persist data: `firefly_iii_upload` (attachments) and `firefly_iii_db` (database)
 
-## Data Import
+## CSV Preprocessing & Import (`pythondashboard/`)
 
-### Import Configurations (`import-configs/`)
+This directory contains everything needed for preprocessing and importing bank statement CSV files into Firefly III.
 
-This directory contains CSV import configuration files for the Firefly III Data Importer. These are JSON files that define:
-- CSV column mappings to Firefly III transaction fields
-- Date formats and delimiters
-- Default accounts for imports
-- Duplicate detection methods
-- Custom tags for imported transactions
+**Directory Structure:**
+```
+pythondashboard/
+├── app.py                    # Streamlit CSV preprocessor application
+├── requirements.txt          # Python dependencies
+├── README.md                 # Detailed documentation
+├── statements/               # Bank statement CSV files (organized by bank)
+│   ├── AIB/
+│   ├── Revolut/
+│   ├── Revolut_CC/
+│   └── T212/
+└── import-configs/           # Firefly III Data Importer configuration files
+    ├── AIB_import_config_v1.json
+    ├── Revolut_import_config_v1.json, v2.json
+    ├── Revolut_CC_import_config_v1.json
+    └── T212_import_config_v*.json
+```
 
-**Available Configurations:**
-- `AIB_import_config_v1.json` - AIB bank statement imports
-- `Revolut_import_config_v1.json`, `v2.json` - Revolut transaction exports
-- `T212_import_config_v3.json`, `v4.json`, `v5.json` - Trading 212 statement imports
+**Streamlit CSV Preprocessor:**
 
-**Configuration Structure:**
-- `roles` - Maps CSV columns to transaction fields (e.g., `date_transaction`, `description`, `amount`)
-- `default_account` - Account ID to import transactions into
-- `delimiter` - CSV delimiter (comma, semicolon, tab)
-- `date` - Date format string
-- `custom_tag` - Tag to add to all imported transactions
-- `duplicate_detection_method` - How to detect duplicates (none, cell, row)
+The Streamlit app automatically detects bank types and applies transformation rules to clean CSV files before importing into Firefly III.
 
-**Usage:**
-1. Open the Data Importer at `http://localhost:81`
-2. Upload a CSV file from `statements/`
-3. Upload the corresponding import configuration JSON file
-4. Review and confirm the import
+**IMPORTANT:** Use this preprocessor BEFORE importing CSVs to:
+- Remove duplicate/internal transactions
+- Standardize date formats to match import configurations
+- Clean data to prevent import errors
 
-### Bank Statements (`statements/`)
+**Quick Start:**
+```bash
+cd pythondashboard
+pip install -r requirements.txt
+streamlit run app.py
+# Opens at http://localhost:8501
+```
 
-Contains CSV export files from various financial institutions for importing into Firefly III:
-- `AIB_*.csv` - AIB bank statements
-- `Revolut_*.csv` - Revolut transaction exports
-- `T212_*.csv` - Trading 212 transaction history
+**Currently Supported Banks:**
+- Revolut (Current Account)
+- Revolut Credit Card
+- Trading 212 (T212)
+- AIB (Allied Irish Banks)
 
-**CSV Processing:**
-- Each bank/service has a specific CSV format
-- Import configurations are versioned to handle format changes
-- Processed files (e.g., `*_processed.csv`) indicate manual cleanup or transformation
+**For detailed documentation** including supported CSV formats, preprocessing rules for each bank, workflow instructions, and how to add new banks, see:
+→ **[pythondashboard/README.md](pythondashboard/README.md)**
 
-**Workflow:**
+## Data Import Workflow
+
+All CSV files and import configurations have been consolidated into the `pythondashboard/` directory.
+
+**Recommended Workflow:**
 1. Export CSV from your bank/service
-2. Save to `statements/` directory
-3. Use matching configuration from `import-configs/`
-4. Import via Data Importer web interface or API
+2. Save to `pythondashboard/statements/<BankName>/` directory
+3. **Run Streamlit preprocessor:** `cd pythondashboard && streamlit run app.py`
+4. Upload CSV, review preprocessing rules, download processed file
+5. Use matching configuration from `pythondashboard/import-configs/` in the Data Importer
+6. Import via Data Importer web interface at `http://localhost:81`
+
+**For detailed information** about import configurations, CSV formats, and preprocessing rules, see:
+→ **[pythondashboard/README.md](pythondashboard/README.md)**
 
 ## Common Gotchas
 

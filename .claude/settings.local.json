@@ -2,7 +2,8 @@
   "permissions": {
     "allow": [
       "Bash(python -m pip:*)",
-      "Bash(cat:*)"
+      "Bash(cat:*)",
+      "Bash(python test_revolut_cc.py)"
     ],
     "deny": [],
     "ask": []

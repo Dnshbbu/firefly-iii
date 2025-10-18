@@ -34,3 +34,4 @@ statements/**
 docker-setup/.db.env
 .gitignore
 docker-setup/.importer.env
+pythondashboard/statements/**
