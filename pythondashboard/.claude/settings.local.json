@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "WebFetch(domain:docs.firefly-iii.org)",
+      "Bash(curl -s https://docs.firefly-iii.org/how-to/firefly-iii/advanced/cron/)",
+      "Read(//mnt/c/Users/StdUser/Desktop/MyProjects/firefly-iii/docker-setup/**)",
+      "Read(//mnt/c/Users/StdUser/Pictures/Screenshots/**)",
+      "Read(//mnt/c/Users/StdUser/Desktop/MyProjects/firefly-iii/**)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

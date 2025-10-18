@@ -431,9 +431,47 @@ For issues or questions:
 
 ## Changelog
 
-| Version | Date       | Changes                                          |
-|---------|------------|--------------------------------------------------|
-| 1.0     | 2025-10-18 | Initial implementation of Cash Flow Dashboard    |
+| Version | Date       | Changes                                                                      |
+|---------|------------|------------------------------------------------------------------------------|
+| 1.0     | 2025-10-18 | Initial implementation of Cash Flow Dashboard                                |
+| 1.0.1   | 2025-10-18 | Fixed timezone comparison issue in calculations.py                           |
+| 1.0.2   | 2025-10-18 | Fixed None value handling in category/source filtering and sorting          |
+
+---
+
+## Bug Fixes
+
+### Version 1.0.1 - Timezone Comparison Fix
+
+**Issue:** `Invalid comparison between dtype=datetime64[ns, UTC+02:00] and Timestamp`
+
+**Cause:** Firefly III API returns dates with timezone information, but pandas datetime comparisons were timezone-naive.
+
+**Fix:** Updated all date comparison logic in `utils/calculations.py` to detect timezone-aware dates and localize comparison timestamps accordingly:
+
+```python
+if df['date'].dt.tz is not None:
+    start_dt = start_dt.tz_localize(df['date'].dt.tz)
+```
+
+**Affected Functions:**
+- `calculate_category_spending()`
+- `calculate_income_sources()`
+- `calculate_period_comparison()`
+
+### Version 1.0.2 - None Value Handling
+
+**Issue:** `'<' not supported between instances of 'NoneType' and 'str'`
+
+**Cause:** Some transactions have `None` as category name or source, causing sorting failures.
+
+**Fix:**
+1. Replace `None` values with 'Uncategorized' (categories) or 'Unknown' (income sources) before grouping
+2. Use `.fillna()` in category filter generation
+
+**Affected Files:**
+- `utils/calculations.py` - Added `fillna()` before groupby operations
+- `pages/3_📈_Cash_Flow.py` - Added `fillna()` when getting unique categories
 
 ---
 
