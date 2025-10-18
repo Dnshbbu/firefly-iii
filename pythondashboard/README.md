@@ -98,14 +98,43 @@ T212 exports typically already have the correct date format, but this ensures co
 
 This removes leading zeros from dates to match the format expected by Firefly III import configurations.
 
+## Design Principles
+
+### Compact UI Design
+
+The Streamlit app follows a **compact design philosophy** to maximize information density and minimize scrolling:
+
+**Implementation:**
+- Custom CSS reduces padding, margins, and spacing throughout the app
+- Dataframes have fixed heights with scrolling for better space utilization
+- Collapsible expanders for secondary information (Applied Rules, Removed Rows)
+- Concise labels and messaging
+- Smaller font sizes for headers and data tables
+
+**Why Compact Design:**
+- See more data rows at once without scrolling
+- Better overview of preprocessing results
+- Faster review and validation workflow
+- Professional, dashboard-like appearance
+- Efficient use of screen real estate
+
+**When Extending the App:**
+When adding new features or bank types, maintain the compact design by:
+- Using `st.markdown("**Title**")` instead of `st.subheader()` for minor sections
+- Adding `height` parameter to dataframes (e.g., `height=400`)
+- Putting detailed information in `st.expander()` components
+- Using short, clear metric labels
+- Following the existing CSS styling patterns
+
 ## Adding New Bank Rules
 
 To add preprocessing rules for a new bank:
 
 1. Open `app.py`
-2. Add bank detection logic based on CSV column names
-3. Add preprocessing rules similar to the Revolut example
-4. Test with sample CSV files
+2. Add bank detection logic based on CSV column names (around line 130)
+3. Add preprocessing rules similar to existing bank examples
+4. Follow the compact design patterns (see Design Principles above)
+5. Test with sample CSV files
 
 ## Project Structure
 

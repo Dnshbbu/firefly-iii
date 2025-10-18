@@ -11,6 +11,94 @@ st.set_page_config(
     layout="wide"
 )
 
+# Compact CSS styling
+st.markdown("""
+<style>
+    /* Reduce padding and margins */
+    .block-container {
+        padding-top: 1rem;
+        padding-bottom: 0rem;
+        padding-left: 2rem;
+        padding-right: 2rem;
+    }
+
+    /* Compact headers */
+    h1 {
+        padding-top: 0rem;
+        padding-bottom: 0.5rem;
+        font-size: 2rem;
+    }
+
+    h2 {
+        padding-top: 0.5rem;
+        padding-bottom: 0.25rem;
+        font-size: 1.5rem;
+    }
+
+    h3 {
+        padding-top: 0.25rem;
+        padding-bottom: 0.25rem;
+        font-size: 1.2rem;
+    }
+
+    /* Compact dataframes */
+    .dataframe {
+        font-size: 0.85rem;
+    }
+
+    /* Compact metrics */
+    [data-testid="stMetricValue"] {
+        font-size: 1.5rem;
+    }
+
+    [data-testid="stMetricLabel"] {
+        font-size: 0.85rem;
+    }
+
+    /* Reduce spacing between elements */
+    .element-container {
+        margin-bottom: 0.5rem;
+    }
+
+    /* Compact file uploader */
+    [data-testid="stFileUploader"] {
+        padding: 0.5rem;
+    }
+
+    /* Compact checkbox labels */
+    .stCheckbox {
+        margin-bottom: 0.25rem;
+    }
+
+    /* Compact info/warning boxes */
+    .stAlert {
+        padding: 0.5rem;
+        margin-bottom: 0.5rem;
+    }
+
+    /* Reduce spacing in markdown lists */
+    ul, ol {
+        margin-top: 0.25rem;
+        margin-bottom: 0.25rem;
+    }
+
+    li {
+        margin-bottom: 0.1rem;
+    }
+
+    /* Compact download button */
+    .stDownloadButton {
+        margin-top: 0.5rem;
+    }
+
+    /* Reduce horizontal rule thickness */
+    hr {
+        margin-top: 0.5rem;
+        margin-bottom: 0.5rem;
+    }
+</style>
+""", unsafe_allow_html=True)
+
 st.title("🔥 Firefly III CSV Preprocessor")
 st.markdown("---")
 
@@ -22,11 +110,10 @@ st.sidebar.title("Navigation")
 page = st.sidebar.radio("Go to", ["CSV Preprocessing", "Future: Dashboard"])
 
 if page == "CSV Preprocessing":
-    st.header("CSV Preprocessing")
-    st.markdown("Upload CSV files from your bank and apply preprocessing rules before importing into Firefly III.")
+    st.subheader("CSV Preprocessing")
 
     # File uploader
-    uploaded_file = st.file_uploader("Choose a CSV file", type=['csv'])
+    uploaded_file = st.file_uploader("Upload CSV file from your bank", type=['csv'])
 
     if uploaded_file is not None:
         # Read the CSV file
@@ -34,9 +121,8 @@ if page == "CSV Preprocessing":
             df = pd.read_csv(uploaded_file)
             original_row_count = len(df)
 
-            st.subheader("Original Data")
-            st.write(f"Total rows: {original_row_count}")
-            st.dataframe(df, use_container_width=True)
+            st.markdown(f"**Original Data** ({original_row_count} rows)")
+            st.dataframe(df, use_container_width=True, height=250)
 
             # Detect bank type based on columns
             bank_type = "Unknown"
@@ -56,13 +142,12 @@ if page == "CSV Preprocessing":
                 # Find the actual column name (with or without leading space)
                 aib_date_col = [col for col in columns if col.strip() == 'Posted Transactions Date'][0]
 
-            st.info(f"Detected bank type: **{bank_type}**")
+            st.info(f"Bank: **{bank_type}**")
 
             # Preprocessing options
-            st.subheader("Preprocessing Rules")
+            st.markdown("**Preprocessing Rules**")
 
             if bank_type == "Revolut":
-                st.markdown("**Revolut-specific rules:**")
 
                 rule1 = st.checkbox(
                     "Remove 'Saving vault topup prefunding wallet' transactions",
@@ -134,30 +219,29 @@ if page == "CSV Preprocessing":
                     applied_rules.append("Date formatting: Converted 'Started Date' and 'Completed Date' to m/d/Y format")
 
                 # Show results
-                st.subheader("Preprocessing Results")
+                st.markdown("**Results**")
 
                 col1, col2, col3 = st.columns(3)
                 with col1:
-                    st.metric("Original Rows", original_row_count)
+                    st.metric("Original", original_row_count)
                 with col2:
-                    st.metric("Removed Rows", original_row_count - len(processed_df))
+                    st.metric("Removed", original_row_count - len(processed_df))
                 with col3:
-                    st.metric("Final Rows", len(processed_df))
+                    st.metric("Final", len(processed_df))
 
                 if removed_rows or applied_rules:
-                    st.markdown("**Applied rules:**")
-                    for rule in removed_rows + applied_rules:
-                        st.markdown(f"- {rule}")
+                    with st.expander("Applied Rules", expanded=False):
+                        for rule in removed_rows + applied_rules:
+                            st.markdown(f"- {rule}")
 
                 # Show removed rows table if any rows were removed
                 if removed_rows_list:
                     removed_df = pd.concat(removed_rows_list, ignore_index=True)
-                    st.subheader("Removed Rows")
-                    st.write(f"Total removed: {len(removed_df)} rows")
-                    st.dataframe(removed_df, use_container_width=True)
+                    with st.expander(f"Removed Rows ({len(removed_df)})", expanded=False):
+                        st.dataframe(removed_df, use_container_width=True, height=300)
 
-                st.subheader("Processed Data")
-                st.dataframe(processed_df, use_container_width=True)
+                st.markdown("**Processed Data**")
+                st.dataframe(processed_df, use_container_width=True, height=400)
 
                 # Download button
                 csv = processed_df.to_csv(index=False)
@@ -179,7 +263,6 @@ if page == "CSV Preprocessing":
                 )
 
             elif bank_type == "T212":
-                st.markdown("**T212-specific rules:**")
 
                 rule1 = st.checkbox(
                     "Format dates to m/d/Y (e.g., 9/13/2025)",
@@ -205,21 +288,21 @@ if page == "CSV Preprocessing":
                     applied_rules.append("Date formatting: Ensured 'Time' column is in m/d/Y format")
 
                 # Show results
-                st.subheader("Preprocessing Results")
+                st.markdown("**Results**")
 
                 col1, col2 = st.columns(2)
                 with col1:
-                    st.metric("Original Rows", original_row_count)
+                    st.metric("Original", original_row_count)
                 with col2:
-                    st.metric("Final Rows", len(processed_df))
+                    st.metric("Final", len(processed_df))
 
                 if applied_rules:
-                    st.markdown("**Applied rules:**")
-                    for rule in applied_rules:
-                        st.markdown(f"- {rule}")
+                    with st.expander("Applied Rules", expanded=False):
+                        for rule in applied_rules:
+                            st.markdown(f"- {rule}")
 
-                st.subheader("Processed Data")
-                st.dataframe(processed_df, use_container_width=True)
+                st.markdown("**Processed Data**")
+                st.dataframe(processed_df, use_container_width=True, height=400)
 
                 # Download button
                 csv = processed_df.to_csv(index=False)
@@ -241,7 +324,6 @@ if page == "CSV Preprocessing":
                 )
 
             elif bank_type == "AIB":
-                st.markdown("**AIB-specific rules:**")
 
                 rule1 = st.checkbox(
                     "Format dates to d/m/Y (e.g., 13/9/2025)",
@@ -268,21 +350,21 @@ if page == "CSV Preprocessing":
                     applied_rules.append("Date formatting: Converted 'Posted Transactions Date' to d/m/Y format")
 
                 # Show results
-                st.subheader("Preprocessing Results")
+                st.markdown("**Results**")
 
                 col1, col2 = st.columns(2)
                 with col1:
-                    st.metric("Original Rows", original_row_count)
+                    st.metric("Original", original_row_count)
                 with col2:
-                    st.metric("Final Rows", len(processed_df))
+                    st.metric("Final", len(processed_df))
 
                 if applied_rules:
-                    st.markdown("**Applied rules:**")
-                    for rule in applied_rules:
-                        st.markdown(f"- {rule}")
+                    with st.expander("Applied Rules", expanded=False):
+                        for rule in applied_rules:
+                            st.markdown(f"- {rule}")
 
-                st.subheader("Processed Data")
-                st.dataframe(processed_df, use_container_width=True)
+                st.markdown("**Processed Data**")
+                st.dataframe(processed_df, use_container_width=True, height=400)
 
                 # Download button
                 csv = processed_df.to_csv(index=False)
@@ -304,7 +386,6 @@ if page == "CSV Preprocessing":
                 )
 
             elif bank_type == "Revolut Credit Card":
-                st.markdown("**Revolut Credit Card-specific rules:**")
 
                 rule1 = st.checkbox(
                     "Format dates to m/d/Y (e.g., 9/13/2025)",
@@ -332,21 +413,21 @@ if page == "CSV Preprocessing":
                     applied_rules.append("Date formatting: Converted 'Started Date' and 'Completed Date' to m/d/Y format")
 
                 # Show results
-                st.subheader("Preprocessing Results")
+                st.markdown("**Results**")
 
                 col1, col2 = st.columns(2)
                 with col1:
-                    st.metric("Original Rows", original_row_count)
+                    st.metric("Original", original_row_count)
                 with col2:
-                    st.metric("Final Rows", len(processed_df))
+                    st.metric("Final", len(processed_df))
 
                 if applied_rules:
-                    st.markdown("**Applied rules:**")
-                    for rule in applied_rules:
-                        st.markdown(f"- {rule}")
+                    with st.expander("Applied Rules", expanded=False):
+                        for rule in applied_rules:
+                            st.markdown(f"- {rule}")
 
-                st.subheader("Processed Data")
-                st.dataframe(processed_df, use_container_width=True)
+                st.markdown("**Processed Data**")
+                st.dataframe(processed_df, use_container_width=True, height=400)
 
                 # Download button
                 csv = processed_df.to_csv(index=False)
@@ -368,27 +449,24 @@ if page == "CSV Preprocessing":
                 )
 
             else:
-                st.warning("No preprocessing rules defined for this bank type yet.")
-                st.markdown("You can still download the original file or add custom rules.")
+                st.warning(f"No preprocessing rules for **{bank_type}**")
 
         except Exception as e:
-            st.error(f"Error reading CSV file: {str(e)}")
-            st.info("Please ensure the file is a valid CSV file.")
+            st.error(f"Error: {str(e)}")
 
 elif page == "Future: Dashboard":
-    st.header("Firefly III Dashboard")
-    st.info("This section will contain interactive dashboards that interact with Firefly III APIs.")
-    st.markdown("""
-    **Planned features:**
-    - Account balances and trends
-    - Budget tracking and visualization
-    - Transaction analytics
-    - Category spending breakdown
-    - Bill tracking
-    - Net worth over time
-    """)
+    st.subheader("Firefly III Dashboard")
+    st.info("Interactive dashboards with Firefly III API integration (coming soon)")
+    with st.expander("Planned Features"):
+        st.markdown("""
+        - Account balances and trends
+        - Budget tracking and visualization
+        - Transaction analytics
+        - Category spending breakdown
+        - Bill tracking
+        - Net worth over time
+        """)
 
 # Footer
 st.sidebar.markdown("---")
-st.sidebar.markdown("### About")
-st.sidebar.markdown("CSV preprocessor for Firefly III imports. Built with Streamlit.")
+st.sidebar.caption("CSV preprocessor for Firefly III")
