@@ -90,6 +90,7 @@ if page == "CSV Preprocessing":
 
                 # Apply preprocessing
                 processed_df = df.copy()
+                removed_rows_list = []
                 removed_rows = []
                 applied_rules = []
 
@@ -97,18 +98,24 @@ if page == "CSV Preprocessing":
                     mask = processed_df['Description'] == 'Saving vault topup prefunding wallet'
                     removed_count = mask.sum()
                     removed_rows.append(f"Rule 1: Removed {removed_count} 'Saving vault topup prefunding wallet' rows")
+                    # Collect removed rows
+                    removed_rows_list.append(processed_df[mask].copy().assign(Reason="Rule 1: Saving vault topup"))
                     processed_df = processed_df[~mask]
 
                 if rule2:
                     mask = (processed_df['Product'] == 'Deposit') & (processed_df['Description'] == 'To Flexible Cash Funds')
                     removed_count = mask.sum()
                     removed_rows.append(f"Rule 2: Removed {removed_count} 'Deposit' + 'To Flexible Cash Funds' rows")
+                    # Collect removed rows
+                    removed_rows_list.append(processed_df[mask].copy().assign(Reason="Rule 2: Deposit to Flexible Cash"))
                     processed_df = processed_df[~mask]
 
                 if rule3:
                     mask = processed_df['Product'] == 'Savings'
                     removed_count = mask.sum()
                     removed_rows.append(f"Rule 3: Removed {removed_count} 'Savings' product rows")
+                    # Collect removed rows
+                    removed_rows_list.append(processed_df[mask].copy().assign(Reason="Rule 3: Savings product"))
                     processed_df = processed_df[~mask]
 
                 if rule4:
@@ -141,6 +148,13 @@ if page == "CSV Preprocessing":
                     st.markdown("**Applied rules:**")
                     for rule in removed_rows + applied_rules:
                         st.markdown(f"- {rule}")
+
+                # Show removed rows table if any rows were removed
+                if removed_rows_list:
+                    removed_df = pd.concat(removed_rows_list, ignore_index=True)
+                    st.subheader("Removed Rows")
+                    st.write(f"Total removed: {len(removed_df)} rows")
+                    st.dataframe(removed_df, use_container_width=True)
 
                 st.subheader("Processed Data")
                 st.dataframe(processed_df, use_container_width=True)
