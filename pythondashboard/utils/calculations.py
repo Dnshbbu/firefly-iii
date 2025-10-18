@@ -360,3 +360,178 @@ def get_date_ranges(period_type: str = 'month') -> Dict[str, Tuple[str, str]]:
         'current': (current_start.strftime('%Y-%m-%d'), current_end.strftime('%Y-%m-%d')),
         'previous': (previous_start.strftime('%Y-%m-%d'), previous_end.strftime('%Y-%m-%d'))
     }
+
+
+def calculate_budget_performance(
+    budgets_data: List[Dict],
+    budget_limits_data: Dict[str, List[Dict]],
+    transactions_df: pd.DataFrame,
+    start_date: str,
+    end_date: str
+) -> pd.DataFrame:
+    """
+    Calculate budget performance (budgeted vs. spent vs. remaining).
+
+    Args:
+        budgets_data: List of budget dictionaries from API
+        budget_limits_data: Dictionary mapping budget_id to list of budget limits
+        transactions_df: DataFrame with transaction data
+        start_date: Period start date (YYYY-MM-DD)
+        end_date: Period end date (YYYY-MM-DD)
+
+    Returns:
+        DataFrame with columns: budget_name, budget_id, budgeted, spent, remaining, utilization_pct, status
+    """
+    if not budgets_data:
+        return pd.DataFrame(columns=['budget_name', 'budget_id', 'budgeted', 'spent', 'remaining', 'utilization_pct', 'status'])
+
+    budget_performance = []
+
+    for budget in budgets_data:
+        budget_id = budget.get('id')
+        budget_name = budget.get('attributes', {}).get('name', 'Unknown')
+
+        # Get budget limit for this period
+        limits = budget_limits_data.get(budget_id, [])
+        budgeted_amount = 0.0
+
+        for limit in limits:
+            limit_attrs = limit.get('attributes', {})
+            budgeted_amount += float(limit_attrs.get('amount', 0))
+
+        # Calculate spent amount from transactions
+        if not transactions_df.empty:
+            budget_transactions = transactions_df[
+                (transactions_df['budget_name'] == budget_name) &
+                (transactions_df['type'] == 'withdrawal')
+            ]
+            spent_amount = budget_transactions['amount'].sum()
+        else:
+            spent_amount = 0.0
+
+        # Calculate remaining and utilization
+        remaining = budgeted_amount - spent_amount
+        utilization_pct = (spent_amount / budgeted_amount * 100) if budgeted_amount > 0 else 0
+
+        # Determine status
+        if utilization_pct >= 100:
+            status = 'Over Budget'
+        elif utilization_pct >= 80:
+            status = 'Warning'
+        else:
+            status = 'On Track'
+
+        budget_performance.append({
+            'budget_name': budget_name,
+            'budget_id': budget_id,
+            'budgeted': budgeted_amount,
+            'spent': spent_amount,
+            'remaining': remaining,
+            'utilization_pct': utilization_pct,
+            'status': status
+        })
+
+    df = pd.DataFrame(budget_performance)
+
+    # Sort by utilization percentage descending
+    df = df.sort_values('utilization_pct', ascending=False)
+
+    return df
+
+
+def calculate_budget_burn_rate(
+    budgeted: float,
+    spent: float,
+    start_date: str,
+    end_date: str,
+    current_date: str = None
+) -> Dict[str, float]:
+    """
+    Calculate budget burn rate and projections.
+
+    Args:
+        budgeted: Total budgeted amount
+        spent: Amount spent so far
+        start_date: Budget period start (YYYY-MM-DD)
+        end_date: Budget period end (YYYY-MM-DD)
+        current_date: Current date (YYYY-MM-DD), defaults to today
+
+    Returns:
+        Dictionary with burn_rate, days_elapsed, days_remaining, projected_spend, projected_over_under
+    """
+    start = pd.to_datetime(start_date)
+    end = pd.to_datetime(end_date)
+    current = pd.to_datetime(current_date) if current_date else pd.Timestamp.now()
+
+    # Calculate days
+    total_days = (end - start).days + 1
+    days_elapsed = (current - start).days + 1
+    days_remaining = (end - current).days
+
+    # Prevent division by zero
+    days_elapsed = max(1, days_elapsed)
+    days_remaining = max(0, days_remaining)
+
+    # Calculate burn rate (spend per day)
+    burn_rate = spent / days_elapsed if days_elapsed > 0 else 0
+
+    # Project total spend at current burn rate
+    projected_spend = spent + (burn_rate * days_remaining)
+
+    # Calculate projected over/under budget
+    projected_over_under = budgeted - projected_spend
+
+    return {
+        'burn_rate': burn_rate,
+        'days_elapsed': days_elapsed,
+        'days_remaining': days_remaining,
+        'total_days': total_days,
+        'projected_spend': projected_spend,
+        'projected_over_under': projected_over_under
+    }
+
+
+def calculate_daily_budget_pace(
+    budgeted: float,
+    spent: float,
+    start_date: str,
+    end_date: str
+) -> pd.DataFrame:
+    """
+    Calculate ideal daily budget pace vs. actual spending.
+
+    Args:
+        budgeted: Total budgeted amount
+        spent: Amount spent so far
+        start_date: Budget period start (YYYY-MM-DD)
+        end_date: Budget period end (YYYY-MM-DD)
+
+    Returns:
+        DataFrame with columns: day, ideal_cumulative, actual_cumulative (for current day only)
+    """
+    start = pd.to_datetime(start_date)
+    end = pd.to_datetime(end_date)
+    today = pd.Timestamp.now()
+
+    # Generate date range
+    date_range = pd.date_range(start=start, end=end, freq='D')
+
+    total_days = len(date_range)
+    daily_budget = budgeted / total_days if total_days > 0 else 0
+
+    data = []
+    for i, date in enumerate(date_range):
+        day_number = i + 1
+        ideal_cumulative = daily_budget * day_number
+
+        # Only show actual for current day
+        actual_cumulative = spent if date.date() == today.date() else None
+
+        data.append({
+            'day': day_number,
+            'date': date,
+            'ideal_cumulative': ideal_cumulative,
+            'actual_cumulative': actual_cumulative
+        })
+
+    return pd.DataFrame(data)

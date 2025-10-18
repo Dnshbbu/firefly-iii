@@ -62,6 +62,15 @@ Analyze your income and expenses over time:
 - Customizable date ranges and aggregation periods
 - Transaction filtering and export
 
+### 💰 Budget Dashboard
+Track and manage your budgets effectively:
+- Budget vs. actual spending comparison
+- Budget utilization gauges and progress bars
+- Burn rate analysis and projections
+- Over/under budget alerts
+- Individual budget performance tracking
+- End-of-period spending forecasts
+
 ### 📄 CSV Preprocessor
 Prepare bank statement CSV files for import:
 - Automatic bank type detection

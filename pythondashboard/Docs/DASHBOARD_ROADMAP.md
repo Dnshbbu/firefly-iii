@@ -478,21 +478,25 @@ This document outlines the comprehensive roadmap for building a custom Firefly I
 
 **Recommended First Implementations:**
 
-1. **Cash Flow Dashboard** ⭐⭐⭐
+1. **Cash Flow Dashboard** ⭐⭐⭐ ✅ **COMPLETED**
    - **Why:** Most actionable insights for daily financial management
    - **Complexity:** Medium (requires transaction aggregation)
    - **Impact:** High (shows where money is going)
    - **Dependencies:** Transaction API endpoint
    - **Estimated Effort:** 1-2 days
+   - **Status:** Implemented 2025-10-18
+   - **Location:** `pages/3_📈_Cash_Flow.py`
 
-2. **Budget Dashboard** ⭐⭐⭐
+2. **Budget Dashboard** ⭐⭐⭐ ✅ **COMPLETED**
    - **Why:** Complements net worth, enables proactive financial management
    - **Complexity:** Medium (budget API + transaction correlation)
    - **Impact:** High (helps control spending)
    - **Dependencies:** Budget API, transaction API
    - **Estimated Effort:** 2-3 days
+   - **Status:** Implemented 2025-10-18
+   - **Location:** `pages/4_💰_Budget.py`
 
-3. **Category Spending Analysis** ⭐⭐
+3. **Category Spending Analysis** ⭐⭐ 🔄 **NEXT UP**
    - **Why:** Deep dive into spending habits
    - **Complexity:** Medium (requires category aggregation)
    - **Impact:** High (identifies spending patterns)
@@ -576,13 +580,13 @@ This document outlines the comprehensive roadmap for building a custom Firefly I
 
 ```
 pythondashboard/
-├── Home.py                          # Main landing page
+├── Home.py                          # Main landing page (updated)
 ├── pages/
 │   ├── 1_📊_Net_Worth.py           # Existing: Net worth dashboard
 │   ├── 2_📄_CSV_Preprocessor.py    # Existing: CSV preprocessing
-│   ├── 3_💰_Budget.py              # New: Budget dashboard
-│   ├── 4_📈_Cash_Flow.py           # New: Cash flow dashboard
-│   ├── 5_🏷️_Categories.py         # New: Category analysis
+│   ├── 3_📈_Cash_Flow.py           # ✅ DONE: Cash flow dashboard
+│   ├── 4_💰_Budget.py              # ✅ DONE: Budget dashboard
+│   ├── 5_🏷️_Categories.py         # TODO: Category analysis
 │   ├── 6_📊_Transactions.py        # New: Transaction analytics
 │   ├── 7_💳_Liabilities.py         # New: Debt tracking
 │   ├── 8_🐷_Savings_Goals.py       # New: Piggy banks
@@ -592,14 +596,14 @@ pythondashboard/
 │   ├── 12_🔍_Insights.py           # New: Smart insights
 │   ├── 13_📆_Compare.py            # New: Period comparison
 │   └── 14_🎯_Projections.py        # New: Goals & forecasting
-├── utils/
-│   ├── __init__.py
-│   ├── api_client.py               # FireflyAPIClient (refactored from Net_Worth.py)
-│   ├── charts.py                   # Reusable chart functions
-│   ├── gridstack.py                # Gridstack widget utilities
-│   ├── calculations.py             # Financial calculations
-│   ├── insights.py                 # Insight generation logic
-│   └── formatters.py               # Data formatting utilities
+├── utils/                           # ✅ Shared utilities created
+│   ├── __init__.py                 # ✅ Module initialization
+│   ├── api_client.py               # ✅ FireflyAPIClient with budget methods
+│   ├── charts.py                   # ✅ 12+ chart functions (including budget charts)
+│   ├── calculations.py             # ✅ Financial calcs (cash flow + budget functions)
+│   ├── gridstack.py                # TODO: Gridstack widget utilities
+│   ├── insights.py                 # TODO: Insight generation logic
+│   └── formatters.py               # TODO: Data formatting utilities
 ├── config/
 │   ├── __init__.py
 │   └── settings.py                 # App configuration
