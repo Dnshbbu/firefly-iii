@@ -645,3 +645,242 @@ def create_budget_progress_bars(
     fig.add_vline(x=100, line_dash="dash", line_color="white", opacity=0.5)
 
     return fig
+
+
+def create_category_trend_chart(
+    df: pd.DataFrame,
+    categories: List[str],
+    title: str = 'Category Spending Trends',
+    height: int = 500
+) -> go.Figure:
+    """
+    Create a multi-line chart showing spending trends for multiple categories.
+
+    Args:
+        df: DataFrame with columns: date, category_name, amount
+        categories: List of category names to display
+        title: Chart title
+        height: Chart height in pixels
+
+    Returns:
+        Plotly Figure object
+    """
+    fig = go.Figure()
+
+    for category in categories:
+        category_data = df[df['category_name'] == category]
+
+        if not category_data.empty:
+            fig.add_trace(go.Scatter(
+                x=category_data['date'],
+                y=category_data['amount'],
+                name=category,
+                mode='lines+markers',
+                line=dict(width=2),
+                marker=dict(size=6)
+            ))
+
+    fig.update_layout(
+        title=title,
+        xaxis_title='Date',
+        yaxis_title='Amount (€)',
+        height=height,
+        margin=dict(t=50, b=50, l=50, r=20),
+        hovermode='x unified',
+        legend=dict(
+            orientation="h",
+            yanchor="bottom",
+            y=1.02,
+            xanchor="right",
+            x=1
+        )
+    )
+
+    return fig
+
+
+def create_treemap_chart(
+    df: pd.DataFrame,
+    labels_col: str,
+    values_col: str,
+    title: str = 'Category Breakdown',
+    height: int = 500
+) -> go.Figure:
+    """
+    Create a treemap visualization for hierarchical category data.
+
+    Args:
+        df: DataFrame with category data
+        labels_col: Column name for labels
+        values_col: Column name for values
+        title: Chart title
+        height: Chart height in pixels
+
+    Returns:
+        Plotly Figure object
+    """
+    fig = go.Figure(go.Treemap(
+        labels=df[labels_col],
+        parents=[""] * len(df),  # All top-level
+        values=df[values_col],
+        textinfo="label+value+percent parent",
+        marker=dict(
+            colorscale='Reds',
+            cmid=df[values_col].median()
+        )
+    ))
+
+    fig.update_layout(
+        title=title,
+        height=height,
+        margin=dict(t=50, b=20, l=20, r=20)
+    )
+
+    return fig
+
+
+def create_pareto_chart(
+    df: pd.DataFrame,
+    category_col: str = 'category_name',
+    amount_col: str = 'amount',
+    cumulative_col: str = 'cumulative_pct',
+    title: str = 'Pareto Analysis (80/20 Rule)',
+    height: int = 500
+) -> go.Figure:
+    """
+    Create a Pareto chart showing category distribution and cumulative percentage.
+
+    Args:
+        df: DataFrame with category data (should be pre-sorted by amount descending)
+        category_col: Column name for categories
+        amount_col: Column name for amounts
+        cumulative_col: Column name for cumulative percentage
+        title: Chart title
+        height: Chart height in pixels
+
+    Returns:
+        Plotly Figure object
+    """
+    fig = go.Figure()
+
+    # Bar chart for amounts
+    fig.add_trace(go.Bar(
+        x=df[category_col],
+        y=df[amount_col],
+        name='Amount',
+        marker=dict(color='#f87171'),
+        yaxis='y'
+    ))
+
+    # Line chart for cumulative percentage
+    fig.add_trace(go.Scatter(
+        x=df[category_col],
+        y=df[cumulative_col],
+        name='Cumulative %',
+        mode='lines+markers',
+        line=dict(color='#60a5fa', width=3),
+        marker=dict(size=8),
+        yaxis='y2'
+    ))
+
+    # Add 80% threshold line
+    fig.add_hline(
+        y=80,
+        line_dash="dash",
+        line_color="#fbbf24",
+        annotation_text="80%",
+        annotation_position="right",
+        yref='y2'
+    )
+
+    fig.update_layout(
+        title=title,
+        xaxis_title='Category',
+        yaxis_title='Amount (€)',
+        yaxis2=dict(
+            title='Cumulative %',
+            overlaying='y',
+            side='right',
+            range=[0, 105]
+        ),
+        height=height,
+        margin=dict(t=50, b=100, l=50, r=80),
+        hovermode='x unified',
+        legend=dict(
+            orientation="h",
+            yanchor="bottom",
+            y=1.02,
+            xanchor="right",
+            x=1
+        )
+    )
+
+    return fig
+
+
+def create_category_comparison_chart(
+    df: pd.DataFrame,
+    category_name: str,
+    title: str = None,
+    height: int = 400
+) -> go.Figure:
+    """
+    Create a month-over-month comparison chart for a specific category.
+
+    Args:
+        df: DataFrame with columns: month, amount, change, change_pct
+        category_name: Name of the category
+        title: Chart title (defaults to category name)
+        height: Chart height in pixels
+
+    Returns:
+        Plotly Figure object
+    """
+    if title is None:
+        title = f'{category_name} - Monthly Trend'
+
+    fig = go.Figure()
+
+    # Bar chart for monthly amounts
+    fig.add_trace(go.Bar(
+        x=df['month'].dt.strftime('%b %Y'),
+        y=df['amount'],
+        name='Monthly Spending',
+        marker=dict(color='#f87171'),
+        text=df['amount'].apply(lambda x: f'€{x:,.0f}'),
+        textposition='outside'
+    ))
+
+    # Line for month-over-month change percentage
+    fig.add_trace(go.Scatter(
+        x=df['month'].dt.strftime('%b %Y'),
+        y=df['change_pct'],
+        name='MoM Change %',
+        mode='lines+markers',
+        line=dict(color='#60a5fa', width=2),
+        marker=dict(size=8),
+        yaxis='y2'
+    ))
+
+    fig.update_layout(
+        title=title,
+        xaxis_title='Month',
+        yaxis_title='Amount (€)',
+        yaxis2=dict(
+            title='Change (%)',
+            overlaying='y',
+            side='right'
+        ),
+        height=height,
+        margin=dict(t=50, b=50, l=50, r=80),
+        hovermode='x unified',
+        legend=dict(
+            orientation="h",
+            yanchor="bottom",
+            y=1.02,
+            xanchor="right",
+            x=1
+        )
+    )
+
+    return fig

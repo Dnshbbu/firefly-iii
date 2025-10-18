@@ -535,3 +535,222 @@ def calculate_daily_budget_pace(
         })
 
     return pd.DataFrame(data)
+
+
+def calculate_category_trends(
+    transactions_df: pd.DataFrame,
+    period: str = 'M'
+) -> pd.DataFrame:
+    """
+    Calculate category spending trends over time.
+
+    Args:
+        transactions_df: DataFrame with transaction data
+        period: Pandas period string ('M' = monthly, 'W' = weekly, 'Q' = quarterly)
+
+    Returns:
+        DataFrame with date, category_name, and amount columns
+    """
+    if transactions_df.empty:
+        return pd.DataFrame(columns=['date', 'category_name', 'amount'])
+
+    # Filter for expenses only
+    df = transactions_df[transactions_df['type'] == 'withdrawal'].copy()
+
+    if df.empty:
+        return pd.DataFrame(columns=['date', 'category_name', 'amount'])
+
+    # Replace None/empty categories
+    df['category_name'] = df['category_name'].fillna('Uncategorized')
+    df['category_name'] = df['category_name'].replace('', 'Uncategorized')
+
+    # Ensure date is datetime
+    df['date'] = pd.to_datetime(df['date'])
+
+    # Group by period and category
+    df_grouped = df.groupby([pd.Grouper(key='date', freq=period), 'category_name'])['amount'].sum().reset_index()
+
+    return df_grouped
+
+
+def calculate_category_monthly_comparison(
+    transactions_df: pd.DataFrame,
+    category_name: str
+) -> pd.DataFrame:
+    """
+    Calculate month-over-month spending for a specific category.
+
+    Args:
+        transactions_df: DataFrame with transaction data
+        category_name: Name of the category to analyze
+
+    Returns:
+        DataFrame with month, amount, and change columns
+    """
+    if transactions_df.empty:
+        return pd.DataFrame(columns=['month', 'amount', 'change', 'change_pct'])
+
+    # Filter for specific category and expenses
+    df = transactions_df[
+        (transactions_df['category_name'] == category_name) &
+        (transactions_df['type'] == 'withdrawal')
+    ].copy()
+
+    if df.empty:
+        return pd.DataFrame(columns=['month', 'amount', 'change', 'change_pct'])
+
+    # Ensure date is datetime
+    df['date'] = pd.to_datetime(df['date'])
+
+    # Group by month
+    monthly = df.groupby(pd.Grouper(key='date', freq='M'))['amount'].sum().reset_index()
+    monthly.columns = ['month', 'amount']
+
+    # Calculate month-over-month change
+    monthly['change'] = monthly['amount'].diff()
+    monthly['change_pct'] = monthly['amount'].pct_change() * 100
+
+    return monthly
+
+
+def calculate_category_percentage(
+    transactions_df: pd.DataFrame,
+    start_date: str = None,
+    end_date: str = None
+) -> pd.DataFrame:
+    """
+    Calculate category spending as percentage of total expenses.
+
+    Args:
+        transactions_df: DataFrame with transaction data
+        start_date: Optional start date filter (YYYY-MM-DD)
+        end_date: Optional end date filter (YYYY-MM-DD)
+
+    Returns:
+        DataFrame with category_name, amount, percentage, and cumulative_pct columns
+    """
+    if transactions_df.empty:
+        return pd.DataFrame(columns=['category_name', 'amount', 'percentage', 'cumulative_pct'])
+
+    df = transactions_df.copy()
+
+    # Filter by date range if provided
+    if start_date:
+        start_dt = pd.to_datetime(start_date)
+        if df['date'].dt.tz is not None:
+            start_dt = start_dt.tz_localize(df['date'].dt.tz)
+        df = df[df['date'] >= start_dt]
+    if end_date:
+        end_dt = pd.to_datetime(end_date)
+        if df['date'].dt.tz is not None:
+            end_dt = end_dt.tz_localize(df['date'].dt.tz)
+        df = df[df['date'] <= end_dt]
+
+    # Filter for expenses only
+    df = df[df['type'] == 'withdrawal'].copy()
+
+    if df.empty:
+        return pd.DataFrame(columns=['category_name', 'amount', 'percentage', 'cumulative_pct'])
+
+    # Replace None/empty categories
+    df['category_name'] = df['category_name'].fillna('Uncategorized')
+    df['category_name'] = df['category_name'].replace('', 'Uncategorized')
+
+    # Group by category
+    category_totals = df.groupby('category_name')['amount'].sum().reset_index()
+    category_totals.columns = ['category_name', 'amount']
+
+    # Calculate total expenses
+    total_expenses = category_totals['amount'].sum()
+
+    # Calculate percentage
+    category_totals['percentage'] = (category_totals['amount'] / total_expenses * 100) if total_expenses > 0 else 0
+
+    # Sort by amount descending
+    category_totals = category_totals.sort_values('amount', ascending=False)
+
+    # Calculate cumulative percentage
+    category_totals['cumulative_pct'] = category_totals['percentage'].cumsum()
+
+    return category_totals
+
+
+def get_top_transactions_by_category(
+    transactions_df: pd.DataFrame,
+    category_name: str,
+    limit: int = 10
+) -> pd.DataFrame:
+    """
+    Get top transactions for a specific category.
+
+    Args:
+        transactions_df: DataFrame with transaction data
+        category_name: Name of the category
+        limit: Number of top transactions to return
+
+    Returns:
+        DataFrame with top transactions sorted by amount descending
+    """
+    if transactions_df.empty:
+        return pd.DataFrame(columns=['date', 'description', 'amount', 'destination_name'])
+
+    # Filter for specific category
+    df = transactions_df[transactions_df['category_name'] == category_name].copy()
+
+    if df.empty:
+        return pd.DataFrame(columns=['date', 'description', 'amount', 'destination_name'])
+
+    # Sort by amount descending
+    df_sorted = df.sort_values('amount', ascending=False)
+
+    # Select relevant columns and limit
+    result = df_sorted[['date', 'description', 'amount', 'destination_name']].head(limit)
+
+    return result
+
+
+def calculate_category_statistics(
+    transactions_df: pd.DataFrame,
+    category_name: str
+) -> Dict[str, float]:
+    """
+    Calculate statistical metrics for a category.
+
+    Args:
+        transactions_df: DataFrame with transaction data
+        category_name: Name of the category
+
+    Returns:
+        Dictionary with mean, median, min, max, std, and count
+    """
+    if transactions_df.empty:
+        return {
+            'mean': 0,
+            'median': 0,
+            'min': 0,
+            'max': 0,
+            'std': 0,
+            'count': 0
+        }
+
+    # Filter for specific category
+    df = transactions_df[transactions_df['category_name'] == category_name].copy()
+
+    if df.empty:
+        return {
+            'mean': 0,
+            'median': 0,
+            'min': 0,
+            'max': 0,
+            'std': 0,
+            'count': 0
+        }
+
+    return {
+        'mean': df['amount'].mean(),
+        'median': df['amount'].median(),
+        'min': df['amount'].min(),
+        'max': df['amount'].max(),
+        'std': df['amount'].std(),
+        'count': len(df)
+    }

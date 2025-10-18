@@ -71,6 +71,15 @@ Track and manage your budgets effectively:
 - Individual budget performance tracking
 - End-of-period spending forecasts
 
+### 🏷️ Category Spending Analysis
+Deep dive into your spending patterns by category:
+- Category distribution visualization (pie, treemap)
+- Pareto analysis (80/20 rule)
+- Category spending trends over time
+- Month-over-month category comparison
+- Top transactions per category
+- Statistical analysis (mean, median, min, max)
+
 ### 📄 CSV Preprocessor
 Prepare bank statement CSV files for import:
 - Automatic bank type detection
