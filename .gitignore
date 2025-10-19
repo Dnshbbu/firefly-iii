@@ -36,3 +36,5 @@ docker-setup/.db.env
 docker-setup/.importer.env
 pythondashboard/statements/**
 pythondashboard/utils/__pycache__/**
+pythondashboard/__pycache__/**
+

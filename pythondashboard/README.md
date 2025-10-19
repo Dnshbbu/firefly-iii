@@ -2,21 +2,34 @@
 
 A comprehensive Streamlit-based dashboard for managing and visualizing your Firefly III personal finance data.
 
-This directory provides two main tools:
+This directory provides multiple tools for managing your Firefly III instance:
 1. **Net Worth Dashboard** - Real-time visualization of your financial position via Firefly III API
 2. **CSV Preprocessor** - Clean and prepare bank statement CSV files for import
+3. **Cash Flow Dashboard** - Track income and expenses over time
+4. **Budget Dashboard** - Monitor budget usage and limits
+5. **Categories Dashboard** - Analyze spending by category
+6. **Rules Management** - Export, view, delete, and import transaction rules
 
 All CSV preprocessing tools, bank statement files, and import configurations are consolidated in one place for easy management.
 
 ## Features
 
-### 📊 Net Worth Dashboard (NEW!)
+### 📊 Net Worth Dashboard
 - **Real-time API Integration** - Connect directly to your Firefly III instance
 - **Net Worth Calculation** - Automatic calculation by currency
 - **Interactive Charts** - Visual breakdown by account type and individual accounts
 - **Account Overview** - Detailed table of all asset and liability accounts
 - **Export Capabilities** - Download account data as CSV
 - **Filtering Options** - Filter by account type, active status, and balance
+
+### 📋 Rules Management (NEW!)
+- **Export Rules** - Download all rules as JSON for backup or migration
+- **View Rules** - Browse all rules with filtering and search capabilities
+- **Delete Rules** - Remove multiple rules with confirmation safeguards
+- **Import Rules** - Upload JSON files to bulk import rules
+- **Duplicate Detection** - Skip importing rules with matching titles
+- **Detailed View** - Inspect triggers, actions, and raw JSON for each rule
+- **Batch Operations** - Handle multiple rules at once
 
 ### 📄 CSV Preprocessing
 - Upload CSV files from your bank statements
@@ -51,6 +64,53 @@ streamlit run Home.py
 3. Use the sidebar to navigate between:
    - **📊 Net Worth** - View your financial dashboard
    - **📄 CSV Preprocessor** - Prepare CSV files for import
+   - **📈 Cash Flow** - Track income and expenses
+   - **💰 Budget** - Monitor budget usage
+   - **🏷️ Categories** - Analyze spending by category
+   - **📋 Rules Management** - Manage transaction rules
+
+### Using the Rules Management Page
+
+1. **Generate API Token** in Firefly III:
+   - Go to your Firefly III instance
+   - Navigate to **Options → Profile → OAuth**
+   - Under **Personal Access Tokens**, click **Create New Token**
+   - Give it a name (e.g., "Streamlit Rules Manager")
+   - Copy the generated token (shown only once!)
+
+2. **Connect to Firefly III**:
+   - Enter your Firefly III URL in the sidebar (e.g., `http://localhost` or `http://app:8080` for Docker)
+   - Paste your Personal Access Token
+   - Click **Connect to Firefly III**
+
+3. **Export Rules**:
+   - Go to the **View & Export Rules** tab
+   - Click **Refresh Rules** to load all rules from Firefly III
+   - Review rules in the table (filter by status or search by title)
+   - Click **Export All Rules** to download as JSON
+
+4. **Delete Rules**:
+   - Go to the **Delete Rules** tab
+   - Select rules to delete using the multi-select dropdown
+   - Review the selected rules in the preview table
+   - Check the confirmation checkbox
+   - Click **Delete Selected Rules**
+
+5. **Import Rules**:
+   - Go to the **Import Rules** tab
+   - Upload a JSON file (previously exported or manually created)
+   - Review the preview of rules to import
+   - Choose import options:
+     - Import as inactive (all rules will be disabled)
+     - Skip duplicates (rules with matching titles)
+   - Check the confirmation checkbox
+   - Click **Import Rules**
+
+**Use Cases:**
+- **Backup:** Export rules before making changes
+- **Migration:** Move rules between Firefly III instances
+- **Bulk Management:** Delete multiple obsolete rules at once
+- **Testing:** Import rules as inactive to test before enabling
 
 ### Using the Net Worth Dashboard
 
