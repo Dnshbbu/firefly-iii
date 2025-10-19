@@ -12,7 +12,12 @@
       "Bash(docker exec firefly_iii_db psql -U firefly -d firefly -c \"\\dt\")",
       "Bash(docker --version)",
       "Bash(docker info)",
-      "Bash(sudo usermod -aG docker $USER)"
+      "Bash(sudo usermod -aG docker $USER)",
+      "Bash(php --version)",
+      "Bash(composer --version)",
+      "Bash(node --version)",
+      "Bash(npm --version)",
+      "Bash(mysql --version)"
     ],
     "deny": [],
     "ask": []
