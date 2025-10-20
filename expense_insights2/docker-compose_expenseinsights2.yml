@@ -1,0 +1,65 @@
+name: expense-insights2
+
+services:
+  app:
+    image: fireflyiii/core:latest
+    hostname: app
+    container_name: firefly_iii_core
+    networks:
+      - firefly_iii
+    restart: always
+    volumes:
+      - expense-insights2_firefly_iii_upload:/var/www/html/storage/upload
+    env_file: .env
+    ports:
+      - "80:8080"
+    depends_on:
+      - db
+
+  db:
+    image: postgres:latest
+    hostname: db
+    container_name: firefly_iii_db
+    networks:
+      - firefly_iii
+    restart: always
+    env_file: .db.env
+    volumes:
+      - expense-insights2_firefly_iii_db:/var/lib/postgresql/data
+
+  importer:
+    image: fireflyiii/data-importer:latest
+    hostname: importer
+    restart: always
+    container_name: firefly_iii_importer
+    networks:
+      - firefly_iii
+    ports:
+      - "81:8080"
+    depends_on:
+      - app
+    env_file: .importer.env
+
+  cron:
+    image: alpine
+    container_name: firefly_iii_cron
+    restart: always
+    env_file: .env
+    command: sh -c "
+      apk add tzdata && \
+      (ln -fs /usr/share/zoneinfo/$$TZ /etc/localtime || true) && \
+      echo '0 3 * * * wget -qO- http://app:8080/api/v1/cron/$$STATIC_CRON_TOKEN;echo' \
+      | crontab - && \
+      crond -f -L /dev/stdout"
+    networks:
+      - firefly_iii
+    depends_on:
+      - app
+
+volumes:
+  expense-insights2_firefly_iii_upload:
+  expense-insights2_firefly_iii_db:
+
+networks:
+  firefly_iii:
+    driver: bridge
