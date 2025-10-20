@@ -508,3 +508,272 @@ class FireflyAPIClient:
             return False, None, f"Invalid JSON file: {str(e)}"
         except Exception as e:
             return False, None, f"Error reading file: {str(e)}"
+
+    # ========== ACCOUNT MANAGEMENT METHODS ==========
+
+    def get_accounts(self, account_type: Optional[str] = None, page: int = 1, limit: int = 50) -> Tuple[bool, Optional[List[Dict]], str]:
+        """
+        Get accounts from Firefly III
+
+        Args:
+            account_type: Optional filter by account type (asset, expense, revenue, liability, etc.)
+            page: Page number for pagination
+            limit: Number of accounts per page
+
+        Returns:
+            Tuple of (success: bool, accounts: List[Dict] or None, message: str)
+        """
+        try:
+            params = {'page': page, 'limit': limit}
+            if account_type:
+                params['type'] = account_type
+
+            response = requests.get(
+                f'{self.base_url}/api/v1/accounts',
+                headers=self.headers,
+                params=params,
+                timeout=10
+            )
+
+            if response.status_code == 200:
+                data = response.json()
+                accounts = data.get('data', [])
+                return True, accounts, f"Retrieved {len(accounts)} accounts"
+            else:
+                return False, None, f"Failed to get accounts: {response.status_code} - {response.text}"
+        except requests.exceptions.RequestException as e:
+            return False, None, f"Error retrieving accounts: {str(e)}"
+
+    def get_all_accounts(self, account_type: Optional[str] = None) -> Tuple[bool, Optional[List[Dict]], str]:
+        """
+        Get ALL accounts from Firefly III (handles pagination automatically)
+
+        Args:
+            account_type: Optional filter by account type (asset, expense, revenue, liability, etc.)
+
+        Returns:
+            Tuple of (success: bool, accounts: List[Dict] or None, message: str)
+        """
+        all_accounts = []
+        page = 1
+
+        try:
+            while True:
+                params = {'page': page}
+                if account_type:
+                    params['type'] = account_type
+
+                response = requests.get(
+                    f'{self.base_url}/api/v1/accounts',
+                    headers=self.headers,
+                    params=params,
+                    timeout=10
+                )
+
+                if response.status_code != 200:
+                    return False, None, f"Failed to get accounts: {response.status_code} - {response.text}"
+
+                data = response.json()
+                accounts = data.get('data', [])
+
+                if not accounts:
+                    break
+
+                all_accounts.extend(accounts)
+
+                # Check if there's a next page
+                meta = data.get('meta', {})
+                pagination = meta.get('pagination', {})
+                current_page = pagination.get('current_page', page)
+                total_pages = pagination.get('total_pages', 1)
+
+                if current_page >= total_pages:
+                    break
+
+                page += 1
+
+            return True, all_accounts, f"Retrieved {len(all_accounts)} accounts"
+        except requests.exceptions.RequestException as e:
+            return False, None, f"Error retrieving accounts: {str(e)}"
+
+    def delete_account(self, account_id: int) -> Tuple[bool, str]:
+        """
+        Delete an account by ID
+
+        Args:
+            account_id: ID of the account to delete
+
+        Returns:
+            Tuple of (success: bool, message: str)
+        """
+        try:
+            response = requests.delete(
+                f'{self.base_url}/api/v1/accounts/{account_id}',
+                headers=self.headers,
+                timeout=10
+            )
+
+            if response.status_code == 204:
+                return True, f"Account {account_id} deleted successfully"
+            else:
+                return False, f"Failed to delete account: {response.status_code} - {response.text}"
+        except requests.exceptions.RequestException as e:
+            return False, f"Error deleting account: {str(e)}"
+
+    def create_account(self, account_data: Dict) -> Tuple[bool, Optional[Dict], str]:
+        """
+        Create a new account
+
+        Args:
+            account_data: Account data dictionary (should contain name, type, and other optional fields)
+
+        Returns:
+            Tuple of (success: bool, created_account: Dict or None, message: str)
+        """
+        try:
+            # The API expects the data in a specific format
+            if 'name' in account_data:
+                # Data is already in the correct format
+                payload = account_data
+            else:
+                # Data might be wrapped in attributes
+                payload = account_data.get('attributes', account_data)
+
+            response = requests.post(
+                f'{self.base_url}/api/v1/accounts',
+                headers=self.headers,
+                json=payload,
+                timeout=10
+            )
+
+            if response.status_code == 200 or response.status_code == 201:
+                data = response.json()
+                created_account = data.get('data', {})
+                account_id = created_account.get('id', 'unknown')
+                return True, created_account, f"Account created successfully (ID: {account_id})"
+            else:
+                # Include more detailed error information
+                error_detail = response.text
+                try:
+                    error_json = response.json()
+                    if 'errors' in error_json:
+                        # Format validation errors nicely
+                        errors = error_json['errors']
+                        error_msgs = []
+                        for field, messages in errors.items():
+                            error_msgs.append(f"{field}: {', '.join(messages)}")
+                        error_detail = '; '.join(error_msgs)
+                    elif 'message' in error_json:
+                        error_detail = error_json['message']
+                except:
+                    pass
+                return False, None, f"Failed to create account: {response.status_code} - {error_detail}"
+        except requests.exceptions.RequestException as e:
+            return False, None, f"Error creating account: {str(e)}"
+
+    def update_account(self, account_id: int, account_data: Dict) -> Tuple[bool, Optional[Dict], str]:
+        """
+        Update an existing account
+
+        Args:
+            account_id: ID of the account to update
+            account_data: Account data dictionary (should contain name, type, and other optional fields)
+
+        Returns:
+            Tuple of (success: bool, updated_account: Dict or None, message: str)
+        """
+        try:
+            # The API expects the data in a specific format
+            if 'name' in account_data:
+                # Data is already in the correct format
+                payload = account_data
+            else:
+                # Data might be wrapped in attributes
+                payload = account_data.get('attributes', account_data)
+
+            response = requests.put(
+                f'{self.base_url}/api/v1/accounts/{account_id}',
+                headers=self.headers,
+                json=payload,
+                timeout=10
+            )
+
+            if response.status_code == 200:
+                data = response.json()
+                updated_account = data.get('data', {})
+                return True, updated_account, f"Account updated successfully (ID: {account_id})"
+            else:
+                # Include more detailed error information
+                error_detail = response.text
+                try:
+                    error_json = response.json()
+                    if 'errors' in error_json:
+                        # Format validation errors nicely
+                        errors = error_json['errors']
+                        error_msgs = []
+                        for field, messages in errors.items():
+                            error_msgs.append(f"{field}: {', '.join(messages)}")
+                        error_detail = '; '.join(error_msgs)
+                    elif 'message' in error_json:
+                        error_detail = error_json['message']
+                except:
+                    pass
+                return False, None, f"Failed to update account: {response.status_code} - {error_detail}"
+        except requests.exceptions.RequestException as e:
+            return False, None, f"Error updating account: {str(e)}"
+
+    def export_accounts_to_json(self, accounts: List[Dict], filepath: str, account_type: str = "accounts") -> Tuple[bool, str]:
+        """
+        Export accounts to JSON file
+
+        Args:
+            accounts: List of account dictionaries
+            filepath: Path to save the JSON file
+            account_type: Type descriptor for the export (e.g., "asset_accounts", "expense_accounts")
+
+        Returns:
+            Tuple of (success: bool, message: str)
+        """
+        try:
+            export_data = {
+                'export_date': datetime.now().isoformat(),
+                'firefly_iii_accounts_export': True,
+                'account_type': account_type,
+                'total_accounts': len(accounts),
+                'accounts': accounts
+            }
+
+            with open(filepath, 'w', encoding='utf-8') as f:
+                json.dump(export_data, f, indent=2, ensure_ascii=False)
+
+            return True, f"Exported {len(accounts)} accounts to {filepath}"
+        except Exception as e:
+            return False, f"Error exporting accounts: {str(e)}"
+
+    def import_accounts_from_json(self, filepath: str) -> Tuple[bool, Optional[List[Dict]], str]:
+        """
+        Import accounts from JSON file
+
+        Args:
+            filepath: Path to the JSON file
+
+        Returns:
+            Tuple of (success: bool, accounts: List[Dict] or None, message: str)
+        """
+        try:
+            with open(filepath, 'r', encoding='utf-8') as f:
+                data = json.load(f)
+
+            # Validate the file structure
+            if not isinstance(data, dict) or 'accounts' not in data:
+                return False, None, "Invalid JSON file format. Expected 'accounts' key."
+
+            accounts = data.get('accounts', [])
+            if not isinstance(accounts, list):
+                return False, None, "Invalid accounts format. Expected a list."
+
+            return True, accounts, f"Loaded {len(accounts)} accounts from file"
+        except json.JSONDecodeError as e:
+            return False, None, f"Invalid JSON file: {str(e)}"
+        except Exception as e:
+            return False, None, f"Error reading file: {str(e)}"
