@@ -107,7 +107,7 @@ STATEMENTS_FOLDER = Path(__file__).parent / "statements"
 
 # Sidebar for navigation
 st.sidebar.title("Navigation")
-page = st.sidebar.radio("Go to", ["CSV Preprocessing", "Future: Dashboard"])
+page = st.sidebar.radio("Go to", ["CSV Preprocessing", "View Preprocessing Rules", "Future: Dashboard"])
 
 if page == "CSV Preprocessing":
     st.subheader("CSV Preprocessing")
@@ -453,6 +453,83 @@ if page == "CSV Preprocessing":
 
         except Exception as e:
             st.error(f"Error: {str(e)}")
+
+elif page == "View Preprocessing Rules":
+    st.subheader("Configured Preprocessing Rules")
+    st.markdown("View all configured preprocessing rules for each supported bank type.")
+    st.markdown("---")
+
+    # Revolut
+    with st.expander("🏦 Revolut (Current Account)", expanded=False):
+        st.markdown("#### Detection Criteria")
+        st.code("Columns: Type, Product, Started Date, Completed Date, Description, Amount, Currency")
+
+        st.markdown("#### Preprocessing Rules")
+
+        st.markdown("**Rule 1: Remove 'Saving vault topup prefunding wallet' transactions**")
+        st.markdown("- **Action:** Remove rows")
+        st.markdown("- **Condition:** `Description == 'Saving vault topup prefunding wallet'`")
+        st.markdown("- **Default:** Enabled")
+
+        st.markdown("**Rule 2: Remove Deposit transfers to Flexible Cash Funds**")
+        st.markdown("- **Action:** Remove rows")
+        st.markdown("- **Condition:** `Product == 'Deposit' AND Description == 'To Flexible Cash Funds'`")
+        st.markdown("- **Default:** Enabled")
+
+        st.markdown("**Rule 3: Remove Savings transactions**")
+        st.markdown("- **Action:** Remove rows")
+        st.markdown("- **Condition:** `Product == 'Savings'`")
+        st.markdown("- **Default:** Enabled")
+
+        st.markdown("**Rule 4: Format dates to m/d/Y**")
+        st.markdown("- **Action:** Transform dates")
+        st.markdown("- **Columns:** `Started Date`, `Completed Date`")
+        st.markdown("- **Format:** Convert from `YYYY-MM-DD HH:MM:SS` to `m/d/Y` (e.g., 9/13/2025)")
+        st.markdown("- **Default:** Enabled")
+
+    # Revolut Credit Card
+    with st.expander("💳 Revolut Credit Card", expanded=False):
+        st.markdown("#### Detection Criteria")
+        st.code("Columns: Type, Started Date, Completed Date, Description, Amount, Fee, Balance\n(Product column NOT present)")
+
+        st.markdown("#### Preprocessing Rules")
+
+        st.markdown("**Rule 1: Format dates to m/d/Y**")
+        st.markdown("- **Action:** Transform dates")
+        st.markdown("- **Columns:** `Started Date`, `Completed Date`")
+        st.markdown("- **Format:** Convert from `YYYY-MM-DD HH:MM:SS` to `m/d/Y` (e.g., 9/13/2025)")
+        st.markdown("- **Default:** Enabled")
+
+    # T212
+    with st.expander("📈 Trading 212 (T212)", expanded=False):
+        st.markdown("#### Detection Criteria")
+        st.code("Columns: Action, Time, ID, Total, Currency (Total)")
+
+        st.markdown("#### Preprocessing Rules")
+
+        st.markdown("**Rule 1: Format dates to m/d/Y**")
+        st.markdown("- **Action:** Transform dates")
+        st.markdown("- **Columns:** `Time`")
+        st.markdown("- **Format:** Ensure date is in `m/d/Y` format (e.g., 9/13/2025)")
+        st.markdown("- **Default:** Enabled")
+        st.markdown("- **Note:** T212 dates are typically already in correct format; this ensures consistency")
+
+    # AIB
+    with st.expander("🏦 AIB (Allied Irish Banks)", expanded=False):
+        st.markdown("#### Detection Criteria")
+        st.code("Columns: Posted Account, Posted Transactions Date, Debit Amount, Credit Amount")
+
+        st.markdown("#### Preprocessing Rules")
+
+        st.markdown("**Rule 1: Format dates to d/m/Y**")
+        st.markdown("- **Action:** Transform dates")
+        st.markdown("- **Columns:** `Posted Transactions Date`")
+        st.markdown("- **Format:** Convert to `d/m/Y` format (e.g., 13/9/2025)")
+        st.markdown("- **Default:** Enabled")
+        st.markdown("- **Note:** AIB uses day-first format (d/m/Y) unlike Revolut/T212 (m/d/Y)")
+
+    st.markdown("---")
+    st.info("💡 **Tip:** These rules are automatically applied based on detected bank type when you upload a CSV in the 'CSV Preprocessing' page.")
 
 elif page == "Future: Dashboard":
     st.subheader("Firefly III Dashboard")
