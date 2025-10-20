@@ -1,0 +1,88 @@
+# Git
+.git
+.gitignore
+.gitattributes
+
+# Docker
+Dockerfile
+docker-compose*.yml
+.dockerignore
+docker-setup/
+
+# Development files
+.editorconfig
+.php_cs
+.php_cs.cache
+phpunit.xml
+phpstan.neon
+rector.php
+
+# IDE
+.idea
+.vscode
+*.swp
+*.swo
+*~
+
+# Node modules (will be installed in build)
+node_modules
+npm-debug.log
+yarn-error.log
+
+# Build artifacts
+public/hot
+public/storage
+public/js
+public/css
+public/mix-manifest.json
+public/build
+
+# Vendor (will be installed in build)
+vendor
+
+# Storage and cache
+storage/framework/cache/*
+storage/framework/sessions/*
+storage/framework/views/*
+storage/logs/*
+storage/upload/*
+storage/database/database.sqlite
+bootstrap/cache/*
+!storage/framework/cache/.gitignore
+!storage/framework/sessions/.gitignore
+!storage/framework/views/.gitignore
+!storage/logs/.gitignore
+!bootstrap/cache/.gitignore
+
+# Environment files
+.env
+.env.backup
+.env.docker
+.env.example
+.env.testing
+
+# Documentation
+*.md
+!readme.md
+docs/
+
+# Python dashboard (not needed in container)
+pythondashboard/
+
+# Tests
+tests/
+coverage/
+
+# CI/CD
+.github/
+.gitlab-ci.yml
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Temporary files
+*.log
+*.tmp
+*.cache
+nul

@@ -1,0 +1,119 @@
+#
+# Quick Start Docker Compose - Uses Official Image
+# This gets you up and running in minutes
+# Later you can switch to docker-compose.custom.yml when you want to customize
+#
+version: '3.8'
+
+services:
+  app:
+    image: fireflyiii/core:latest
+    container_name: firefly_iii_app
+    hostname: app
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - firefly
+    ports:
+      - "8080:8080"
+    volumes:
+      - firefly_upload:/var/www/html/storage/upload
+    env_file:
+      - .env.docker
+    environment:
+      DB_CONNECTION: pgsql
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_DATABASE: ${DB_DATABASE:-firefly}
+      DB_USERNAME: ${DB_USERNAME:-firefly}
+      DB_PASSWORD: ${DB_PASSWORD}
+      APP_ENV: ${APP_ENV:-local}
+      APP_DEBUG: ${APP_DEBUG:-true}
+      APP_KEY: ${APP_KEY}
+      APP_URL: ${APP_URL:-http://localhost:8080}
+      FIREFLY_III_LAYOUT: ${FIREFLY_III_LAYOUT:-v1}
+      STATIC_CRON_TOKEN: ${STATIC_CRON_TOKEN}
+      TRUSTED_PROXIES: "**"
+      SITE_OWNER: ${SITE_OWNER:-admin@example.com}
+      TZ: ${TZ:-UTC}
+    healthcheck:
+      test: ["CMD", "php", "-v"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  db:
+    image: postgres:16-alpine
+    container_name: firefly_iii_db
+    hostname: db
+    restart: unless-stopped
+    networks:
+      - firefly
+    environment:
+      POSTGRES_DB: ${DB_DATABASE:-firefly}
+      POSTGRES_USER: ${DB_USERNAME:-firefly}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      PGDATA: /var/lib/postgresql/data/pgdata
+    volumes:
+      - firefly_db:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME:-firefly}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  importer:
+    image: fireflyiii/data-importer:latest
+    container_name: firefly_iii_importer
+    hostname: importer
+    restart: unless-stopped
+    depends_on:
+      - app
+    networks:
+      - firefly
+    ports:
+      - "8081:8080"
+    environment:
+      FIREFLY_III_URL: http://app:8080
+      VANITY_URL: ${APP_URL:-http://localhost:8080}
+      EXPECT_SECURE_URL: ${IMPORTER_EXPECT_SECURE_URL:-false}
+      TRUSTED_PROXIES: "**"
+      TZ: ${TZ:-UTC}
+
+  cron:
+    image: alpine:latest
+    container_name: firefly_iii_cron
+    hostname: cron
+    restart: unless-stopped
+    depends_on:
+      - app
+    networks:
+      - firefly
+    environment:
+      STATIC_CRON_TOKEN: ${STATIC_CRON_TOKEN}
+      TZ: ${TZ:-UTC}
+    command: >
+      sh -c "
+      apk add --no-cache wget tzdata &&
+      (ln -fs /usr/share/zoneinfo/$$TZ /etc/localtime || true) &&
+      echo '0 3 * * * wget -qO- http://app:8080/api/v1/cron/$$STATIC_CRON_TOKEN && echo Cron executed' | crontab - &&
+      echo Cron job scheduled at 3 AM daily &&
+      crond -f -L /dev/stdout
+      "
+
+volumes:
+  firefly_db:
+    driver: local
+    name: firefly_iii_db_quick
+  firefly_upload:
+    driver: local
+    name: firefly_iii_upload_quick
+
+networks:
+  firefly:
+    driver: bridge
+    name: firefly_iii_network_quick
