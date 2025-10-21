@@ -1,0 +1,124 @@
+{
+  "export_date": "2025-10-20T16:10:08.818615",
+  "firefly_iii_budgets_export": true,
+  "total_budgets": 3,
+  "budgets": [
+    {
+      "type": "budgets",
+      "id": "3",
+      "attributes": {
+        "created_at": "2025-10-20T16:26:12+02:00",
+        "updated_at": "2025-10-20T16:28:46+02:00",
+        "active": true,
+        "name": "Discretionary",
+        "order": 1,
+        "notes": null,
+        "auto_budget_type": "reset",
+        "auto_budget_period": "monthly",
+        "object_group_id": null,
+        "object_group_order": null,
+        "object_group_title": null,
+        "object_has_currency_setting": true,
+        "currency_id": "1",
+        "currency_code": "EUR",
+        "currency_name": "Euro",
+        "currency_symbol": "€",
+        "currency_decimal_places": 2,
+        "primary_currency_id": "1",
+        "primary_currency_name": "Euro",
+        "primary_currency_code": "EUR",
+        "primary_currency_symbol": "€",
+        "primary_currency_decimal_places": 2,
+        "auto_budget_amount": "300.00",
+        "pc_auto_budget_amount": null,
+        "spent": null,
+        "pc_spent": null
+      },
+      "links": {
+        "self": "http://localhost/api/v1/budgets/3",
+        "0": {
+          "rel": "self",
+          "uri": "/budgets/3"
+        }
+      }
+    },
+    {
+      "type": "budgets",
+      "id": "4",
+      "attributes": {
+        "created_at": "2025-10-20T16:29:21+02:00",
+        "updated_at": "2025-10-20T16:29:21+02:00",
+        "active": true,
+        "name": "Essentails:",
+        "order": 2,
+        "notes": null,
+        "auto_budget_type": null,
+        "auto_budget_period": null,
+        "object_group_id": null,
+        "object_group_order": null,
+        "object_group_title": null,
+        "object_has_currency_setting": false,
+        "currency_id": null,
+        "currency_code": null,
+        "currency_name": null,
+        "currency_symbol": null,
+        "currency_decimal_places": null,
+        "primary_currency_id": "1",
+        "primary_currency_name": "Euro",
+        "primary_currency_code": "EUR",
+        "primary_currency_symbol": "€",
+        "primary_currency_decimal_places": 2,
+        "auto_budget_amount": null,
+        "pc_auto_budget_amount": null,
+        "spent": null,
+        "pc_spent": null
+      },
+      "links": {
+        "self": "http://localhost/api/v1/budgets/4",
+        "0": {
+          "rel": "self",
+          "uri": "/budgets/4"
+        }
+      }
+    },
+    {
+      "type": "budgets",
+      "id": "5",
+      "attributes": {
+        "created_at": "2025-10-20T16:29:21+02:00",
+        "updated_at": "2025-10-20T16:29:21+02:00",
+        "active": true,
+        "name": "Fixed costs",
+        "order": 3,
+        "notes": null,
+        "auto_budget_type": null,
+        "auto_budget_period": null,
+        "object_group_id": null,
+        "object_group_order": null,
+        "object_group_title": null,
+        "object_has_currency_setting": false,
+        "currency_id": null,
+        "currency_code": null,
+        "currency_name": null,
+        "currency_symbol": null,
+        "currency_decimal_places": null,
+        "primary_currency_id": "1",
+        "primary_currency_name": "Euro",
+        "primary_currency_code": "EUR",
+        "primary_currency_symbol": "€",
+        "primary_currency_decimal_places": 2,
+        "auto_budget_amount": null,
+        "pc_auto_budget_amount": null,
+        "spent": null,
+        "pc_spent": null
+      },
+      "links": {
+        "self": "http://localhost/api/v1/budgets/5",
+        "0": {
+          "rel": "self",
+          "uri": "/budgets/5"
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,2174 @@
+{
+  "export_date": "2025-10-20T16:08:58.112573",
+  "firefly_iii_rules_export": true,
+  "total_rules": 35,
+  "rules": [
+    {
+      "type": "rules",
+      "id": "31",
+      "attributes": {
+        "created_at": "2025-10-20T16:17:30+02:00",
+        "updated_at": "2025-10-20T16:18:13+02:00",
+        "rule_group_id": "10",
+        "rule_group_title": "Expenses: set category, desc, etc..",
+        "title": "DELIVEROO",
+        "description": "",
+        "order": 17,
+        "active": true,
+        "strict": true,
+        "stop_processing": false,
+        "trigger": "store-journal",
+        "triggers": [
+          {
+            "id": "102",
+            "created_at": "2025-10-20T16:17:41+02:00",
+            "updated_at": "2025-10-20T16:17:41+02:00",
+            "type": "transaction_type",
+            "value": "Withdrawal",
+            "prohibited": false,
+            "order": 1,
+            "active": true,
+            "stop_processing": false
+          },
+          {
+            "id": "103",
+            "created_at": "2025-10-20T16:17:41+02:00",
+            "updated_at": "2025-10-20T16:17:41+02:00",
+            "type": "description_contains",
+            "value": "DELIVEROO",
+            "prohibited": false,
+            "order": 2,
+            "active": true,
+            "stop_processing": false
+          }
+        ],
+        "actions": [
+          {
+            "id": "45",
+            "created_at": "2025-10-20T16:17:41+02:00",
+            "updated_at": "2025-10-20T16:17:41+02:00",
+            "type": "set_category",
+            "value": "Discretionary: Deliveroo and Eat out",
+            "order": 1,
+            "active": true,
+            "stop_processing": false
+          }
+        ]
+      },
+      "links": {
+        "self": "http://localhost/api/v1/rules/31",
+        "0": {
+          "rel": "self",
+          "uri": "/rules/31"
+        }
+      }
+    },
+    {
+      "type": "rules",
+      "id": "30",
+      "attributes": {
+        "created_at": "2025-10-20T16:16:52+02:00",
+        "updated_at": "2025-10-20T16:18:13+02:00",
+        "rule_group_id": "10",
+        "rule_group_title": "Expenses: set category, desc, etc..",
+        "title": "COCA COLA -vending machine",
+        "description": "",
+        "order": 18,
+        "active": true,
+        "strict": true,
+        "stop_processing": false,
+        "trigger": "store-journal",
+        "triggers": [
+          {
+            "id": "97",
+            "created_at": "2025-10-20T16:17:19+02:00",
+            "updated_at": "2025-10-20T16:17:19+02:00",
+            "type": "transaction_type",
+            "value": "Withdrawal",
+            "prohibited": false,
+            "order": 1,
+            "active": true,
+            "stop_processing": false
+          },
+          {
+            "id": "98",
+            "created_at": "2025-10-20T16:17:19+02:00",
+            "updated_at": "2025-10-20T16:17:19+02:00",
+            "type": "description_contains",
+            "value": "COCA COLA",
+            "prohibited": false,
+            "order": 2,
+            "active": true,
+            "stop_processing": false
+          }
+        ],
+        "actions": [
+          {
+            "id": "43",
+            "created_at": "2025-10-20T16:17:19+02:00",
+            "updated_at": "2025-10-20T16:17:19+02:00",
+            "type": "set_category",
+            "value": "Discretionary: Deliveroo and Eat out",
+            "order": 1,
+            "active": true,
+            "stop_processing": false
+          }
+        ]
+      },
+      "links": {
+        "self": "http://localhost/api/v1/rules/30",
+        "0": {
+          "rel": "self",
+          "uri": "/rules/30"
+        }
+      }
+    },
+    {
+      "type": "rules",
+      "id": "20",
+      "attributes": {
+        "created_at": "2025-10-20T16:08:02+02:00",
+        "updated_at": "2025-10-20T16:18:13+02:00",
+        "rule_group_id": "10",
+        "rule_group_title": "Expenses: set category, desc, etc..",
+        "title": "BOOTS RETAIL",
+        "description": "",
+        "order": 19,
+        "active": true,
+        "strict": true,
+        "stop_processing": false,
+        "trigger": "store-journal",
+        "triggers": [
+          {
+            "id": "47",
+            "created_at": "2025-10-20T16:08:02+02:00",
+            "updated_at": "2025-10-20T16:08:02+02:00",
+            "type": "transaction_type",
+            "value": "Withdrawal",
+            "prohibited": false,
+            "order": 1,
+            "active": true,
+            "stop_processing": false
+          },
+          {
+            "id": "48",
+            "created_at": "2025-10-20T16:08:02+02:00",
+            "updated_at": "2025-10-20T16:08:21+02:00",
+            "type": "description_contains",
+            "value": "BOOTS RETAIL",
+            "prohibited": false,
+            "order": 3,
+            "active": true,
+            "stop_processing": false
+          }
+        ],
+        "actions": [
+          {
+            "id": "23",
+            "created_at": "2025-10-20T16:08:02+02:00",
+            "updated_at": "2025-10-20T16:08:02+02:00",
+            "type": "set_category",
+            "value": "Discretionary: Health",
+            "order": 1,
+            "active": true,
+            "stop_processing": false
+          }
+        ]
+      },
+      "links": {
+        "self": "http://localhost/api/v1/rules/20",
+        "0": {
+          "rel": "self",
+          "uri": "/rules/20"
+        }
+      }
+    },
+    {
+      "type": "rules",
+      "id": "21",
+      "attributes": {
+        "created_at": "2025-10-20T16:09:46+02:00",
+        "updated_at": "2025-10-20T16:18:13+02:00",
+        "rule_group_id": "10",
+        "rule_group_title": "Expenses: set category, desc, etc..",
+        "title": "IKEA IRELAND LTD",
+        "description": "",
+        "order": 20,
+        "active": true,
+        "strict": true,
+        "stop_processing": false,
+        "trigger": "manual-activation",
+        "triggers": [
+          {
+            "id": "50",
+            "created_at": "2025-10-20T16:09:46+02:00",
+            "updated_at": "2025-10-20T16:09:46+02:00",
+            "type": "transaction_type",
+            "value": "Withdrawal",
+            "prohibited": false,
+            "order": 1,
+            "active": true,
+            "stop_processing": false
+          },
+          {
+            "id": "51",
+            "created_at": "2025-10-20T16:09:46+02:00",
+            "updated_at": "2025-10-20T16:09:54+02:00",
+            "type": "description_contains",
+            "value": "IKEA IRELAND",
+            "prohibited": false,
+            "order": 3,
+            "active": true,
+            "stop_processing": false
+          }
+        ],
+        "actions": [
+          {
+            "id": "24",
+            "created_at": "2025-10-20T16:09:46+02:00",
+            "updated_at": "2025-10-20T16:09:46+02:00",
+            "type": "set_category",
+            "value": "Discretionary: Shopping",
+            "order": 1,
+            "active": true,
+            "stop_processing": false
+          }
+        ]
+      },
+      "links": {
+        "self": "http://localhost/api/v1/rules/21",
+        "0": {
+          "rel": "self",
+          "uri": "/rules/21"
+        }
+      }
+    },
+    {
+      "type": "rules",
+      "id": "32",
+      "attributes": {
+        "created_at": "2025-10-20T16:18:13+02:00",
+        "updated_at": "2025-10-20T16:18:34+02:00",
+        "rule_group_id": "10",
+        "rule_group_title": "Expenses: set category, desc, etc..",
+        "title": "Dunnes",
+        "description": "",
+        "order": 15,
+        "active": true,
+        "strict": true,
+        "stop_processing": false,
+        "trigger": "manual-activation",
+        "triggers": [
+          {
+            "id": "107",
+            "created_at": "2025-10-20T16:18:34+02:00",
+            "updated_at": "2025-10-20T16:18:34+02:00",
+            "type": "transaction_type",
+            "value": "Withdrawal",
+            "prohibited": false,
+            "order": 1,
+            "active": true,
+            "stop_processing": false
+          },
+          {
+            "id": "108",
+            "created_at": "2025-10-20T16:18:34+02:00",
+            "updated_at": "2025-10-20T16:18:34+02:00",
+            "type": "description_contains",
+            "value": "DUNNES",
+            "prohibited": false,
+            "order": 2,
+            "active": true,
+            "stop_processing": false
+          }
+        ],
+        "actions": [
+          {
+            "id": "47",
+            "created_at": "2025-10-20T16:18:34+02:00",
+            "updated_at": "2025-10-20T16:18:34+02:00",
+            "type": "set_category",
+            "value": "Discretionary: Shopping",
+            "order": 1,
+            "active": true,
+            "stop_processing": false
+          }
+        ]
+      },
+      "links": {
+        "self": "http://localhost/api/v1/rules/32",
+        "0": {
+          "rel": "self",
+          "uri": "/rules/32"
+        }
+      }
+    },
+    {
+      "type": "rules",
+      "id": "43",
+      "attributes": {
+        "created_at": "2025-10-20T16:58:46+02:00",
+        "updated_at": "2025-10-20T16:58:46+02:00",
+        "rule_group_id": "10",
+        "rule_group_title": "Expenses: set category, desc, etc..",
+        "title": "Bank Q fees",
+        "description": "This rule is based on transaction &quot;FEE-QTR TO 29AUG25&quot;. It will match transactions that are exactly the same.",
+        "order": 26,
+        "active": true,
+        "strict": true,
+        "stop_processing": false,
+        "trigger": "store-journal",
+        "triggers": [
+          {
+            "id": "162",
+            "created_at": "2025-10-20T16:58:46+02:00",
+            "updated_at": "2025-10-20T16:58:46+02:00",
+            "type": "transaction_type",
+            "value": "Withdrawal",
+            "prohibited": false,
+            "order": 1,
+            "active": true,
+            "stop_processing": false
+          },
+          {
+            "id": "163",
+            "created_at": "2025-10-20T16:58:46+02:00",
+            "updated_at": "2025-10-20T16:59:01+02:00",
+            "type": "description_contains",
+            "value": "FEE-QTR",
+            "prohibited": false,
+            "order": 3,
+            "active": true,
+            "stop_processing": false
+          }
+        ],
+        "actions": [
+          {
+            "id": "87",
+            "created_at": "2025-10-20T16:58:46+02:00",
+            "updated_at": "2025-10-20T16:58:46+02:00",
+            "type": "set_category",
+            "value": "FixedCosts: Bank Q fees",
+            "order": 1,
+            "active": true,
+            "stop_processing": false
+          }
+        ]
+      },
+      "links": {
+        "self": "http://localhost/api/v1/rules/43",
+        "0": {
+          "rel": "self",
+          "uri": "/rules/43"
+        }
+      }
+    },
+    {
+      "type": "rules",
+      "id": "11",
+      "attributes": {
+        "created_at": "2025-10-20T15:27:02+02:00",
+        "updated_at": "2025-10-20T15:27:02+02:00",
+        "rule_group_id": "10",
+        "rule_group_title": "Expenses: set category, desc, etc..",
+        "title": "Rule based on transaction \"STAR ASIA\"",
+        "description": "",
+        "order": 1,
+        "active": true,
+        "strict": true,
+        "stop_processing": false,
+        "trigger": "store-journal",
+        "triggers": [
+          {
+            "id": "19",
+            "created_at": "2025-10-20T15:27:02+02:00",
+            "updated_at": "2025-10-20T15:27:02+02:00",
+            "type": "transaction_type",
+            "value": "Withdrawal",
+            "prohibited": false,
+            "order": 1,
+            "active": true,
+            "stop_processing": false
+          },
+          {
+            "id": "20",
+            "created_at": "2025-10-20T15:27:02+02:00",
+            "updated_at": "2025-10-20T15:27:34+02:00",
+            "type": "description_is",
+            "value": "STAR ASIA",
+            "prohibited": false,
+            "order": 3,
+            "active": true,
+            "stop_processing": false
+          }
+        ],
+        "actions": [
+          {
+            "id": "12",
+            "created_at": "2025-10-20T15:27:02+02:00",
+            "updated_at": "2025-10-20T15:27:02+02:00",
+            "type": "set_category",
+            "value": "Essentials: Asian Store",
+            "order": 1,
+            "active": true,
+            "stop_processing": false
+          }
+        ]
+      },
+      "links": {
+        "self": "http://localhost/api/v1/rules/11",
+        "0": {
+          "rel": "self",
+          "uri": "/rules/11"
+        }
+      }
+    },
+    {
+      "type": "rules",
+      "id": "12",
+      "attributes": {
+        "created_at": "2025-10-20T15:28:18+02:00",
+        "updated_at": "2025-10-20T15:28:18+02:00",
+        "rule_group_id": "11",
+        "rule_group_title": "Set dest accounts",
+        "title": "Essentials",
+        "description": "",
+        "order": 1,
+        "active": true,
+        "strict": true,
+        "stop_processing": false,
+        "trigger": "store-journal",
+        "triggers": [
+          {
+            "id": "22",
+            "created_at": "2025-10-20T15:28:18+02:00",
+            "updated_at": "2025-10-20T15:28:18+02:00",
+            "type": "category_starts",
+            "value": "Essentials:",
+            "prohibited": false,
+            "order": 1,
+            "active": true,
+            "stop_processing": false
+          }
+        ],
+        "actions": [
+          {
+            "id": "13",
+            "created_at": "2025-10-20T15:28:18+02:00",
+            "updated_at": "2025-10-20T15:28:18+02:00",
+            "type": "set_destination_account",
+            "value": "Essentials",
+            "order": 1,
+            "active": true,
+            "stop_processing": false
+          }
+        ]
+      },
+      "links": {
+        "self": "http://localhost/api/v1/rules/12",
+        "0": {
+          "rel": "self",
+          "uri": "/rules/12"
+        }
+      }
+    },
+    {
+      "type": "rules",
+      "id": "34",
+      "attributes": {
+        "created_at": "2025-10-20T16:42:23+02:00",
+        "updated_at": "2025-10-20T16:42:23+02:00",
+        "rule_group_id": "12",
+        "rule_group_title": "Revenue",
+        "title": "Lending Interest",
+        "description": "",
+        "order": 2,
+        "active": true,
+        "strict": true,
+        "stop_processing": false,
+        "trigger": "manual-activation",
+        "triggers": [
+          {
+            "id": "135",
+            "created_at": "2025-10-20T16:49:08+02:00",
+            "updated_at": "2025-10-20T16:49:08+02:00",
+            "type": "transaction_type",
+            "value": "Deposit",
+            "prohibited": false,
+            "order": 1,
+            "active": true,
+            "stop_processing": false
+          },
+          {
+            "id": "136",
+            "created_at": "2025-10-20T16:49:08+02:00",
+            "updated_at": "2025-10-20T16:49:08+02:00",
+            "type": "external_id_is",
+            "value": "Lending interest",
+            "prohibited": false,
+            "order": 2,
+            "active": true,
+            "stop_processing": false
+          }
+        ],
+        "actions": [
+          {
+            "id": "68",
+            "created_at": "2025-10-20T16:49:08+02:00",
+            "updated_at": "2025-10-20T17:00:16+02:00",
+            "type": "set_category",
+            "value": "Revenue: Lending interest",
+            "order": 1,
+            "active": true,
+            "stop_processing": false
+          },
+          {
+            "id": "69",
+            "created_at": "2025-10-20T16:49:08+02:00",
+            "updated_at": "2025-10-20T16:49:08+02:00",
+            "type": "set_source_account",
+            "value": "Lending Interest Revenue Acct",
+            "order": 2,
+            "active": true,
+            "stop_processing": false
+          },
+          {
+            "id": "70",
+            "created_at": "2025-10-20T16:49:08+02:00",
+            "updated_at": "2025-10-20T16:49:08+02:00",
+            "type": "set_description",
+            "value": "Lending interest",
+            "order": 3,
+            "active": true,
+            "stop_processing": false
+          }
+        ]
+      },
+      "links": {
+        "self": "http://localhost/api/v1/rules/34",
+        "0": {
+          "rel": "self",
+          "uri": "/rules/34"
+        }
+      }
+    },
+    {
+      "type": "rules",
+      "id": "44",
+      "attributes": {
+        "created_at": "2025-10-20T17:02:17+02:00",
+        "updated_at": "2025-10-20T17:02:17+02:00",
+        "rule_group_id": "12",
+        "rule_group_title": "Revenue",
+        "title": "Salary",
+        "description": "",
+        "order": 5,
+        "active": true,
+        "strict": true,
+        "stop_processing": false,
+        "trigger": "store-journal",
+        "triggers": [
+          {
+            "id": "165",
+            "created_at": "2025-10-20T17:02:17+02:00",
+            "updated_at": "2025-10-20T17:02:17+02:00",
+            "type": "transaction_type",
+            "value": "Deposit",
+            "prohibited": false,
+            "order": 1,
+            "active": true,
+            "stop_processing": false
+          },
+          {
+            "id": "166",
+            "created_at": "2025-10-20T17:02:17+02:00",
+            "updated_at": "2025-10-20T17:02:24+02:00",
+            "type": "description_is",
+            "value": "FIL TRANSACTION SE",
+            "prohibited": false,
+            "order": 3,
+            "active": true,
+            "stop_processing": false
+          }
+        ],
+        "actions": [
+          {
+            "id": "88",
+            "created_at": "2025-10-20T17:02:17+02:00",
+            "updated_at": "2025-10-20T17:02:17+02:00",
+            "type": "set_category",
+            "value": "Revenue: Salary",
+            "order": 1,
+            "active": true,
+            "stop_processing": false
+          },
+          {
+            "id": "89",
+            "created_at": "2025-10-20T17:02:17+02:00",
+            "updated_at": "2025-10-20T17:02:17+02:00",
+            "type": "set_source_account",
+            "value": "Salary Revenue Acct",
+            "order": 2,
+            "active": true,
+            "stop_processing": false
+          }
+        ]
+      },
+      "links": {
+        "self": "http://localhost/api/v1/rules/44",
+        "0": {
+          "rel": "self",
+          "uri": "/rules/44"
+        }
+      }
+    },
+    {
+      "type": "rules",
+      "id": "19",
+      "attributes": {
+        "created_at": "2025-10-20T16:06:28+02:00",
+        "updated_at": "2025-10-20T16:06:54+02:00",
+        "rule_group_id": "11",
+        "rule_group_title": "Set dest accounts",
+        "title": "Discretionary",
+        "description": "",
+        "order": 2,
+        "active": true,
+        "strict": true,
+        "stop_processing": false,
+        "trigger": "store-journal",
+        "triggers": [
+          {
+            "id": "45",
+            "created_at": "2025-10-20T16:06:54+02:00",
+            "updated_at": "2025-10-20T16:06:54+02:00",
+            "type": "category_starts",
+            "value": "Discretionary:",
+            "prohibited": false,
+            "order": 1,
+            "active": true,
+            "stop_processing": false
+          }
+        ],
+        "actions": [
+          {
+            "id": "22",
+            "created_at": "2025-10-20T16:06:54+02:00",
+            "updated_at": "2025-10-20T16:06:54+02:00",
+            "type": "set_destination_account",
+            "value": "Discretionary",
+            "order": 1,
+            "active": true,
+            "stop_processing": false
+          }
+        ]
+      },
+      "links": {
+        "self": "http://localhost/api/v1/rules/19",
+        "0": {
+          "rel": "self",
+          "uri": "/rules/19"
+        }
+      }
+    },
+    {
+      "type": "rules",
+      "id": "45",
+      "attributes": {
+        "created_at": "2025-10-20T17:04:59+02:00",
+        "updated_at": "2025-10-20T17:04:59+02:00",
+        "rule_group_id": "12",
+        "rule_group_title": "Revenue",
+        "title": "YTinfographics credit from stripe",
+        "description": "",
+        "order": 6,
+        "active": true,
+        "strict": true,
+        "stop_processing": false,
+        "trigger": "store-journal",
+        "triggers": [
+          {
+            "id": "168",
+            "created_at": "2025-10-20T17:04:59+02:00",
+            "updated_at": "2025-10-20T17:04:59+02:00",
+            "type": "transaction_type",
+            "value": "Deposit",
+            "prohibited": false,
+            "order": 1,
+            "active": true,
+            "stop_processing": false
+          },
+          {
+            "id": "169",
+            "created_at": "2025-10-20T17:04:59+02:00",
+            "updated_at": "2025-10-20T17:05:08+02:00",
+            "type": "description_contains",
+            "value": "STRIPE",
+            "prohibited": false,
+            "order": 3,
+            "active": true,
+            "stop_processing": false
+          }
+        ],
+        "actions": [
+          {
+            "id": "90",
+            "created_at": "2025-10-20T17:04:59+02:00",
+            "updated_at": "2025-10-20T17:04:59+02:00",
+            "type": "set_category",
+            "value": "Revenue: Credit",
+            "order": 1,
+            "active": true,
+            "stop_processing": false
+          },
+          {
+            "id": "91",
+            "created_at": "2025-10-20T17:04:59+02:00",
+            "updated_at": "2025-10-20T17:04:59+02:00",
+            "type": "set_source_account",
+            "value": "Credit Revenue Acct",
+            "order": 2,
+            "active": true,
+            "stop_processing": false
+          }
+        ]
+      },
+      "links": {
+        "self": "http://localhost/api/v1/rules/45",
+        "0": {
+          "rel": "self",
+          "uri": "/rules/45"
+        }
+      }
+    },
+    {
+      "type": "rules",
+      "id": "35",
+      "attributes": {
+        "created_at": "2025-10-20T16:44:11+02:00",
+        "updated_at": "2025-10-20T16:46:17+02:00",
+        "rule_group_id": "12",
+        "rule_group_title": "Revenue",
+        "title": "Spending cashback",
+        "description": "",
+        "order": 3,
+        "active": true,
+        "strict": true,
+        "stop_processing": false,
+        "trigger": "manual-activation",
+        "triggers": [
+          {
+            "id": "137",
+            "created_at": "2025-10-20T16:49:22+02:00",
+            "updated_at": "2025-10-20T16:49:22+02:00",
+            "type": "transaction_type",
+            "value": "Deposit",
+            "prohibited": false,
+            "order": 1,
+            "active": true,
+            "stop_processing": false
+          },
+          {
+            "id": "138",
+            "created_at": "2025-10-20T16:49:22+02:00",
+            "updated_at": "2025-10-20T16:49:22+02:00",
+            "type": "external_id_is",
+            "value": "Spending cashback",
+            "prohibited": false,
+            "order": 2,
+            "active": true,
+            "stop_processing": false
+          }
+        ],
+        "actions": [
+          {
+            "id": "71",
+            "created_at": "2025-10-20T16:49:22+02:00",
+            "updated_at": "2025-10-20T16:59:59+02:00",
+            "type": "set_category",
+            "value": "Revenue: Cashback",
+            "order": 1,
+            "active": true,
+            "stop_processing": false
+          },
+          {
+            "id": "72",
+            "created_at": "2025-10-20T16:49:22+02:00",
+            "updated_at": "2025-10-20T16:49:22+02:00",
+            "type": "set_source_account",
+            "value": "Cashback Revenue Acct",
+            "order": 2,
+            "active": true,
+            "stop_processing": false
+          },
+          {
+            "id": "73",
+            "created_at": "2025-10-20T16:49:22+02:00",
+            "updated_at": "2025-10-20T16:49:22+02:00",
+            "type": "set_description",
+            "value": "Cashback",
+            "order": 3,
+            "active": true,
+            "stop_processing": false
+          }
+        ]
+      },
+      "links": {
+        "self": "http://localhost/api/v1/rules/35",
+        "0": {
+          "rel": "self",
+          "uri": "/rules/35"
+        }
+      }
+    },
+    {
+      "type": "rules",
+      "id": "36",
+      "attributes": {
+        "created_at": "2025-10-20T16:45:51+02:00",
+        "updated_at": "2025-10-20T16:46:54+02:00",
+        "rule_group_id": "12",
+        "rule_group_title": "Revenue",
+        "title": "Interest on cash",
+        "description": "",
+        "order": 4,
+        "active": true,
+        "strict": true,
+        "stop_processing": false,
+        "trigger": "store-journal",
+        "triggers": [
+          {
+            "id": "139",
+            "created_at": "2025-10-20T16:49:35+02:00",
+            "updated_at": "2025-10-20T16:49:35+02:00",
+            "type": "transaction_type",
+            "value": "Deposit",
+            "prohibited": false,
+            "order": 1,
+            "active": true,
+            "stop_processing": false
+          },
+          {
+            "id": "140",
+            "created_at": "2025-10-20T16:49:35+02:00",
+            "updated_at": "2025-10-20T16:49:35+02:00",
+            "type": "external_id_is",
+            "value": "Interest on cash",
+            "prohibited": false,
+            "order": 2,
+            "active": true,
+            "stop_processing": false
+          }
+        ],
+        "actions": [
+          {
+            "id": "74",
+            "created_at": "2025-10-20T16:49:35+02:00",
+            "updated_at": "2025-10-20T17:00:09+02:00",
+            "type": "set_category",
+            "value": "Revenue: Interest on cash",
+            "order": 1,
+            "active": true,
+            "stop_processing": false
+          },
+          {
+            "id": "75",
+            "created_at": "2025-10-20T16:49:35+02:00",
+            "updated_at": "2025-10-20T16:49:35+02:00",
+            "type": "set_source_account",
+            "value": "Interest on cash Revenue Acct",
+            "order": 2,
+            "active": true,
+            "stop_processing": false
+          },
+          {
+            "id": "76",
+            "created_at": "2025-10-20T16:49:35+02:00",
+            "updated_at": "2025-10-20T16:49:35+02:00",
+            "type": "set_description",
+            "value": "Interest on Cash",
+            "order": 3,
+            "active": true,
+            "stop_processing": false
+          }
+        ]
+      },
+      "links": {
+        "self": "http://localhost/api/v1/rules/36",
+        "0": {
+          "rel": "self",
+          "uri": "/rules/36"
+        }
+      }
+    },
+    {
+      "type": "rules",
+      "id": "33",
+      "attributes": {
+        "created_at": "2025-10-20T16:37:07+02:00",
+        "updated_at": "2025-10-20T16:49:49+02:00",
+        "rule_group_id": "12",
+        "rule_group_title": "Revenue",
+        "title": "Dividend",
+        "description": "",
+        "order": 1,
+        "active": true,
+        "strict": true,
+        "stop_processing": false,
+        "trigger": "store-journal",
+        "triggers": [
+          {
+            "id": "141",
+            "created_at": "2025-10-20T16:49:49+02:00",
+            "updated_at": "2025-10-20T16:49:49+02:00",
+            "type": "transaction_type",
+            "value": "Deposit",
+            "prohibited": false,
+            "order": 1,
+            "active": true,
+            "stop_processing": false
+          },
+          {
+            "id": "142",
+            "created_at": "2025-10-20T16:49:49+02:00",
+            "updated_at": "2025-10-20T16:49:49+02:00",
+            "type": "external_id_contains",
+            "value": "Dividend",
+            "prohibited": false,
+            "order": 2,
+            "active": true,
+            "stop_processing": false
+          }
+        ],
+        "actions": [
+          {
+            "id": "77",
+            "created_at": "2025-10-20T16:49:49+02:00",
+            "updated_at": "2025-10-20T17:00:32+02:00",
+            "type": "set_category",
+            "value": "Revenue: Dividend",
+            "order": 1,
+            "active": true,
+            "stop_processing": false
+          },
+          {
+            "id": "78",
+            "created_at": "2025-10-20T16:49:49+02:00",
+            "updated_at": "2025-10-20T16:49:49+02:00",
+            "type": "set_source_account",
+            "value": "Dividend Revenue Acct",
+            "order": 2,
+            "active": true,
+            "stop_processing": false
+          },
+          {
+            "id": "79",
+            "created_at": "2025-10-20T16:49:49+02:00",
+            "updated_at": "2025-10-20T16:49:49+02:00",
+            "type": "set_description",
+            "value": "Dividend",
+            "order": 3,
+            "active": true,
+            "stop_processing": false
+          }
+        ]
+      },
+      "links": {
+        "self": "http://localhost/api/v1/rules/33",
+        "0": {
+          "rel": "self",
+          "uri": "/rules/33"
+        }
+      }
+    },
+    {
+      "type": "rules",
+      "id": "37",
+      "attributes": {
+        "created_at": "2025-10-20T16:50:51+02:00",
+        "updated_at": "2025-10-20T16:51:10+02:00",
+        "rule_group_id": "11",
+        "rule_group_title": "Set dest accounts",
+        "title": "Fixed costs",
+        "description": "",
+        "order": 3,
+        "active": true,
+        "strict": true,
+        "stop_processing": false,
+        "trigger": "store-journal",
+        "triggers": [
+          {
+            "id": "145",
+            "created_at": "2025-10-20T16:51:10+02:00",
+            "updated_at": "2025-10-20T16:51:10+02:00",
+            "type": "category_starts",
+            "value": "FixedCosts:",
+            "prohibited": false,
+            "order": 1,
+            "active": true,
+            "stop_processing": false
+          }
+        ],
+        "actions": [
+          {
+            "id": "81",
+            "created_at": "2025-10-20T16:51:10+02:00",
+            "updated_at": "2025-10-20T16:51:10+02:00",
+            "type": "set_destination_account",
+            "value": "FixedCosts",
+            "order": 1,
+            "active": true,
+            "stop_processing": false
+          }
+        ]
+      },
+      "links": {
+        "self": "http://localhost/api/v1/rules/37",
+        "0": {
+          "rel": "self",
+          "uri": "/rules/37"
+        }
+      }
+    },
+    {
+      "type": "rules",
+      "id": "38",
+      "attributes": {
+        "created_at": "2025-10-20T16:54:29+02:00",
+        "updated_at": "2025-10-20T16:54:29+02:00",
+        "rule_group_id": "10",
+        "rule_group_title": "Expenses: set category, desc, etc..",
+        "title": "Electricity",
+        "description": "This rule is based on transaction &quot;D/D Energia&quot;. It will match transactions that are exactly the same.",
+        "order": 21,
+        "active": true,
+        "strict": true,
+        "stop_processing": false,
+        "trigger": "manual-activation",
+        "triggers": [
+          {
+            "id": "147",
+            "created_at": "2025-10-20T16:54:29+02:00",
+            "updated_at": "2025-10-20T16:54:29+02:00",
+            "type": "transaction_type",
+            "value": "Withdrawal",
+            "prohibited": false,
+            "order": 1,
+            "active": true,
+            "stop_processing": false
+          },
+          {
+            "id": "148",
+            "created_at": "2025-10-20T16:54:29+02:00",
+            "updated_at": "2025-10-20T16:55:00+02:00",
+            "type": "description_is",
+            "value": "D/D Energia",
+            "prohibited": false,
+            "order": 3,
+            "active": true,
+            "stop_processing": false
+          }
+        ],
+        "actions": [
+          {
+            "id": "82",
+            "created_at": "2025-10-20T16:54:29+02:00",
+            "updated_at": "2025-10-20T16:54:29+02:00",
+            "type": "set_category",
+            "value": "FixedCosts: Electricity",
+            "order": 1,
+            "active": true,
+            "stop_processing": false
+          }
+        ]
+      },
+      "links": {
+        "self": "http://localhost/api/v1/rules/38",
+        "0": {
+          "rel": "self",
+          "uri": "/rules/38"
+        }
+      }
+    },
+    {
+      "type": "rules",
+      "id": "39",
+      "attributes": {
+        "created_at": "2025-10-20T16:55:00+02:00",
+        "updated_at": "2025-10-20T16:55:00+02:00",
+        "rule_group_id": "10",
+        "rule_group_title": "Expenses: set category, desc, etc..",
+        "title": "Mobile recharge",
+        "description": "This rule is based on transaction &quot;D/D EIR&quot;. It will match transactions that are exactly the same.",
+        "order": 22,
+        "active": true,
+        "strict": true,
+        "stop_processing": false,
+        "trigger": "store-journal",
+        "triggers": [
+          {
+            "id": "150",
+            "created_at": "2025-10-20T16:55:00+02:00",
+            "updated_at": "2025-10-20T16:55:00+02:00",
+            "type": "transaction_type",
+            "value": "Withdrawal",
+            "prohibited": false,
+            "order": 1,
+            "active": true,
+            "stop_processing": false
+          },
+          {
+            "id": "151",
+            "created_at": "2025-10-20T16:55:00+02:00",
+            "updated_at": "2025-10-20T16:55:56+02:00",
+            "type": "description_is",
+            "value": "D/D EIR",
+            "prohibited": false,
+            "order": 3,
+            "active": true,
+            "stop_processing": false
+          }
+        ],
+        "actions": [
+          {
+            "id": "83",
+            "created_at": "2025-10-20T16:55:00+02:00",
+            "updated_at": "2025-10-20T16:55:00+02:00",
+            "type": "set_category",
+            "value": "FixedCosts: Mobile Recharge",
+            "order": 1,
+            "active": true,
+            "stop_processing": false
+          }
+        ]
+      },
+      "links": {
+        "self": "http://localhost/api/v1/rules/39",
+        "0": {
+          "rel": "self",
+          "uri": "/rules/39"
+        }
+      }
+    },
+    {
+      "type": "rules",
+      "id": "22",
+      "attributes": {
+        "created_at": "2025-10-20T16:10:22+02:00",
+        "updated_at": "2025-10-20T16:15:30+02:00",
+        "rule_group_id": "10",
+        "rule_group_title": "Expenses: set category, desc, etc..",
+        "title": "Bombay Bazaar",
+        "description": "",
+        "order": 3,
+        "active": true,
+        "strict": true,
+        "stop_processing": false,
+        "trigger": "store-journal",
+        "triggers": [
+          {
+            "id": "55",
+            "created_at": "2025-10-20T16:10:42+02:00",
+            "updated_at": "2025-10-20T16:10:42+02:00",
+            "type": "transaction_type",
+            "value": "Withdrawal",
+            "prohibited": false,
+            "order": 1,
+            "active": true,
+            "stop_processing": false
+          },
+          {
+            "id": "56",
+            "created_at": "2025-10-20T16:10:42+02:00",
+            "updated_at": "2025-10-20T16:10:42+02:00",
+            "type": "description_contains",
+            "value": "Bombay Bazaar",
+            "prohibited": false,
+            "order": 2,
+            "active": true,
+            "stop_processing": false
+          }
+        ],
+        "actions": [
+          {
+            "id": "26",
+            "created_at": "2025-10-20T16:10:42+02:00",
+            "updated_at": "2025-10-20T16:10:42+02:00",
+            "type": "set_category",
+            "value": "Essentials: Asian Store",
+            "order": 1,
+            "active": true,
+            "stop_processing": false
+          }
+        ]
+      },
+      "links": {
+        "self": "http://localhost/api/v1/rules/22",
+        "0": {
+          "rel": "self",
+          "uri": "/rules/22"
+        }
+      }
+    },
+    {
+      "type": "rules",
+      "id": "13",
+      "attributes": {
+        "created_at": "2025-10-20T15:47:18+02:00",
+        "updated_at": "2025-10-20T16:15:30+02:00",
+        "rule_group_id": "10",
+        "rule_group_title": "Expenses: set category, desc, etc..",
+        "title": "Rule based on transaction \"ORIENTAL PANTRY SUPERM\"",
+        "description": "",
+        "order": 4,
+        "active": true,
+        "strict": true,
+        "stop_processing": false,
+        "trigger": "manual-activation",
+        "triggers": [
+          {
+            "id": "26",
+            "created_at": "2025-10-20T15:47:43+02:00",
+            "updated_at": "2025-10-20T15:47:43+02:00",
+            "type": "transaction_type",
+            "value": "Withdrawal",
+            "prohibited": false,
+            "order": 1,
+            "active": true,
+            "stop_processing": false
+          },
+          {
+            "id": "27",
+            "created_at": "2025-10-20T15:47:43+02:00",
+            "updated_at": "2025-10-20T15:47:43+02:00",
+            "type": "description_contains",
+            "value": "ORIENTAL PANTRY",
+            "prohibited": false,
+            "order": 2,
+            "active": true,
+            "stop_processing": false
+          }
+        ],
+        "actions": [
+          {
+            "id": "15",
+            "created_at": "2025-10-20T15:47:43+02:00",
+            "updated_at": "2025-10-20T15:47:43+02:00",
+            "type": "set_category",
+            "value": "Essentials: Asian Store",
+            "order": 1,
+            "active": true,
+            "stop_processing": false
+          }
+        ]
+      },
+      "links": {
+        "self": "http://localhost/api/v1/rules/13",
+        "0": {
+          "rel": "self",
+          "uri": "/rules/13"
+        }
+      }
+    },
+    {
+      "type": "rules",
+      "id": "14",
+      "attributes": {
+        "created_at": "2025-10-20T15:48:33+02:00",
+        "updated_at": "2025-10-20T16:15:30+02:00",
+        "rule_group_id": "10",
+        "rule_group_title": "Expenses: set category, desc, etc..",
+        "title": "CIRCLE K",
+        "description": "",
+        "order": 5,
+        "active": true,
+        "strict": true,
+        "stop_processing": false,
+        "trigger": "store-journal",
+        "triggers": [
+          {
+            "id": "29",
+            "created_at": "2025-10-20T15:48:33+02:00",
+            "updated_at": "2025-10-20T15:48:33+02:00",
+            "type": "transaction_type",
+            "value": "Withdrawal",
+            "prohibited": false,
+            "order": 1,
+            "active": true,
+            "stop_processing": false
+          },
+          {
+            "id": "30",
+            "created_at": "2025-10-20T15:48:33+02:00",
+            "updated_at": "2025-10-20T15:48:40+02:00",
+            "type": "description_contains",
+            "value": "CIRCLE K",
+            "prohibited": false,
+            "order": 3,
+            "active": true,
+            "stop_processing": false
+          }
+        ],
+        "actions": [
+          {
+            "id": "16",
+            "created_at": "2025-10-20T15:48:33+02:00",
+            "updated_at": "2025-10-20T15:48:33+02:00",
+            "type": "set_category",
+            "value": "Essentials: Fuel",
+            "order": 1,
+            "active": true,
+            "stop_processing": false
+          }
+        ]
+      },
+      "links": {
+        "self": "http://localhost/api/v1/rules/14",
+        "0": {
+          "rel": "self",
+          "uri": "/rules/14"
+        }
+      }
+    },
+    {
+      "type": "rules",
+      "id": "15",
+      "attributes": {
+        "created_at": "2025-10-20T16:00:18+02:00",
+        "updated_at": "2025-10-20T16:15:30+02:00",
+        "rule_group_id": "10",
+        "rule_group_title": "Expenses: set category, desc, etc..",
+        "title": "LIDL",
+        "description": "",
+        "order": 6,
+        "active": true,
+        "strict": true,
+        "stop_processing": false,
+        "trigger": "manual-activation",
+        "triggers": [
+          {
+            "id": "32",
+            "created_at": "2025-10-20T16:00:18+02:00",
+            "updated_at": "2025-10-20T16:00:18+02:00",
+            "type": "transaction_type",
+            "value": "Withdrawal",
+            "prohibited": false,
+            "order": 1,
+            "active": true,
+            "stop_processing": false
+          },
+          {
+            "id": "33",
+            "created_at": "2025-10-20T16:00:18+02:00",
+            "updated_at": "2025-10-20T16:02:11+02:00",
+            "type": "description_contains",
+            "value": "LIDL",
+            "prohibited": false,
+            "order": 3,
+            "active": true,
+            "stop_processing": false
+          }
+        ],
+        "actions": [
+          {
+            "id": "17",
+            "created_at": "2025-10-20T16:00:18+02:00",
+            "updated_at": "2025-10-20T16:00:18+02:00",
+            "type": "set_category",
+            "value": "Essentials: Groceries",
+            "order": 1,
+            "active": true,
+            "stop_processing": false
+          }
+        ]
+      },
+      "links": {
+        "self": "http://localhost/api/v1/rules/15",
+        "0": {
+          "rel": "self",
+          "uri": "/rules/15"
+        }
+      }
+    },
+    {
+      "type": "rules",
+      "id": "28",
+      "attributes": {
+        "created_at": "2025-10-20T16:15:07+02:00",
+        "updated_at": "2025-10-20T16:15:30+02:00",
+        "rule_group_id": "10",
+        "rule_group_title": "Expenses: set category, desc, etc..",
+        "title": "Gala",
+        "description": "",
+        "order": 7,
+        "active": true,
+        "strict": true,
+        "stop_processing": false,
+        "trigger": "manual-activation",
+        "triggers": [
+          {
+            "id": "87",
+            "created_at": "2025-10-20T16:15:17+02:00",
+            "updated_at": "2025-10-20T16:15:17+02:00",
+            "type": "transaction_type",
+            "value": "Withdrawal",
+            "prohibited": false,
+            "order": 1,
+            "active": true,
+            "stop_processing": false
+          },
+          {
+            "id": "88",
+            "created_at": "2025-10-20T16:15:17+02:00",
+            "updated_at": "2025-10-20T16:15:17+02:00",
+            "type": "description_contains",
+            "value": "Gala",
+            "prohibited": false,
+            "order": 2,
+            "active": true,
+            "stop_processing": false
+          }
+        ],
+        "actions": [
+          {
+            "id": "39",
+            "created_at": "2025-10-20T16:15:17+02:00",
+            "updated_at": "2025-10-20T16:15:17+02:00",
+            "type": "set_category",
+            "value": "Essentials: Groceries",
+            "order": 1,
+            "active": true,
+            "stop_processing": false
+          }
+        ]
+      },
+      "links": {
+        "self": "http://localhost/api/v1/rules/28",
+        "0": {
+          "rel": "self",
+          "uri": "/rules/28"
+        }
+      }
+    },
+    {
+      "type": "rules",
+      "id": "25",
+      "attributes": {
+        "created_at": "2025-10-20T16:13:15+02:00",
+        "updated_at": "2025-10-20T16:15:30+02:00",
+        "rule_group_id": "10",
+        "rule_group_title": "Expenses: set category, desc, etc..",
+        "title": "DEALZ",
+        "description": "",
+        "order": 8,
+        "active": true,
+        "strict": true,
+        "stop_processing": false,
+        "trigger": "manual-activation",
+        "triggers": [
+          {
+            "id": "72",
+            "created_at": "2025-10-20T16:13:42+02:00",
+            "updated_at": "2025-10-20T16:13:42+02:00",
+            "type": "transaction_type",
+            "value": "Withdrawal",
+            "prohibited": false,
+            "order": 1,
+            "active": true,
+            "stop_processing": false
+          },
+          {
+            "id": "73",
+            "created_at": "2025-10-20T16:13:42+02:00",
+            "updated_at": "2025-10-20T16:13:42+02:00",
+            "type": "description_contains",
+            "value": "DEALZ",
+            "prohibited": false,
+            "order": 2,
+            "active": true,
+            "stop_processing": false
+          }
+        ],
+        "actions": [
+          {
+            "id": "33",
+            "created_at": "2025-10-20T16:13:42+02:00",
+            "updated_at": "2025-10-20T16:13:42+02:00",
+            "type": "set_category",
+            "value": "Discretionary: Shopping",
+            "order": 1,
+            "active": true,
+            "stop_processing": false
+          }
+        ]
+      },
+      "links": {
+        "self": "http://localhost/api/v1/rules/25",
+        "0": {
+          "rel": "self",
+          "uri": "/rules/25"
+        }
+      }
+    },
+    {
+      "type": "rules",
+      "id": "24",
+      "attributes": {
+        "created_at": "2025-10-20T16:12:30+02:00",
+        "updated_at": "2025-10-20T16:15:30+02:00",
+        "rule_group_id": "10",
+        "rule_group_title": "Expenses: set category, desc, etc..",
+        "title": "ALDI",
+        "description": "",
+        "order": 9,
+        "active": true,
+        "strict": true,
+        "stop_processing": false,
+        "trigger": "manual-activation",
+        "triggers": [
+          {
+            "id": "67",
+            "created_at": "2025-10-20T16:12:43+02:00",
+            "updated_at": "2025-10-20T16:12:43+02:00",
+            "type": "transaction_type",
+            "value": "Withdrawal",
+            "prohibited": false,
+            "order": 1,
+            "active": true,
+            "stop_processing": false
+          },
+          {
+            "id": "68",
+            "created_at": "2025-10-20T16:12:43+02:00",
+            "updated_at": "2025-10-20T16:12:43+02:00",
+            "type": "description_contains",
+            "value": "ALDI",
+            "prohibited": false,
+            "order": 2,
+            "active": true,
+            "stop_processing": false
+          }
+        ],
+        "actions": [
+          {
+            "id": "31",
+            "created_at": "2025-10-20T16:12:43+02:00",
+            "updated_at": "2025-10-20T16:12:43+02:00",
+            "type": "set_category",
+            "value": "Essentials: Groceries",
+            "order": 1,
+            "active": true,
+            "stop_processing": false
+          }
+        ]
+      },
+      "links": {
+        "self": "http://localhost/api/v1/rules/24",
+        "0": {
+          "rel": "self",
+          "uri": "/rules/24"
+        }
+      }
+    },
+    {
+      "type": "rules",
+      "id": "16",
+      "attributes": {
+        "created_at": "2025-10-20T16:02:11+02:00",
+        "updated_at": "2025-10-20T16:15:30+02:00",
+        "rule_group_id": "10",
+        "rule_group_title": "Expenses: set category, desc, etc..",
+        "title": "TESCO STORES PLC",
+        "description": "",
+        "order": 10,
+        "active": true,
+        "strict": true,
+        "stop_processing": false,
+        "trigger": "manual-activation",
+        "triggers": [
+          {
+            "id": "35",
+            "created_at": "2025-10-20T16:02:11+02:00",
+            "updated_at": "2025-10-20T16:02:11+02:00",
+            "type": "transaction_type",
+            "value": "Withdrawal",
+            "prohibited": false,
+            "order": 1,
+            "active": true,
+            "stop_processing": false
+          },
+          {
+            "id": "36",
+            "created_at": "2025-10-20T16:02:11+02:00",
+            "updated_at": "2025-10-20T16:02:16+02:00",
+            "type": "description_contains",
+            "value": "TESCO STORES",
+            "prohibited": false,
+            "order": 3,
+            "active": true,
+            "stop_processing": false
+          }
+        ],
+        "actions": [
+          {
+            "id": "18",
+            "created_at": "2025-10-20T16:02:11+02:00",
+            "updated_at": "2025-10-20T16:02:11+02:00",
+            "type": "set_category",
+            "value": "Essentials: Groceries",
+            "order": 1,
+            "active": true,
+            "stop_processing": false
+          }
+        ]
+      },
+      "links": {
+        "self": "http://localhost/api/v1/rules/16",
+        "0": {
+          "rel": "self",
+          "uri": "/rules/16"
+        }
+      }
+    },
+    {
+      "type": "rules",
+      "id": "23",
+      "attributes": {
+        "created_at": "2025-10-20T16:10:55+02:00",
+        "updated_at": "2025-10-20T16:15:30+02:00",
+        "rule_group_id": "10",
+        "rule_group_title": "Expenses: set category, desc, etc..",
+        "title": "Daybreak",
+        "description": "",
+        "order": 11,
+        "active": true,
+        "strict": true,
+        "stop_processing": false,
+        "trigger": "store-journal",
+        "triggers": [
+          {
+            "id": "62",
+            "created_at": "2025-10-20T16:11:53+02:00",
+            "updated_at": "2025-10-20T16:11:53+02:00",
+            "type": "transaction_type",
+            "value": "Withdrawal",
+            "prohibited": false,
+            "order": 1,
+            "active": true,
+            "stop_processing": false
+          },
+          {
+            "id": "63",
+            "created_at": "2025-10-20T16:11:53+02:00",
+            "updated_at": "2025-10-20T16:11:53+02:00",
+            "type": "description_contains",
+            "value": "Daybreak",
+            "prohibited": false,
+            "order": 2,
+            "active": true,
+            "stop_processing": false
+          }
+        ],
+        "actions": [
+          {
+            "id": "29",
+            "created_at": "2025-10-20T16:11:53+02:00",
+            "updated_at": "2025-10-20T16:11:53+02:00",
+            "type": "set_category",
+            "value": "Essentials: Groceries",
+            "order": 1,
+            "active": true,
+            "stop_processing": false
+          }
+        ]
+      },
+      "links": {
+        "self": "http://localhost/api/v1/rules/23",
+        "0": {
+          "rel": "self",
+          "uri": "/rules/23"
+        }
+      }
+    },
+    {
+      "type": "rules",
+      "id": "40",
+      "attributes": {
+        "created_at": "2025-10-20T16:55:55+02:00",
+        "updated_at": "2025-10-20T16:55:56+02:00",
+        "rule_group_id": "10",
+        "rule_group_title": "Expenses: set category, desc, etc..",
+        "title": "Dental",
+        "description": "This rule is based on transaction &quot;D/D VHI&quot;. It will match transactions that are exactly the same.",
+        "order": 23,
+        "active": true,
+        "strict": true,
+        "stop_processing": false,
+        "trigger": "manual-activation",
+        "triggers": [
+          {
+            "id": "153",
+            "created_at": "2025-10-20T16:55:56+02:00",
+            "updated_at": "2025-10-20T16:55:56+02:00",
+            "type": "transaction_type",
+            "value": "Withdrawal",
+            "prohibited": false,
+            "order": 1,
+            "active": true,
+            "stop_processing": false
+          },
+          {
+            "id": "154",
+            "created_at": "2025-10-20T16:55:56+02:00",
+            "updated_at": "2025-10-20T16:56:01+02:00",
+            "type": "description_is",
+            "value": "D/D VHI",
+            "prohibited": false,
+            "order": 3,
+            "active": true,
+            "stop_processing": false
+          }
+        ],
+        "actions": [
+          {
+            "id": "84",
+            "created_at": "2025-10-20T16:55:56+02:00",
+            "updated_at": "2025-10-20T16:55:56+02:00",
+            "type": "set_category",
+            "value": "FixedCosts: Dental",
+            "order": 1,
+            "active": true,
+            "stop_processing": false
+          }
+        ]
+      },
+      "links": {
+        "self": "http://localhost/api/v1/rules/40",
+        "0": {
+          "rel": "self",
+          "uri": "/rules/40"
+        }
+      }
+    },
+    {
+      "type": "rules",
+      "id": "17",
+      "attributes": {
+        "created_at": "2025-10-20T16:04:07+02:00",
+        "updated_at": "2025-10-20T16:15:30+02:00",
+        "rule_group_id": "10",
+        "rule_group_title": "Expenses: set category, desc, etc..",
+        "title": "Centra",
+        "description": "",
+        "order": 12,
+        "active": true,
+        "strict": true,
+        "stop_processing": false,
+        "trigger": "store-journal",
+        "triggers": [
+          {
+            "id": "38",
+            "created_at": "2025-10-20T16:04:07+02:00",
+            "updated_at": "2025-10-20T16:04:07+02:00",
+            "type": "transaction_type",
+            "value": "Withdrawal",
+            "prohibited": false,
+            "order": 1,
+            "active": true,
+            "stop_processing": false
+          },
+          {
+            "id": "39",
+            "created_at": "2025-10-20T16:04:07+02:00",
+            "updated_at": "2025-10-20T16:05:03+02:00",
+            "type": "description_is",
+            "value": "CT NORTH KING STREET",
+            "prohibited": false,
+            "order": 3,
+            "active": true,
+            "stop_processing": false
+          }
+        ],
+        "actions": [
+          {
+            "id": "19",
+            "created_at": "2025-10-20T16:04:07+02:00",
+            "updated_at": "2025-10-20T16:04:07+02:00",
+            "type": "set_category",
+            "value": "Essentials: Groceries",
+            "order": 1,
+            "active": true,
+            "stop_processing": false
+          }
+        ]
+      },
+      "links": {
+        "self": "http://localhost/api/v1/rules/17",
+        "0": {
+          "rel": "self",
+          "uri": "/rules/17"
+        }
+      }
+    },
+    {
+      "type": "rules",
+      "id": "41",
+      "attributes": {
+        "created_at": "2025-10-20T16:57:37+02:00",
+        "updated_at": "2025-10-20T16:57:38+02:00",
+        "rule_group_id": "10",
+        "rule_group_title": "Expenses: set category, desc, etc..",
+        "title": "Home rent",
+        "description": "",
+        "order": 24,
+        "active": true,
+        "strict": true,
+        "stop_processing": false,
+        "trigger": "store-journal",
+        "triggers": [
+          {
+            "id": "156",
+            "created_at": "2025-10-20T16:57:38+02:00",
+            "updated_at": "2025-10-20T16:57:38+02:00",
+            "type": "transaction_type",
+            "value": "Withdrawal",
+            "prohibited": false,
+            "order": 1,
+            "active": true,
+            "stop_processing": false
+          },
+          {
+            "id": "157",
+            "created_at": "2025-10-20T16:57:38+02:00",
+            "updated_at": "2025-10-20T16:58:07+02:00",
+            "type": "description_is",
+            "value": "*MOBI 123HARDWICKE",
+            "prohibited": false,
+            "order": 3,
+            "active": true,
+            "stop_processing": false
+          }
+        ],
+        "actions": [
+          {
+            "id": "85",
+            "created_at": "2025-10-20T16:57:38+02:00",
+            "updated_at": "2025-10-20T16:57:38+02:00",
+            "type": "set_category",
+            "value": "FixedCosts: Rent",
+            "order": 1,
+            "active": true,
+            "stop_processing": false
+          }
+        ]
+      },
+      "links": {
+        "self": "http://localhost/api/v1/rules/41",
+        "0": {
+          "rel": "self",
+          "uri": "/rules/41"
+        }
+      }
+    },
+    {
+      "type": "rules",
+      "id": "42",
+      "attributes": {
+        "created_at": "2025-10-20T16:58:07+02:00",
+        "updated_at": "2025-10-20T16:58:07+02:00",
+        "rule_group_id": "10",
+        "rule_group_title": "Expenses: set category, desc, etc..",
+        "title": "Internet",
+        "description": "This rule is based on transaction &quot;D/D VIRGIN MEDIA I&quot;. It will match transactions that are exactly the same.",
+        "order": 25,
+        "active": true,
+        "strict": true,
+        "stop_processing": false,
+        "trigger": "store-journal",
+        "triggers": [
+          {
+            "id": "159",
+            "created_at": "2025-10-20T16:58:07+02:00",
+            "updated_at": "2025-10-20T16:58:07+02:00",
+            "type": "transaction_type",
+            "value": "Withdrawal",
+            "prohibited": false,
+            "order": 1,
+            "active": true,
+            "stop_processing": false
+          },
+          {
+            "id": "160",
+            "created_at": "2025-10-20T16:58:07+02:00",
+            "updated_at": "2025-10-20T16:58:46+02:00",
+            "type": "description_is",
+            "value": "D/D VIRGIN MEDIA I",
+            "prohibited": false,
+            "order": 3,
+            "active": true,
+            "stop_processing": false
+          }
+        ],
+        "actions": [
+          {
+            "id": "86",
+            "created_at": "2025-10-20T16:58:07+02:00",
+            "updated_at": "2025-10-20T16:58:07+02:00",
+            "type": "set_category",
+            "value": "FixedCosts: Internet",
+            "order": 1,
+            "active": true,
+            "stop_processing": false
+          }
+        ]
+      },
+      "links": {
+        "self": "http://localhost/api/v1/rules/42",
+        "0": {
+          "rel": "self",
+          "uri": "/rules/42"
+        }
+      }
+    },
+    {
+      "type": "rules",
+      "id": "18",
+      "attributes": {
+        "created_at": "2025-10-20T16:05:03+02:00",
+        "updated_at": "2025-10-20T16:15:30+02:00",
+        "rule_group_id": "10",
+        "rule_group_title": "Expenses: set category, desc, etc..",
+        "title": "Woodies Glasnevin",
+        "description": "",
+        "order": 13,
+        "active": true,
+        "strict": true,
+        "stop_processing": false,
+        "trigger": "manual-activation",
+        "triggers": [
+          {
+            "id": "41",
+            "created_at": "2025-10-20T16:05:03+02:00",
+            "updated_at": "2025-10-20T16:05:03+02:00",
+            "type": "transaction_type",
+            "value": "Withdrawal",
+            "prohibited": false,
+            "order": 1,
+            "active": true,
+            "stop_processing": false
+          },
+          {
+            "id": "42",
+            "created_at": "2025-10-20T16:05:03+02:00",
+            "updated_at": "2025-10-20T16:06:10+02:00",
+            "type": "description_contains",
+            "value": "Woodies",
+            "prohibited": false,
+            "order": 3,
+            "active": true,
+            "stop_processing": false
+          }
+        ],
+        "actions": [
+          {
+            "id": "20",
+            "created_at": "2025-10-20T16:05:03+02:00",
+            "updated_at": "2025-10-20T16:05:03+02:00",
+            "type": "set_category",
+            "value": "Discretionary: Shopping",
+            "order": 1,
+            "active": true,
+            "stop_processing": false
+          }
+        ]
+      },
+      "links": {
+        "self": "http://localhost/api/v1/rules/18",
+        "0": {
+          "rel": "self",
+          "uri": "/rules/18"
+        }
+      }
+    },
+    {
+      "type": "rules",
+      "id": "27",
+      "attributes": {
+        "created_at": "2025-10-20T16:14:37+02:00",
+        "updated_at": "2025-10-20T16:15:30+02:00",
+        "rule_group_id": "10",
+        "rule_group_title": "Expenses: set category, desc, etc..",
+        "title": "PENNEYS",
+        "description": "",
+        "order": 14,
+        "active": true,
+        "strict": true,
+        "stop_processing": false,
+        "trigger": "manual-activation",
+        "triggers": [
+          {
+            "id": "82",
+            "created_at": "2025-10-20T16:14:50+02:00",
+            "updated_at": "2025-10-20T16:14:50+02:00",
+            "type": "transaction_type",
+            "value": "Withdrawal",
+            "prohibited": false,
+            "order": 1,
+            "active": true,
+            "stop_processing": false
+          },
+          {
+            "id": "83",
+            "created_at": "2025-10-20T16:14:50+02:00",
+            "updated_at": "2025-10-20T16:14:50+02:00",
+            "type": "description_contains",
+            "value": "PENNEYS",
+            "prohibited": false,
+            "order": 2,
+            "active": true,
+            "stop_processing": false
+          }
+        ],
+        "actions": [
+          {
+            "id": "37",
+            "created_at": "2025-10-20T16:14:50+02:00",
+            "updated_at": "2025-10-20T16:14:50+02:00",
+            "type": "set_category",
+            "value": "Discretionary: Shopping",
+            "order": 1,
+            "active": true,
+            "stop_processing": false
+          }
+        ]
+      },
+      "links": {
+        "self": "http://localhost/api/v1/rules/27",
+        "0": {
+          "rel": "self",
+          "uri": "/rules/27"
+        }
+      }
+    },
+    {
+      "type": "rules",
+      "id": "29",
+      "attributes": {
+        "created_at": "2025-10-20T16:15:30+02:00",
+        "updated_at": "2025-10-20T16:15:47+02:00",
+        "rule_group_id": "10",
+        "rule_group_title": "Expenses: set category, desc, etc..",
+        "title": "SUPER ASIA",
+        "description": "",
+        "order": 2,
+        "active": true,
+        "strict": true,
+        "stop_processing": false,
+        "trigger": "store-journal",
+        "triggers": [
+          {
+            "id": "92",
+            "created_at": "2025-10-20T16:15:44+02:00",
+            "updated_at": "2025-10-20T16:15:44+02:00",
+            "type": "transaction_type",
+            "value": "Withdrawal",
+            "prohibited": false,
+            "order": 1,
+            "active": true,
+            "stop_processing": false
+          },
+          {
+            "id": "93",
+            "created_at": "2025-10-20T16:15:44+02:00",
+            "updated_at": "2025-10-20T16:15:44+02:00",
+            "type": "description_contains",
+            "value": "SUPER ASIA",
+            "prohibited": false,
+            "order": 2,
+            "active": true,
+            "stop_processing": false
+          }
+        ],
+        "actions": [
+          {
+            "id": "41",
+            "created_at": "2025-10-20T16:15:44+02:00",
+            "updated_at": "2025-10-20T16:15:44+02:00",
+            "type": "set_category",
+            "value": "Essentials: Asian Store",
+            "order": 1,
+            "active": true,
+            "stop_processing": false
+          }
+        ]
+      },
+      "links": {
+        "self": "http://localhost/api/v1/rules/29",
+        "0": {
+          "rel": "self",
+          "uri": "/rules/29"
+        }
+      }
+    },
+    {
+      "type": "rules",
+      "id": "26",
+      "attributes": {
+        "created_at": "2025-10-20T16:13:58+02:00",
+        "updated_at": "2025-10-20T16:18:13+02:00",
+        "rule_group_id": "10",
+        "rule_group_title": "Expenses: set category, desc, etc..",
+        "title": "HICKEYS PHARMACY",
+        "description": "",
+        "order": 16,
+        "active": true,
+        "strict": true,
+        "stop_processing": false,
+        "trigger": "store-journal",
+        "triggers": [
+          {
+            "id": "77",
+            "created_at": "2025-10-20T16:14:12+02:00",
+            "updated_at": "2025-10-20T16:14:12+02:00",
+            "type": "transaction_type",
+            "value": "Withdrawal",
+            "prohibited": false,
+            "order": 1,
+            "active": true,
+            "stop_processing": false
+          },
+          {
+            "id": "78",
+            "created_at": "2025-10-20T16:14:12+02:00",
+            "updated_at": "2025-10-20T16:14:12+02:00",
+            "type": "description_contains",
+            "value": "HICKEYS PHARMACY",
+            "prohibited": false,
+            "order": 2,
+            "active": true,
+            "stop_processing": false
+          }
+        ],
+        "actions": [
+          {
+            "id": "35",
+            "created_at": "2025-10-20T16:14:12+02:00",
+            "updated_at": "2025-10-20T16:14:12+02:00",
+            "type": "set_category",
+            "value": "Discretionary: Health",
+            "order": 1,
+            "active": true,
+            "stop_processing": false
+          }
+        ]
+      },
+      "links": {
+        "self": "http://localhost/api/v1/rules/26",
+        "0": {
+          "rel": "self",
+          "uri": "/rules/26"
+        }
+      }
+    }
+  ]
+}

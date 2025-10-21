@@ -777,3 +777,576 @@ class FireflyAPIClient:
             return False, None, f"Invalid JSON file: {str(e)}"
         except Exception as e:
             return False, None, f"Error reading file: {str(e)}"
+
+    # ========== BUDGET MANAGEMENT METHODS ==========
+
+    def get_budgets(self, page: int = 1, limit: int = 50) -> Tuple[bool, Optional[List[Dict]], str]:
+        """
+        Get budgets from Firefly III
+
+        Args:
+            page: Page number for pagination
+            limit: Number of budgets per page
+
+        Returns:
+            Tuple of (success: bool, budgets: List[Dict] or None, message: str)
+        """
+        try:
+            response = requests.get(
+                f'{self.base_url}/api/v1/budgets',
+                headers=self.headers,
+                params={'page': page, 'limit': limit},
+                timeout=10
+            )
+
+            if response.status_code == 200:
+                data = response.json()
+                budgets = data.get('data', [])
+                return True, budgets, f"Retrieved {len(budgets)} budgets"
+            else:
+                return False, None, f"Failed to get budgets: {response.status_code} - {response.text}"
+        except requests.exceptions.RequestException as e:
+            return False, None, f"Error retrieving budgets: {str(e)}"
+
+    def get_all_budgets(self) -> Tuple[bool, Optional[List[Dict]], str]:
+        """
+        Get ALL budgets from Firefly III (handles pagination automatically)
+
+        Returns:
+            Tuple of (success: bool, budgets: List[Dict] or None, message: str)
+        """
+        all_budgets = []
+        page = 1
+
+        try:
+            while True:
+                response = requests.get(
+                    f'{self.base_url}/api/v1/budgets',
+                    headers=self.headers,
+                    params={'page': page},
+                    timeout=10
+                )
+
+                if response.status_code != 200:
+                    return False, None, f"Failed to get budgets: {response.status_code} - {response.text}"
+
+                data = response.json()
+                budgets = data.get('data', [])
+
+                if not budgets:
+                    break
+
+                all_budgets.extend(budgets)
+
+                # Check if there's a next page
+                meta = data.get('meta', {})
+                pagination = meta.get('pagination', {})
+                current_page = pagination.get('current_page', page)
+                total_pages = pagination.get('total_pages', 1)
+
+                if current_page >= total_pages:
+                    break
+
+                page += 1
+
+            return True, all_budgets, f"Retrieved {len(all_budgets)} budgets"
+        except requests.exceptions.RequestException as e:
+            return False, None, f"Error retrieving budgets: {str(e)}"
+
+    def delete_budget(self, budget_id: int) -> Tuple[bool, str]:
+        """
+        Delete a budget by ID
+
+        Args:
+            budget_id: ID of the budget to delete
+
+        Returns:
+            Tuple of (success: bool, message: str)
+        """
+        try:
+            response = requests.delete(
+                f'{self.base_url}/api/v1/budgets/{budget_id}',
+                headers=self.headers,
+                timeout=10
+            )
+
+            if response.status_code == 204:
+                return True, f"Budget {budget_id} deleted successfully"
+            else:
+                return False, f"Failed to delete budget: {response.status_code} - {response.text}"
+        except requests.exceptions.RequestException as e:
+            return False, f"Error deleting budget: {str(e)}"
+
+    def create_budget(self, budget_data: Dict) -> Tuple[bool, Optional[Dict], str]:
+        """
+        Create a new budget
+
+        Args:
+            budget_data: Budget data dictionary (should contain name, and optionally auto_budget settings)
+
+        Returns:
+            Tuple of (success: bool, created_budget: Dict or None, message: str)
+        """
+        try:
+            if 'name' in budget_data:
+                payload = budget_data
+            else:
+                payload = budget_data.get('attributes', budget_data)
+
+            response = requests.post(
+                f'{self.base_url}/api/v1/budgets',
+                headers=self.headers,
+                json=payload,
+                timeout=10
+            )
+
+            if response.status_code == 200 or response.status_code == 201:
+                data = response.json()
+                created_budget = data.get('data', {})
+                budget_id = created_budget.get('id', 'unknown')
+                return True, created_budget, f"Budget created successfully (ID: {budget_id})"
+            else:
+                error_detail = response.text
+                try:
+                    error_json = response.json()
+                    if 'errors' in error_json:
+                        errors = error_json['errors']
+                        error_msgs = []
+                        for field, messages in errors.items():
+                            error_msgs.append(f"{field}: {', '.join(messages)}")
+                        error_detail = '; '.join(error_msgs)
+                    elif 'message' in error_json:
+                        error_detail = error_json['message']
+                except:
+                    pass
+                return False, None, f"Failed to create budget: {response.status_code} - {error_detail}"
+        except requests.exceptions.RequestException as e:
+            return False, None, f"Error creating budget: {str(e)}"
+
+    def update_budget(self, budget_id: int, budget_data: Dict) -> Tuple[bool, Optional[Dict], str]:
+        """
+        Update an existing budget
+
+        Args:
+            budget_id: ID of the budget to update
+            budget_data: Budget data dictionary
+
+        Returns:
+            Tuple of (success: bool, updated_budget: Dict or None, message: str)
+        """
+        try:
+            if 'name' in budget_data:
+                payload = budget_data
+            else:
+                payload = budget_data.get('attributes', budget_data)
+
+            response = requests.put(
+                f'{self.base_url}/api/v1/budgets/{budget_id}',
+                headers=self.headers,
+                json=payload,
+                timeout=10
+            )
+
+            if response.status_code == 200:
+                data = response.json()
+                updated_budget = data.get('data', {})
+                return True, updated_budget, f"Budget updated successfully (ID: {budget_id})"
+            else:
+                error_detail = response.text
+                try:
+                    error_json = response.json()
+                    if 'errors' in error_json:
+                        errors = error_json['errors']
+                        error_msgs = []
+                        for field, messages in errors.items():
+                            error_msgs.append(f"{field}: {', '.join(messages)}")
+                        error_detail = '; '.join(error_msgs)
+                    elif 'message' in error_json:
+                        error_detail = error_json['message']
+                except:
+                    pass
+                return False, None, f"Failed to update budget: {response.status_code} - {error_detail}"
+        except requests.exceptions.RequestException as e:
+            return False, None, f"Error updating budget: {str(e)}"
+
+    # ========== BILL/SUBSCRIPTION MANAGEMENT METHODS ==========
+
+    def get_bills(self, page: int = 1, limit: int = 50) -> Tuple[bool, Optional[List[Dict]], str]:
+        """
+        Get bills from Firefly III
+
+        Args:
+            page: Page number for pagination
+            limit: Number of bills per page
+
+        Returns:
+            Tuple of (success: bool, bills: List[Dict] or None, message: str)
+        """
+        try:
+            response = requests.get(
+                f'{self.base_url}/api/v1/bills',
+                headers=self.headers,
+                params={'page': page, 'limit': limit},
+                timeout=10
+            )
+
+            if response.status_code == 200:
+                data = response.json()
+                bills = data.get('data', [])
+                return True, bills, f"Retrieved {len(bills)} bills"
+            else:
+                return False, None, f"Failed to get bills: {response.status_code} - {response.text}"
+        except requests.exceptions.RequestException as e:
+            return False, None, f"Error retrieving bills: {str(e)}"
+
+    def get_all_bills(self) -> Tuple[bool, Optional[List[Dict]], str]:
+        """
+        Get ALL bills from Firefly III (handles pagination automatically)
+
+        Returns:
+            Tuple of (success: bool, bills: List[Dict] or None, message: str)
+        """
+        all_bills = []
+        page = 1
+
+        try:
+            while True:
+                response = requests.get(
+                    f'{self.base_url}/api/v1/bills',
+                    headers=self.headers,
+                    params={'page': page},
+                    timeout=10
+                )
+
+                if response.status_code != 200:
+                    return False, None, f"Failed to get bills: {response.status_code} - {response.text}"
+
+                data = response.json()
+                bills = data.get('data', [])
+
+                if not bills:
+                    break
+
+                all_bills.extend(bills)
+
+                # Check if there's a next page
+                meta = data.get('meta', {})
+                pagination = meta.get('pagination', {})
+                current_page = pagination.get('current_page', page)
+                total_pages = pagination.get('total_pages', 1)
+
+                if current_page >= total_pages:
+                    break
+
+                page += 1
+
+            return True, all_bills, f"Retrieved {len(all_bills)} bills"
+        except requests.exceptions.RequestException as e:
+            return False, None, f"Error retrieving bills: {str(e)}"
+
+    def delete_bill(self, bill_id: int) -> Tuple[bool, str]:
+        """
+        Delete a bill by ID
+
+        Args:
+            bill_id: ID of the bill to delete
+
+        Returns:
+            Tuple of (success: bool, message: str)
+        """
+        try:
+            response = requests.delete(
+                f'{self.base_url}/api/v1/bills/{bill_id}',
+                headers=self.headers,
+                timeout=10
+            )
+
+            if response.status_code == 204:
+                return True, f"Bill {bill_id} deleted successfully"
+            else:
+                return False, f"Failed to delete bill: {response.status_code} - {response.text}"
+        except requests.exceptions.RequestException as e:
+            return False, f"Error deleting bill: {str(e)}"
+
+    def create_bill(self, bill_data: Dict) -> Tuple[bool, Optional[Dict], str]:
+        """
+        Create a new bill
+
+        Args:
+            bill_data: Bill data dictionary
+
+        Returns:
+            Tuple of (success: bool, created_bill: Dict or None, message: str)
+        """
+        try:
+            if 'name' in bill_data:
+                payload = bill_data
+            else:
+                payload = bill_data.get('attributes', bill_data)
+
+            response = requests.post(
+                f'{self.base_url}/api/v1/bills',
+                headers=self.headers,
+                json=payload,
+                timeout=10
+            )
+
+            if response.status_code == 200 or response.status_code == 201:
+                data = response.json()
+                created_bill = data.get('data', {})
+                bill_id = created_bill.get('id', 'unknown')
+                return True, created_bill, f"Bill created successfully (ID: {bill_id})"
+            else:
+                error_detail = response.text
+                try:
+                    error_json = response.json()
+                    if 'errors' in error_json:
+                        errors = error_json['errors']
+                        error_msgs = []
+                        for field, messages in errors.items():
+                            error_msgs.append(f"{field}: {', '.join(messages)}")
+                        error_detail = '; '.join(error_msgs)
+                    elif 'message' in error_json:
+                        error_detail = error_json['message']
+                except:
+                    pass
+                return False, None, f"Failed to create bill: {response.status_code} - {error_detail}"
+        except requests.exceptions.RequestException as e:
+            return False, None, f"Error creating bill: {str(e)}"
+
+    def update_bill(self, bill_id: int, bill_data: Dict) -> Tuple[bool, Optional[Dict], str]:
+        """
+        Update an existing bill
+
+        Args:
+            bill_id: ID of the bill to update
+            bill_data: Bill data dictionary
+
+        Returns:
+            Tuple of (success: bool, updated_bill: Dict or None, message: str)
+        """
+        try:
+            if 'name' in bill_data:
+                payload = bill_data
+            else:
+                payload = bill_data.get('attributes', bill_data)
+
+            response = requests.put(
+                f'{self.base_url}/api/v1/bills/{bill_id}',
+                headers=self.headers,
+                json=payload,
+                timeout=10
+            )
+
+            if response.status_code == 200:
+                data = response.json()
+                updated_bill = data.get('data', {})
+                return True, updated_bill, f"Bill updated successfully (ID: {bill_id})"
+            else:
+                error_detail = response.text
+                try:
+                    error_json = response.json()
+                    if 'errors' in error_json:
+                        errors = error_json['errors']
+                        error_msgs = []
+                        for field, messages in errors.items():
+                            error_msgs.append(f"{field}: {', '.join(messages)}")
+                        error_detail = '; '.join(error_msgs)
+                    elif 'message' in error_json:
+                        error_detail = error_json['message']
+                except:
+                    pass
+                return False, None, f"Failed to update bill: {response.status_code} - {error_detail}"
+        except requests.exceptions.RequestException as e:
+            return False, None, f"Error updating bill: {str(e)}"
+
+    # ========== PIGGY BANK MANAGEMENT METHODS ==========
+
+    def get_piggy_banks(self, page: int = 1, limit: int = 50) -> Tuple[bool, Optional[List[Dict]], str]:
+        """
+        Get piggy banks from Firefly III
+
+        Args:
+            page: Page number for pagination
+            limit: Number of piggy banks per page
+
+        Returns:
+            Tuple of (success: bool, piggy_banks: List[Dict] or None, message: str)
+        """
+        try:
+            response = requests.get(
+                f'{self.base_url}/api/v1/piggy-banks',
+                headers=self.headers,
+                params={'page': page, 'limit': limit},
+                timeout=10
+            )
+
+            if response.status_code == 200:
+                data = response.json()
+                piggy_banks = data.get('data', [])
+                return True, piggy_banks, f"Retrieved {len(piggy_banks)} piggy banks"
+            else:
+                return False, None, f"Failed to get piggy banks: {response.status_code} - {response.text}"
+        except requests.exceptions.RequestException as e:
+            return False, None, f"Error retrieving piggy banks: {str(e)}"
+
+    def get_all_piggy_banks(self) -> Tuple[bool, Optional[List[Dict]], str]:
+        """
+        Get ALL piggy banks from Firefly III (handles pagination automatically)
+
+        Returns:
+            Tuple of (success: bool, piggy_banks: List[Dict] or None, message: str)
+        """
+        all_piggy_banks = []
+        page = 1
+
+        try:
+            while True:
+                response = requests.get(
+                    f'{self.base_url}/api/v1/piggy-banks',
+                    headers=self.headers,
+                    params={'page': page},
+                    timeout=10
+                )
+
+                if response.status_code != 200:
+                    return False, None, f"Failed to get piggy banks: {response.status_code} - {response.text}"
+
+                data = response.json()
+                piggy_banks = data.get('data', [])
+
+                if not piggy_banks:
+                    break
+
+                all_piggy_banks.extend(piggy_banks)
+
+                # Check if there's a next page
+                meta = data.get('meta', {})
+                pagination = meta.get('pagination', {})
+                current_page = pagination.get('current_page', page)
+                total_pages = pagination.get('total_pages', 1)
+
+                if current_page >= total_pages:
+                    break
+
+                page += 1
+
+            return True, all_piggy_banks, f"Retrieved {len(all_piggy_banks)} piggy banks"
+        except requests.exceptions.RequestException as e:
+            return False, None, f"Error retrieving piggy banks: {str(e)}"
+
+    def delete_piggy_bank(self, piggy_bank_id: int) -> Tuple[bool, str]:
+        """
+        Delete a piggy bank by ID
+
+        Args:
+            piggy_bank_id: ID of the piggy bank to delete
+
+        Returns:
+            Tuple of (success: bool, message: str)
+        """
+        try:
+            response = requests.delete(
+                f'{self.base_url}/api/v1/piggy-banks/{piggy_bank_id}',
+                headers=self.headers,
+                timeout=10
+            )
+
+            if response.status_code == 204:
+                return True, f"Piggy bank {piggy_bank_id} deleted successfully"
+            else:
+                return False, f"Failed to delete piggy bank: {response.status_code} - {response.text}"
+        except requests.exceptions.RequestException as e:
+            return False, f"Error deleting piggy bank: {str(e)}"
+
+    def create_piggy_bank(self, piggy_bank_data: Dict) -> Tuple[bool, Optional[Dict], str]:
+        """
+        Create a new piggy bank
+
+        Args:
+            piggy_bank_data: Piggy bank data dictionary
+
+        Returns:
+            Tuple of (success: bool, created_piggy_bank: Dict or None, message: str)
+        """
+        try:
+            if 'name' in piggy_bank_data:
+                payload = piggy_bank_data
+            else:
+                payload = piggy_bank_data.get('attributes', piggy_bank_data)
+
+            response = requests.post(
+                f'{self.base_url}/api/v1/piggy-banks',
+                headers=self.headers,
+                json=payload,
+                timeout=10
+            )
+
+            if response.status_code == 200 or response.status_code == 201:
+                data = response.json()
+                created_piggy_bank = data.get('data', {})
+                piggy_bank_id = created_piggy_bank.get('id', 'unknown')
+                return True, created_piggy_bank, f"Piggy bank created successfully (ID: {piggy_bank_id})"
+            else:
+                error_detail = response.text
+                try:
+                    error_json = response.json()
+                    if 'errors' in error_json:
+                        errors = error_json['errors']
+                        error_msgs = []
+                        for field, messages in errors.items():
+                            error_msgs.append(f"{field}: {', '.join(messages)}")
+                        error_detail = '; '.join(error_msgs)
+                    elif 'message' in error_json:
+                        error_detail = error_json['message']
+                except:
+                    pass
+                return False, None, f"Failed to create piggy bank: {response.status_code} - {error_detail}"
+        except requests.exceptions.RequestException as e:
+            return False, None, f"Error creating piggy bank: {str(e)}"
+
+    def update_piggy_bank(self, piggy_bank_id: int, piggy_bank_data: Dict) -> Tuple[bool, Optional[Dict], str]:
+        """
+        Update an existing piggy bank
+
+        Args:
+            piggy_bank_id: ID of the piggy bank to update
+            piggy_bank_data: Piggy bank data dictionary
+
+        Returns:
+            Tuple of (success: bool, updated_piggy_bank: Dict or None, message: str)
+        """
+        try:
+            if 'name' in piggy_bank_data:
+                payload = piggy_bank_data
+            else:
+                payload = piggy_bank_data.get('attributes', piggy_bank_data)
+
+            response = requests.put(
+                f'{self.base_url}/api/v1/piggy-banks/{piggy_bank_id}',
+                headers=self.headers,
+                json=payload,
+                timeout=10
+            )
+
+            if response.status_code == 200:
+                data = response.json()
+                updated_piggy_bank = data.get('data', {})
+                return True, updated_piggy_bank, f"Piggy bank updated successfully (ID: {piggy_bank_id})"
+            else:
+                error_detail = response.text
+                try:
+                    error_json = response.json()
+                    if 'errors' in error_json:
+                        errors = error_json['errors']
+                        error_msgs = []
+                        for field, messages in errors.items():
+                            error_msgs.append(f"{field}: {', '.join(messages)}")
+                        error_detail = '; '.join(error_msgs)
+                    elif 'message' in error_json:
+                        error_detail = error_json['message']
+                except:
+                    pass
+                return False, None, f"Failed to update piggy bank: {response.status_code} - {error_detail}"
+        except requests.exceptions.RequestException as e:
+            return False, None, f"Error updating piggy bank: {str(e)}"
