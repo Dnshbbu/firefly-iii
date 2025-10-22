@@ -1,0 +1,202 @@
+{
+  "export_date": "2025-10-21T16:00:46.759065",
+  "firefly_iii_budgets_export": true,
+  "total_budgets": 5,
+  "budgets": [
+    {
+      "type": "budgets",
+      "id": "3",
+      "attributes": {
+        "created_at": "2025-10-20T16:26:12+02:00",
+        "updated_at": "2025-10-20T16:28:46+02:00",
+        "active": true,
+        "name": "Discretionary",
+        "order": 1,
+        "notes": null,
+        "auto_budget_type": "reset",
+        "auto_budget_period": "monthly",
+        "object_group_id": null,
+        "object_group_order": null,
+        "object_group_title": null,
+        "object_has_currency_setting": true,
+        "currency_id": "1",
+        "currency_code": "EUR",
+        "currency_name": "Euro",
+        "currency_symbol": "€",
+        "currency_decimal_places": 2,
+        "primary_currency_id": "1",
+        "primary_currency_name": "Euro",
+        "primary_currency_code": "EUR",
+        "primary_currency_symbol": "€",
+        "primary_currency_decimal_places": 2,
+        "auto_budget_amount": "400.00",
+        "pc_auto_budget_amount": null,
+        "spent": null,
+        "pc_spent": null
+      },
+      "links": {
+        "self": "http://localhost/api/v1/budgets/3",
+        "0": {
+          "rel": "self",
+          "uri": "/budgets/3"
+        }
+      }
+    },
+    {
+      "type": "budgets",
+      "id": "4",
+      "attributes": {
+        "created_at": "2025-10-20T16:29:21+02:00",
+        "updated_at": "2025-10-21T14:40:03+02:00",
+        "active": true,
+        "name": "Essentails",
+        "order": 2,
+        "notes": null,
+        "auto_budget_type": "reset",
+        "auto_budget_period": "monthly",
+        "object_group_id": null,
+        "object_group_order": null,
+        "object_group_title": null,
+        "object_has_currency_setting": true,
+        "currency_id": "1",
+        "currency_code": "EUR",
+        "currency_name": "Euro",
+        "currency_symbol": "€",
+        "currency_decimal_places": 2,
+        "primary_currency_id": "1",
+        "primary_currency_name": "Euro",
+        "primary_currency_code": "EUR",
+        "primary_currency_symbol": "€",
+        "primary_currency_decimal_places": 2,
+        "auto_budget_amount": "500.00",
+        "pc_auto_budget_amount": null,
+        "spent": null,
+        "pc_spent": null
+      },
+      "links": {
+        "self": "http://localhost/api/v1/budgets/4",
+        "0": {
+          "rel": "self",
+          "uri": "/budgets/4"
+        }
+      }
+    },
+    {
+      "type": "budgets",
+      "id": "5",
+      "attributes": {
+        "created_at": "2025-10-20T16:29:21+02:00",
+        "updated_at": "2025-10-21T14:44:52+02:00",
+        "active": true,
+        "name": "FixedCosts",
+        "order": 3,
+        "notes": null,
+        "auto_budget_type": "reset",
+        "auto_budget_period": "monthly",
+        "object_group_id": null,
+        "object_group_order": null,
+        "object_group_title": null,
+        "object_has_currency_setting": true,
+        "currency_id": "1",
+        "currency_code": "EUR",
+        "currency_name": "Euro",
+        "currency_symbol": "€",
+        "currency_decimal_places": 2,
+        "primary_currency_id": "1",
+        "primary_currency_name": "Euro",
+        "primary_currency_code": "EUR",
+        "primary_currency_symbol": "€",
+        "primary_currency_decimal_places": 2,
+        "auto_budget_amount": "300.00",
+        "pc_auto_budget_amount": null,
+        "spent": null,
+        "pc_spent": null
+      },
+      "links": {
+        "self": "http://localhost/api/v1/budgets/5",
+        "0": {
+          "rel": "self",
+          "uri": "/budgets/5"
+        }
+      }
+    },
+    {
+      "type": "budgets",
+      "id": "9",
+      "attributes": {
+        "created_at": "2025-10-21T14:55:43+02:00",
+        "updated_at": "2025-10-21T15:40:51+02:00",
+        "active": true,
+        "name": "Housing",
+        "order": 4,
+        "notes": null,
+        "auto_budget_type": "reset",
+        "auto_budget_period": "monthly",
+        "object_group_id": null,
+        "object_group_order": null,
+        "object_group_title": null,
+        "object_has_currency_setting": true,
+        "currency_id": "1",
+        "currency_code": "EUR",
+        "currency_name": "Euro",
+        "currency_symbol": "€",
+        "currency_decimal_places": 2,
+        "primary_currency_id": "1",
+        "primary_currency_name": "Euro",
+        "primary_currency_code": "EUR",
+        "primary_currency_symbol": "€",
+        "primary_currency_decimal_places": 2,
+        "auto_budget_amount": "1750.00",
+        "pc_auto_budget_amount": null,
+        "spent": null,
+        "pc_spent": null
+      },
+      "links": {
+        "self": "http://localhost/api/v1/budgets/9",
+        "0": {
+          "rel": "self",
+          "uri": "/budgets/9"
+        }
+      }
+    },
+    {
+      "type": "budgets",
+      "id": "15",
+      "attributes": {
+        "created_at": "2025-10-21T16:27:34+02:00",
+        "updated_at": "2025-10-21T16:27:34+02:00",
+        "active": true,
+        "name": "YearlyOnce",
+        "order": 5,
+        "notes": null,
+        "auto_budget_type": "reset",
+        "auto_budget_period": "yearly",
+        "object_group_id": null,
+        "object_group_order": null,
+        "object_group_title": null,
+        "object_has_currency_setting": true,
+        "currency_id": "1",
+        "currency_code": "EUR",
+        "currency_name": "Euro",
+        "currency_symbol": "€",
+        "currency_decimal_places": 2,
+        "primary_currency_id": "1",
+        "primary_currency_name": "Euro",
+        "primary_currency_code": "EUR",
+        "primary_currency_symbol": "€",
+        "primary_currency_decimal_places": 2,
+        "auto_budget_amount": "1300.00",
+        "pc_auto_budget_amount": null,
+        "spent": null,
+        "pc_spent": null
+      },
+      "links": {
+        "self": "http://localhost/api/v1/budgets/15",
+        "0": {
+          "rel": "self",
+          "uri": "/budgets/15"
+        }
+      }
+    }
+  ]
+}
