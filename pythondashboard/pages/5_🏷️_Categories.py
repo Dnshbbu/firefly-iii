@@ -31,39 +31,84 @@ st.set_page_config(
     layout="wide"
 )
 
-# Compact CSS styling with dark mode support
+# Ultra-compact CSS styling - DENSE dashboard
 st.markdown("""
 <style>
+    /* Minimal padding for maximum density */
     .block-container {
-        padding-top: 5rem !important;
-        padding-bottom: 0rem;
-        padding-left: 2rem;
-        padding-right: 2rem;
+        padding-top: 3rem !important;
+        padding-bottom: 0rem !important;
+        padding-left: 1rem !important;
+        padding-right: 1rem !important;
+        max-width: 100% !important;
     }
+
+    /* Compact headers */
     h1 {
-        padding-top: 0rem;
-        padding-bottom: 0.5rem;
-        font-size: 2rem;
-        margin-top: 0;
+        padding-top: 0rem !important;
+        padding-bottom: 0.3rem !important;
+        margin-top: 0 !important;
+        margin-bottom: 0.3rem !important;
+        font-size: 1.8rem !important;
     }
     h2 {
-        padding-top: 0.5rem;
-        padding-bottom: 0.25rem;
-        font-size: 1.5rem;
+        padding-top: 0.2rem !important;
+        padding-bottom: 0.2rem !important;
+        margin-top: 0.3rem !important;
+        margin-bottom: 0.3rem !important;
+        font-size: 1.3rem !important;
     }
     h3 {
-        padding-top: 0.25rem;
-        padding-bottom: 0.25rem;
-        font-size: 1.2rem;
+        padding-top: 0.1rem !important;
+        padding-bottom: 0.1rem !important;
+        margin-top: 0.2rem !important;
+        margin-bottom: 0.2rem !important;
+        font-size: 1.1rem !important;
     }
-    .dataframe {
-        font-size: 0.85rem;
-    }
+
+    /* Compact metrics */
     [data-testid="stMetricValue"] {
-        font-size: 1.5rem;
+        font-size: 1.3rem !important;
     }
     [data-testid="stMetricLabel"] {
-        font-size: 0.85rem;
+        font-size: 0.75rem !important;
+        margin-bottom: 0 !important;
+    }
+    [data-testid="stMetric"] {
+        padding: 0.3rem !important;
+    }
+
+    /* Compact dataframes */
+    .dataframe {
+        font-size: 0.75rem !important;
+    }
+
+    /* Reduce spacing between elements */
+    .element-container {
+        margin-bottom: 0.2rem !important;
+    }
+
+    /* Compact dividers */
+    hr {
+        margin-top: 0.3rem !important;
+        margin-bottom: 0.3rem !important;
+    }
+
+    /* Reduce plot margins */
+    .js-plotly-plot {
+        margin-bottom: 0 !important;
+    }
+
+    /* Compact expanders */
+    .streamlit-expanderHeader {
+        font-size: 0.9rem !important;
+        padding: 0.3rem !important;
+    }
+
+    /* Compact buttons */
+    .stButton button {
+        padding: 0.25rem 0.75rem !important;
+        font-size: 0.85rem !important;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -182,16 +227,16 @@ end_date_str = end_date.strftime('%Y-%m-%d')
 try:
     client = FireflyAPIClient(st.session_state.firefly_url, st.session_state.firefly_token)
 
-    # Add refresh button
-    col1, col2, col3 = st.columns([1, 1, 4])
+    # Add refresh button - compact
+    col1, col2 = st.columns([1, 5])
     with col1:
-        if st.button("🔄 Refresh Data"):
+        if st.button("🔄 Refresh"):
             st.cache_data.clear()
             st.rerun()
     with col2:
-        st.caption(f"Last updated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+        st.caption(f"Last updated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')} | Period: {start_date_str} to {end_date_str}")
 
-    st.divider()
+    st.markdown("---")
 
     # Cache data fetching
     @st.cache_data(ttl=300)
@@ -221,94 +266,74 @@ try:
         category_spending = calculate_category_spending(df_expenses, start_date_str, end_date_str)
         category_percentage = calculate_category_percentage(df_expenses, start_date_str, end_date_str)
 
-        # Summary metrics
+        # Calculate summary metrics
         total_expenses = category_spending['total_amount'].sum()
         num_categories = len(category_spending)
         top_category = category_spending.iloc[0] if not category_spending.empty else None
         avg_per_category = total_expenses / num_categories if num_categories > 0 else 0
+        num_transactions = category_spending['transaction_count'].sum()
 
-        # Display summary
-        st.header("📊 Category Overview")
+        # Display all metrics in single compact section
+        st.markdown("### 📊 Category Overview")
 
-        col1, col2, col3, col4 = st.columns(4)
+        # Single row with all metrics
+        cols = st.columns(6)
+        cols[0].metric("Total Expenses", f"€{total_expenses:,.0f}")
+        cols[1].metric("Categories", num_categories)
+        cols[2].metric("Transactions", f"{int(num_transactions)}")
+        cols[3].metric("Avg/Category", f"€{avg_per_category:,.0f}")
+        if top_category is not None:
+            cols[4].metric("Top Category", top_category['category_name'])
+            cols[5].metric("Top Spending", f"€{top_category['total_amount']:,.0f}")
 
-        with col1:
-            st.metric(
-                label="Total Expenses",
-                value=f"€{total_expenses:,.2f}"
-            )
-
-        with col2:
-            st.metric(
-                label="Categories",
-                value=num_categories
-            )
-
-        with col3:
-            if top_category is not None:
-                st.metric(
-                    label="Top Category",
-                    value=top_category['category_name'],
-                    delta=f"€{top_category['total_amount']:,.2f}"
-                )
-
-        with col4:
-            st.metric(
-                label="Avg per Category",
-                value=f"€{avg_per_category:,.2f}"
-            )
-
-        st.divider()
+        st.markdown("---")
 
         # Visualization tabs
         tab1, tab2, tab3 = st.tabs(["📊 Overview", "📈 Trends", "🔍 Deep Dive"])
 
         with tab1:
-            st.subheader("Category Distribution")
+            st.markdown("**Category Distribution**")
 
             col1, col2 = st.columns(2)
 
             with col1:
-                # Pie chart
+                # Pie chart - compact
                 fig_pie = create_pie_chart(
                     category_spending.head(10),
                     labels='category_name',
                     values='total_amount',
                     title="Top 10 Categories by Spending",
-                    height=450
+                    height=300
                 )
-                st.plotly_chart(fig_pie, use_container_width=True)
+                st.plotly_chart(fig_pie, use_container_width=True, config={'displayModeBar': False})
 
             with col2:
-                # Treemap
+                # Treemap - compact
                 fig_treemap = create_treemap_chart(
                     category_spending.head(15),
                     labels_col='category_name',
                     values_col='total_amount',
                     title="Category Spending Treemap",
-                    height=450
+                    height=300
                 )
-                st.plotly_chart(fig_treemap, use_container_width=True)
+                st.plotly_chart(fig_treemap, use_container_width=True, config={'displayModeBar': False})
 
-            st.divider()
-
-            # Pareto chart
-            st.subheader("Pareto Analysis (80/20 Rule)")
-            st.caption("Identify which categories account for 80% of your spending")
+            # Pareto chart - compact
+            st.markdown("**Pareto Analysis (80/20 Rule)**")
 
             fig_pareto = create_pareto_chart(
                 category_percentage.head(15),
                 title="Category Spending - Pareto Analysis",
-                height=500
+                height=350
             )
-            st.plotly_chart(fig_pareto, use_container_width=True)
+            st.plotly_chart(fig_pareto, use_container_width=True, config={'displayModeBar': False})
 
             # Find 80% threshold
             categories_80 = category_percentage[category_percentage['cumulative_pct'] <= 80]
-            st.info(f"📌 **Insight:** {len(categories_80)} categories account for 80% of your total spending ({len(categories_80) / len(category_percentage) * 100:.1f}% of all categories)")
+            st.markdown(f"📌 **Insight:** {len(categories_80)} categories account for 80% of your total spending ({len(categories_80) / len(category_percentage) * 100:.1f}% of all categories)")
 
         with tab2:
-            st.subheader("Category Spending Trends")
+            st.markdown("**Category Spending Trends**")
 
             # Calculate trends
             category_trends = calculate_category_trends(df_expenses, period='ME')
@@ -317,29 +342,28 @@ try:
             top_5_categories = category_spending.head(5)['category_name'].tolist()
 
             selected_categories = st.multiselect(
-                "Select categories to display",
+                "Select categories to display (max 10)",
                 options=category_spending['category_name'].tolist(),
-                default=top_5_categories,
-                help="Select up to 10 categories for clarity"
+                default=top_5_categories
             )
 
             if selected_categories:
                 if len(selected_categories) > 10:
-                    st.warning("Showing first 10 selected categories for clarity")
+                    st.caption("Showing first 10 selected categories")
                     selected_categories = selected_categories[:10]
 
                 fig_trends = create_category_trend_chart(
                     category_trends,
                     categories=selected_categories,
                     title="Monthly Spending Trends by Category",
-                    height=500
+                    height=400
                 )
-                st.plotly_chart(fig_trends, use_container_width=True)
+                st.plotly_chart(fig_trends, use_container_width=True, config={'displayModeBar': False})
             else:
                 st.info("Please select at least one category to display trends")
 
         with tab3:
-            st.subheader("Detailed Category Analysis")
+            st.markdown("**Detailed Category Analysis**")
 
             # Category selector
             selected_category = st.selectbox(
@@ -353,96 +377,78 @@ try:
                 monthly_data = calculate_category_monthly_comparison(df_expenses, selected_category)
                 top_transactions = get_top_transactions_by_category(df_expenses, selected_category, limit=10)
 
-                # Display statistics
-                st.markdown(f"### {selected_category}")
+                # Display statistics - compact row
+                cols = st.columns(5)
+                cols[0].metric("Transactions", f"{int(stats['count'])}")
+                cols[1].metric("Average", f"€{stats['mean']:,.0f}")
+                cols[2].metric("Median", f"€{stats['median']:,.0f}")
+                cols[3].metric("Min", f"€{stats['min']:,.0f}")
+                cols[4].metric("Max", f"€{stats['max']:,.0f}")
 
-                col1, col2, col3, col4, col5 = st.columns(5)
-
-                with col1:
-                    st.metric("Transactions", f"{int(stats['count'])}")
-
-                with col2:
-                    st.metric("Average", f"€{stats['mean']:,.2f}")
-
-                with col3:
-                    st.metric("Median", f"€{stats['median']:,.2f}")
-
-                with col4:
-                    st.metric("Min", f"€{stats['min']:,.2f}")
-
-                with col5:
-                    st.metric("Max", f"€{stats['max']:,.2f}")
-
-                st.divider()
-
-                # Monthly comparison chart
+                # Monthly comparison chart - compact
                 if not monthly_data.empty:
-                    st.subheader("Monthly Trend")
+                    st.markdown("**Monthly Trend**")
 
                     fig_comparison = create_category_comparison_chart(
                         monthly_data,
                         selected_category,
-                        height=400
+                        height=300
                     )
-                    st.plotly_chart(fig_comparison, use_container_width=True)
+                    st.plotly_chart(fig_comparison, use_container_width=True, config={'displayModeBar': False})
 
-                st.divider()
+                # Top transactions - collapsible
+                with st.expander("📋 Top 10 Transactions", expanded=False):
+                    if not top_transactions.empty:
+                        top_transactions_display = top_transactions.copy()
+                        top_transactions_display['date'] = pd.to_datetime(top_transactions_display['date']).dt.strftime('%Y-%m-%d')
+                        top_transactions_display['amount'] = top_transactions_display['amount'].apply(lambda x: f"€{x:,.2f}")
 
-                # Top transactions
-                st.subheader("Top 10 Transactions")
+                        st.dataframe(
+                            top_transactions_display,
+                            use_container_width=True,
+                            hide_index=True,
+                            column_config={
+                                'date': 'Date',
+                                'description': 'Description',
+                                'amount': 'Amount',
+                                'destination_name': 'Merchant'
+                            },
+                            height=300
+                        )
+                    else:
+                        st.info("No transactions found for this category")
 
-                if not top_transactions.empty:
-                    top_transactions_display = top_transactions.copy()
-                    top_transactions_display['date'] = pd.to_datetime(top_transactions_display['date']).dt.strftime('%Y-%m-%d')
-                    top_transactions_display['amount'] = top_transactions_display['amount'].apply(lambda x: f"€{x:,.2f}")
+        st.markdown("---")
 
-                    st.dataframe(
-                        top_transactions_display,
-                        use_container_width=True,
-                        hide_index=True,
-                        column_config={
-                            'date': 'Date',
-                            'description': 'Description',
-                            'amount': 'Amount',
-                            'destination_name': 'Merchant'
-                        }
-                    )
-                else:
-                    st.info("No transactions found for this category")
+        # Category breakdown table - collapsible
+        with st.expander("📋 All Categories", expanded=False):
+            # Format for display
+            category_display = category_percentage.copy()
+            category_display['amount'] = category_display['amount'].apply(lambda x: f"€{x:,.2f}")
+            category_display['percentage'] = category_display['percentage'].apply(lambda x: f"{x:.1f}%")
+            category_display['cumulative_pct'] = category_display['cumulative_pct'].apply(lambda x: f"{x:.1f}%")
 
-        st.divider()
+            st.dataframe(
+                category_display,
+                use_container_width=True,
+                hide_index=True,
+                column_config={
+                    'category_name': 'Category',
+                    'amount': 'Total Spent',
+                    'percentage': '% of Total',
+                    'cumulative_pct': 'Cumulative %'
+                },
+                height=400
+            )
 
-        # Category breakdown table
-        st.header("📋 All Categories")
-
-        # Format for display
-        category_display = category_percentage.copy()
-        category_display['amount'] = category_display['amount'].apply(lambda x: f"€{x:,.2f}")
-        category_display['percentage'] = category_display['percentage'].apply(lambda x: f"{x:.1f}%")
-        category_display['cumulative_pct'] = category_display['cumulative_pct'].apply(lambda x: f"{x:.1f}%")
-
-        st.dataframe(
-            category_display,
-            use_container_width=True,
-            hide_index=True,
-            column_config={
-                'category_name': 'Category',
-                'amount': 'Total Spent',
-                'percentage': '% of Total',
-                'cumulative_pct': 'Cumulative %'
-            },
-            height=400
-        )
-
-        # Export option
-        st.divider()
-        csv = category_percentage.to_csv(index=False)
-        st.download_button(
-            label="📥 Download Category Data (CSV)",
-            data=csv,
-            file_name=f"firefly_categories_{start_date_str}_to_{end_date_str}.csv",
-            mime="text/csv"
-        )
+            # Export option
+            csv = category_percentage.to_csv(index=False)
+            st.download_button(
+                label="📥 Download CSV",
+                data=csv,
+                file_name=f"firefly_categories_{start_date_str}_to_{end_date_str}.csv",
+                mime="text/csv"
+            )
 
 except Exception as e:
     st.error(f"An error occurred: {str(e)}")

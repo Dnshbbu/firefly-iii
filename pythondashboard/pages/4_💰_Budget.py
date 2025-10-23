@@ -27,39 +27,84 @@ st.set_page_config(
     layout="wide"
 )
 
-# Compact CSS styling with dark mode support
+# Ultra-compact CSS styling - DENSE dashboard
 st.markdown("""
 <style>
+    /* Minimal padding for maximum density */
     .block-container {
-        padding-top: 5rem !important;
-        padding-bottom: 0rem;
-        padding-left: 2rem;
-        padding-right: 2rem;
+        padding-top: 3rem !important;
+        padding-bottom: 0rem !important;
+        padding-left: 1rem !important;
+        padding-right: 1rem !important;
+        max-width: 100% !important;
     }
+
+    /* Compact headers */
     h1 {
-        padding-top: 0rem;
-        padding-bottom: 0.5rem;
-        font-size: 2rem;
-        margin-top: 0;
+        padding-top: 0rem !important;
+        padding-bottom: 0.3rem !important;
+        margin-top: 0 !important;
+        margin-bottom: 0.3rem !important;
+        font-size: 1.8rem !important;
     }
     h2 {
-        padding-top: 0.5rem;
-        padding-bottom: 0.25rem;
-        font-size: 1.5rem;
+        padding-top: 0.2rem !important;
+        padding-bottom: 0.2rem !important;
+        margin-top: 0.3rem !important;
+        margin-bottom: 0.3rem !important;
+        font-size: 1.3rem !important;
     }
     h3 {
-        padding-top: 0.25rem;
-        padding-bottom: 0.25rem;
-        font-size: 1.2rem;
+        padding-top: 0.1rem !important;
+        padding-bottom: 0.1rem !important;
+        margin-top: 0.2rem !important;
+        margin-bottom: 0.2rem !important;
+        font-size: 1.1rem !important;
     }
-    .dataframe {
-        font-size: 0.85rem;
-    }
+
+    /* Compact metrics */
     [data-testid="stMetricValue"] {
-        font-size: 1.5rem;
+        font-size: 1.3rem !important;
     }
     [data-testid="stMetricLabel"] {
-        font-size: 0.85rem;
+        font-size: 0.75rem !important;
+        margin-bottom: 0 !important;
+    }
+    [data-testid="stMetric"] {
+        padding: 0.3rem !important;
+    }
+
+    /* Compact dataframes */
+    .dataframe {
+        font-size: 0.75rem !important;
+    }
+
+    /* Reduce spacing between elements */
+    .element-container {
+        margin-bottom: 0.2rem !important;
+    }
+
+    /* Compact dividers */
+    hr {
+        margin-top: 0.3rem !important;
+        margin-bottom: 0.3rem !important;
+    }
+
+    /* Reduce plot margins */
+    .js-plotly-plot {
+        margin-bottom: 0 !important;
+    }
+
+    /* Compact expanders */
+    .streamlit-expanderHeader {
+        font-size: 0.9rem !important;
+        padding: 0.3rem !important;
+    }
+
+    /* Compact buttons */
+    .stButton button {
+        padding: 0.25rem 0.75rem !important;
+        font-size: 0.85rem !important;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -178,16 +223,16 @@ else:  # Custom
 try:
     client = FireflyAPIClient(st.session_state.firefly_url, st.session_state.firefly_token)
 
-    # Add refresh button
-    col1, col2, col3 = st.columns([1, 1, 4])
+    # Add refresh button - compact
+    col1, col2 = st.columns([1, 5])
     with col1:
-        if st.button("🔄 Refresh Data"):
+        if st.button("🔄 Refresh"):
             st.cache_data.clear()
             st.rerun()
     with col2:
-        st.caption(f"Last updated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+        st.caption(f"Last updated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')} | Period: {start_date_str} to {end_date_str}")
 
-    st.divider()
+    st.markdown("---")
 
     # Cache data fetching
     @st.cache_data(ttl=300)
@@ -254,105 +299,58 @@ try:
         warning_count = len(budget_performance[budget_performance['status'] == 'Warning'])
         on_track_count = len(budget_performance[budget_performance['status'] == 'On Track'])
 
-        # Display summary metrics
-        st.header("💰 Budget Summary")
+        # Display all metrics in single compact section
+        st.markdown("### 💰 Budget Summary")
 
-        col1, col2, col3, col4 = st.columns(4)
+        # Row 1: Main metrics
+        cols = st.columns(7)
+        cols[0].metric("Total Budgeted", f"€{total_budgeted:,.0f}")
+        cols[1].metric("Total Spent", f"€{total_spent:,.0f}")
+        cols[2].metric("Remaining", f"€{total_remaining:,.0f}")
+        cols[3].metric("Utilization", f"{overall_utilization:.1f}%")
+        cols[4].metric("✅ On Track", on_track_count)
+        cols[5].metric("⚠️ Warning", warning_count)
+        cols[6].metric("🚨 Over", over_budget_count)
 
-        with col1:
-            st.metric(
-                label="Total Budgeted",
-                value=f"€{total_budgeted:,.2f}"
+        st.markdown("---")
+
+        # Budget charts - side by side
+        st.markdown("### 📊 Budget Performance")
+
+        chart_col1, chart_col2 = st.columns(2)
+
+        with chart_col1:
+            fig_budget_vs_actual = create_budget_vs_actual_chart(
+                budget_performance,
+                title="Budget vs. Actual Spending",
+                height=350
             )
+            st.plotly_chart(fig_budget_vs_actual, use_container_width=True, config={'displayModeBar': False})
 
-        with col2:
-            st.metric(
-                label="Total Spent",
-                value=f"€{total_spent:,.2f}"
-            )
+        with chart_col2:
+            fig_progress = create_budget_progress_bars(budget_performance, height=350)
+            st.plotly_chart(fig_progress, use_container_width=True, config={'displayModeBar': False})
 
-        with col3:
-            color = "normal" if total_remaining >= 0 else "inverse"
-            st.metric(
-                label="Total Remaining",
-                value=f"€{total_remaining:,.2f}"
-            )
+        st.markdown("---")
 
-        with col4:
-            st.metric(
-                label="Overall Utilization",
-                value=f"{overall_utilization:.1f}%"
-            )
-
-        st.divider()
-
-        # Budget status counts
-        st.subheader("📊 Budget Status")
-
-        col1, col2, col3 = st.columns(3)
-
-        with col1:
-            st.metric(
-                label="✅ On Track",
-                value=on_track_count,
-                help="Budgets under 80% utilization"
-            )
-
-        with col2:
-            st.metric(
-                label="⚠️ Warning",
-                value=warning_count,
-                help="Budgets between 80-100% utilization"
-            )
-
-        with col3:
-            st.metric(
-                label="🚨 Over Budget",
-                value=over_budget_count,
-                help="Budgets exceeding 100% utilization"
-            )
-
-        st.divider()
-
-        # Budget vs Actual Chart
-        st.header("📊 Budget vs. Actual Spending")
-
-        fig_budget_vs_actual = create_budget_vs_actual_chart(
-            budget_performance,
-            title="Budget Performance by Category",
-            height=500
-        )
-        st.plotly_chart(fig_budget_vs_actual, use_container_width=True)
-
-        st.divider()
-
-        # Budget Utilization Progress Bars
-        st.header("📈 Budget Utilization")
-
-        fig_progress = create_budget_progress_bars(budget_performance, height=400)
-        st.plotly_chart(fig_progress, use_container_width=True)
-
-        st.divider()
-
-        # Individual Budget Gauges (top 6 by utilization)
-        st.header("🎯 Top Budget Utilization Gauges")
+        # Top 6 budget gauges - compact 3x2 grid
+        st.markdown("### 🎯 Budget Utilization Overview")
 
         top_budgets = budget_performance.head(6)
-
         cols = st.columns(3)
         for idx, (_, budget) in enumerate(top_budgets.iterrows()):
             with cols[idx % 3]:
                 fig_gauge = create_budget_utilization_gauges(
                     budget['budget_name'],
                     budget['utilization_pct'],
-                    height=250
+                    height=200
                 )
-                st.plotly_chart(fig_gauge, use_container_width=True)
+                st.plotly_chart(fig_gauge, use_container_width=True, config={'displayModeBar': False})
 
-        st.divider()
+        st.markdown("---")
 
-        # Burn Rate Analysis
-        st.header("🔥 Budget Burn Rate Analysis")
+        # Burn Rate Analysis - compact
+        st.markdown("### 🔥 Burn Rate Analysis")
 
         if total_budgeted > 0:
             burn_rate_metrics = calculate_budget_burn_rate(
@@ -362,146 +360,89 @@ try:
                 end_date_str
             )
 
-            col1, col2 = st.columns(2)
+            daily_budget = total_budgeted / burn_rate_metrics['total_days'] if burn_rate_metrics['total_days'] > 0 else 0
 
+            # All metrics in one row
+            cols = st.columns(7)
+            cols[0].metric("Days Elapsed", burn_rate_metrics['days_elapsed'])
+            cols[1].metric("Days Left", burn_rate_metrics['days_remaining'])
+            cols[2].metric("Daily Budget", f"€{daily_budget:,.0f}")
+            cols[3].metric("Actual Burn", f"€{burn_rate_metrics['burn_rate']:,.0f}")
+            cols[4].metric("Projected Spend", f"€{burn_rate_metrics['projected_spend']:,.0f}")
+
+            delta_value = burn_rate_metrics['projected_over_under']
+            if delta_value >= 0:
+                cols[5].metric("Under Budget", f"€{abs(delta_value):,.0f}")
+                cols[6].markdown("**✅ On Track**")
+            else:
+                cols[5].metric("Over Budget", f"€{abs(delta_value):,.0f}")
+                cols[6].markdown("**⚠️ Warning**")
+
+            # Compact burn rate chart
+            col1, col2 = st.columns([2, 3])
             with col1:
-                st.subheader("📅 Time Analysis")
-
-                col_a, col_b, col_c = st.columns(3)
-                with col_a:
-                    st.metric(
-                        label="Days Elapsed",
-                        value=burn_rate_metrics['days_elapsed']
-                    )
-                with col_b:
-                    st.metric(
-                        label="Days Remaining",
-                        value=burn_rate_metrics['days_remaining']
-                    )
-                with col_c:
-                    st.metric(
-                        label="Total Days",
-                        value=burn_rate_metrics['total_days']
-                    )
-
-            with col2:
-                st.subheader("💸 Burn Rate Metrics")
-
-                daily_budget = total_budgeted / burn_rate_metrics['total_days'] if burn_rate_metrics['total_days'] > 0 else 0
-
-                col_a, col_b = st.columns(2)
-                with col_a:
-                    st.metric(
-                        label="Daily Budget",
-                        value=f"€{daily_budget:,.2f}"
-                    )
-                with col_b:
-                    st.metric(
-                        label="Actual Burn Rate",
-                        value=f"€{burn_rate_metrics['burn_rate']:,.2f}",
-                        delta=f"€{burn_rate_metrics['burn_rate'] - daily_budget:,.2f}",
-                        delta_color="inverse"
-                    )
-
-            st.divider()
-
-            # Burn rate chart
-            fig_burn_rate = create_burn_rate_chart(
-                burn_rate_metrics['burn_rate'],
-                daily_budget,
-                title="Daily Spending: Ideal vs. Actual",
-                height=350
-            )
-            st.plotly_chart(fig_burn_rate, use_container_width=True)
-
-            # Projection
-            st.subheader("🔮 End-of-Period Projection")
-
-            col1, col2 = st.columns(2)
-            with col1:
-                st.metric(
-                    label="Projected Total Spend",
-                    value=f"€{burn_rate_metrics['projected_spend']:,.2f}"
+                fig_burn_rate = create_burn_rate_chart(
+                    burn_rate_metrics['burn_rate'],
+                    daily_budget,
+                    title="Daily Spending: Ideal vs. Actual",
+                    height=250
                 )
+                st.plotly_chart(fig_burn_rate, use_container_width=True, config={'displayModeBar': False})
+
             with col2:
-                delta_value = burn_rate_metrics['projected_over_under']
-                if delta_value >= 0:
-                    st.metric(
-                        label="Projected Under Budget",
-                        value=f"€{abs(delta_value):,.2f}",
-                        delta="Under budget",
-                        delta_color="normal"
-                    )
+                if burn_rate_metrics['projected_over_under'] < 0:
+                    st.markdown(f"**⚠️ Budget Alert**\n\nAt the current spending rate, you are projected to exceed your budget by **€{abs(burn_rate_metrics['projected_over_under']):,.0f}**")
                 else:
-                    st.metric(
-                        label="Projected Over Budget",
-                        value=f"€{abs(delta_value):,.2f}",
-                        delta="Over budget",
-                        delta_color="inverse"
-                    )
+                    st.markdown(f"**✅ Budget Status**\n\nAt the current spending rate, you are projected to stay within budget with **€{burn_rate_metrics['projected_over_under']:,.0f}** remaining")
 
-            if burn_rate_metrics['projected_over_under'] < 0:
-                st.warning(f"⚠️ At the current spending rate, you are projected to exceed your budget by €{abs(burn_rate_metrics['projected_over_under']):,.2f}")
-            else:
-                st.success(f"✅ At the current spending rate, you are projected to stay within budget with €{burn_rate_metrics['projected_over_under']:,.2f} remaining")
+        st.markdown("---")
 
-        st.divider()
+        # Budget Details Table - collapsible
+        with st.expander("📋 Budget Details", expanded=False):
+            # Add filter for status - compact
+            col1, col2 = st.columns([3, 3])
+            with col1:
+                status_filter = st.multiselect(
+                    "Filter by Status",
+                    options=['On Track', 'Warning', 'Over Budget'],
+                    default=['On Track', 'Warning', 'Over Budget']
+                )
 
-        # Budget Details Table
-        st.header("📋 Budget Details")
+            # Apply filter
+            budget_display = budget_performance.copy()
+            if status_filter:
+                budget_display = budget_display[budget_display['status'].isin(status_filter)]
 
-        # Add filter for status
-        status_filter = st.multiselect(
-            "Filter by Status",
-            options=['On Track', 'Warning', 'Over Budget'],
-            default=['On Track', 'Warning', 'Over Budget']
-        )
+            # Format for display
+            budget_display_formatted = budget_display.copy()
+            budget_display_formatted['budgeted'] = budget_display_formatted['budgeted'].apply(lambda x: f"€{x:,.2f}")
+            budget_display_formatted['spent'] = budget_display_formatted['spent'].apply(lambda x: f"€{x:,.2f}")
+            budget_display_formatted['remaining'] = budget_display_formatted['remaining'].apply(lambda x: f"€{x:,.2f}")
+            budget_display_formatted['utilization_pct'] = budget_display_formatted['utilization_pct'].apply(lambda x: f"{x:.1f}%")
 
-        # Apply filter
-        budget_display = budget_performance.copy()
-        if status_filter:
-            budget_display = budget_display[budget_display['status'].isin(status_filter)]
+            st.dataframe(
+                budget_display_formatted[['budget_name', 'budgeted', 'spent', 'remaining', 'utilization_pct', 'status']],
+                use_container_width=True,
+                hide_index=True,
+                column_config={
+                    'budget_name': 'Budget',
+                    'budgeted': 'Budgeted',
+                    'spent': 'Spent',
+                    'remaining': 'Remaining',
+                    'utilization_pct': 'Utilization',
+                    'status': 'Status'
+                },
+                height=400
+            )
 
-        # Format for display
-        budget_display_formatted = budget_display.copy()
-        budget_display_formatted['budgeted'] = budget_display_formatted['budgeted'].apply(lambda x: f"€{x:,.2f}")
-        budget_display_formatted['spent'] = budget_display_formatted['spent'].apply(lambda x: f"€{x:,.2f}")
-        budget_display_formatted['remaining'] = budget_display_formatted['remaining'].apply(lambda x: f"€{x:,.2f}")
-        budget_display_formatted['utilization_pct'] = budget_display_formatted['utilization_pct'].apply(lambda x: f"{x:.1f}%")
-
-        # Add color coding for status
-        def color_status(val):
-            if val == 'Over Budget':
-                return 'background-color: rgba(248, 113, 113, 0.3)'
-            elif val == 'Warning':
-                return 'background-color: rgba(251, 191, 36, 0.3)'
-            else:
-                return 'background-color: rgba(74, 222, 128, 0.3)'
-
-        st.dataframe(
-            budget_display_formatted[['budget_name', 'budgeted', 'spent', 'remaining', 'utilization_pct', 'status']],
-            use_container_width=True,
-            hide_index=True,
-            column_config={
-                'budget_name': 'Budget',
-                'budgeted': 'Budgeted',
-                'spent': 'Spent',
-                'remaining': 'Remaining',
-                'utilization_pct': 'Utilization',
-                'status': 'Status'
-            },
-            height=400
-        )
-
-        # Export option
-        st.divider()
-        csv = budget_display.to_csv(index=False)
-        st.download_button(
-            label="📥 Download Budget Data (CSV)",
-            data=csv,
-            file_name=f"firefly_budgets_{start_date_str}_to_{end_date_str}.csv",
-            mime="text/csv"
-        )
+            # Export option
+            csv = budget_display.to_csv(index=False)
+            st.download_button(
+                label="📥 Download CSV",
+                data=csv,
+                file_name=f"firefly_budgets_{start_date_str}_to_{end_date_str}.csv",
+                mime="text/csv"
+            )
 
 except Exception as e:
     st.error(f"An error occurred: {str(e)}")

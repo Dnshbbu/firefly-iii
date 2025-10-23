@@ -581,6 +581,10 @@ def create_burn_rate_chart(
     values = [daily_budget, burn_rate]
     colors = ['#60a5fa', '#f87171' if burn_rate > daily_budget else '#4ade80']
 
+    # Calculate y-axis range to accommodate outside text labels
+    max_value = max(values)
+    y_max = max_value * 1.15  # Add 15% padding for labels
+
     fig = go.Figure(data=[
         go.Bar(
             x=categories,
@@ -593,9 +597,12 @@ def create_burn_rate_chart(
 
     fig.update_layout(
         title=title,
-        yaxis_title='Amount per Day (€)',
+        yaxis=dict(
+            title='Amount per Day (€)',
+            range=[0, y_max]
+        ),
         height=height,
-        margin=dict(t=50, b=50, l=50, r=20),
+        margin=dict(t=70, b=50, l=50, r=20),
         showlegend=False
     )
 
@@ -874,17 +881,24 @@ def create_category_comparison_chart(
         yaxis='y2'
     ))
 
+    # Calculate y-axis range to accommodate outside text labels
+    max_value = df['amount'].max()
+    y_max = max_value * 1.15  # Add 15% padding for labels
+
     fig.update_layout(
         title=title,
         xaxis_title='Month',
-        yaxis_title='Amount (€)',
+        yaxis=dict(
+            title='Amount (€)',
+            range=[0, y_max]
+        ),
         yaxis2=dict(
             title='Change (%)',
             overlaying='y',
             side='right'
         ),
         height=height,
-        margin=dict(t=50, b=50, l=50, r=80),
+        margin=dict(t=80, b=50, l=50, r=80),
         hovermode='x unified',
         legend=dict(
             orientation="h",
