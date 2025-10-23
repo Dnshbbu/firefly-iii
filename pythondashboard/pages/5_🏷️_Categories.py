@@ -398,7 +398,12 @@ try:
 
                         # Flatten column names
                         monthly_data.columns = ['month', 'total_amount', 'transaction_count', 'avg_amount', 'last_date']
-                        monthly_data = monthly_data.sort_values('month', ascending=False)
+
+                        # Sort by month for timeline (descending - newest first)
+                        monthly_data_timeline = monthly_data.sort_values('month', ascending=False)
+
+                        # Sort by month for bar chart (ascending - oldest first)
+                        monthly_data_chart = monthly_data.sort_values('month', ascending=True)
 
                         # Create vertical timeline using components
                         import streamlit.components.v1 as components
@@ -417,7 +422,7 @@ body {
 }
 .timeline-container {
     position: relative;
-    height: 600px;
+    height: 450px;
     overflow-y: auto;
     padding-left: 10px;
     padding-bottom: 20px;
@@ -517,7 +522,7 @@ body {
     <div class="timeline">
 """
 
-                        for _, row in monthly_data.iterrows():
+                        for _, row in monthly_data_timeline.iterrows():
                             year_str = row['month'].strftime('%Y')
                             month_name = row['month'].strftime('%B').upper()
                             total_str = f"€{row['total_amount']:,.2f}"
@@ -541,7 +546,46 @@ body {
 """
 
                         # Display timeline using iframe component
-                        components.html(timeline_html, height=620, scrolling=False)
+                        components.html(timeline_html, height=470, scrolling=False)
+
+                        # Add monthly bar chart below timeline
+                        st.markdown("**📊 Monthly Spending Trend**")
+
+                        # Create monthly bar chart
+                        import plotly.graph_objects as go
+
+                        # Calculate y-axis range to accommodate labels
+                        max_value = monthly_data_chart['total_amount'].max()
+                        y_max = max_value * 1.2  # Add 20% padding for outside labels
+
+                        fig_monthly_bar = go.Figure()
+
+                        fig_monthly_bar.add_trace(go.Bar(
+                            x=monthly_data_chart['month'].dt.strftime('%b %Y'),
+                            y=monthly_data_chart['total_amount'],
+                            marker=dict(color='#f87171'),
+                            text=monthly_data_chart['total_amount'].apply(lambda x: f'€{x:,.0f}'),
+                            textposition='outside',
+                            textfont=dict(size=9),
+                            hovertemplate='<b>%{x}</b><br>Amount: €%{y:,.2f}<br><extra></extra>'
+                        ))
+
+                        fig_monthly_bar.update_layout(
+                            title=f"Monthly Spending - {timeline_category}",
+                            xaxis_title='Month',
+                            yaxis=dict(
+                                title='Amount (€)',
+                                range=[0, y_max]
+                            ),
+                            height=280,
+                            margin=dict(t=40, b=40, l=50, r=20),
+                            showlegend=False,
+                            plot_bgcolor='rgba(0,0,0,0)',
+                            paper_bgcolor='rgba(0,0,0,0)',
+                            font=dict(color='#e2e8f0')
+                        )
+
+                        st.plotly_chart(fig_monthly_bar, use_container_width=True, config={'displayModeBar': False})
                 else:
                     # Show placeholder when nothing is selected
                     st.info("👈 Click on a category in the pie chart to view transaction timeline")
