@@ -19,39 +19,84 @@ st.set_page_config(
     layout="wide"
 )
 
-# Compact CSS styling with dark mode support
+# Ultra-compact CSS styling - DENSE dashboard
 st.markdown("""
 <style>
+    /* Minimal padding for maximum density */
     .block-container {
-        padding-top: 5rem !important;
-        padding-bottom: 0rem;
-        padding-left: 2rem;
-        padding-right: 2rem;
+        padding-top: 3rem !important;
+        padding-bottom: 0rem !important;
+        padding-left: 1rem !important;
+        padding-right: 1rem !important;
+        max-width: 100% !important;
     }
+
+    /* Compact headers */
     h1 {
-        padding-top: 0rem;
-        padding-bottom: 0.5rem;
-        font-size: 2rem;
-        margin-top: 0;
+        padding-top: 0rem !important;
+        padding-bottom: 0.3rem !important;
+        margin-top: 0 !important;
+        margin-bottom: 0.3rem !important;
+        font-size: 1.8rem !important;
     }
     h2 {
-        padding-top: 0.5rem;
-        padding-bottom: 0.25rem;
-        font-size: 1.5rem;
+        padding-top: 0.2rem !important;
+        padding-bottom: 0.2rem !important;
+        margin-top: 0.3rem !important;
+        margin-bottom: 0.3rem !important;
+        font-size: 1.3rem !important;
     }
     h3 {
-        padding-top: 0.25rem;
-        padding-bottom: 0.25rem;
-        font-size: 1.2rem;
+        padding-top: 0.1rem !important;
+        padding-bottom: 0.1rem !important;
+        margin-top: 0.2rem !important;
+        margin-bottom: 0.2rem !important;
+        font-size: 1.1rem !important;
     }
-    .dataframe {
-        font-size: 0.85rem;
-    }
+
+    /* Compact metrics */
     [data-testid="stMetricValue"] {
-        font-size: 1.5rem;
+        font-size: 1.3rem !important;
     }
     [data-testid="stMetricLabel"] {
-        font-size: 0.85rem;
+        font-size: 0.75rem !important;
+        margin-bottom: 0 !important;
+    }
+    [data-testid="stMetric"] {
+        padding: 0.3rem !important;
+    }
+
+    /* Compact dataframes */
+    .dataframe {
+        font-size: 0.75rem !important;
+    }
+
+    /* Reduce spacing between elements */
+    .element-container {
+        margin-bottom: 0.2rem !important;
+    }
+
+    /* Compact dividers */
+    hr {
+        margin-top: 0.3rem !important;
+        margin-bottom: 0.3rem !important;
+    }
+
+    /* Reduce plot margins */
+    .js-plotly-plot {
+        margin-bottom: 0 !important;
+    }
+
+    /* Compact expanders */
+    .streamlit-expanderHeader {
+        font-size: 0.9rem !important;
+        padding: 0.3rem !important;
+    }
+
+    /* Compact buttons */
+    .stButton button {
+        padding: 0.25rem 0.75rem !important;
+        font-size: 0.85rem !important;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -190,16 +235,14 @@ aggregation_map = {
 try:
     client = FireflyAPIClient(st.session_state.firefly_url, st.session_state.firefly_token)
 
-    # Add refresh button
-    col1, col2, col3 = st.columns([1, 1, 4])
+    # Add refresh button - compact
+    col1, col2 = st.columns([1, 5])
     with col1:
-        if st.button("🔄 Refresh Data"):
+        if st.button("🔄 Refresh"):
             st.cache_data.clear()
             st.rerun()
     with col2:
-        st.caption(f"Last updated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
-
-    st.divider()
+        st.caption(f"Last updated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')} | Period: {start_date_str} to {end_date_str}")
 
     # Cache transaction data
     @st.cache_data(ttl=300)
@@ -215,8 +258,9 @@ try:
             # Parse transaction data
             df = client.parse_transaction_data(transactions_data)
 
-            # Filter out transfers (only show income and expenses)
+            # Separate transfers from income/expenses
             df_filtered = df[df['type'].isin(['deposit', 'withdrawal'])].copy()
+            df_transfers = df[df['type'] == 'transfer'].copy()
 
             if df_filtered.empty:
                 st.warning("No income or expense transactions found in the selected date range.")
@@ -230,109 +274,102 @@ try:
             total_expenses = df_filtered[df_filtered['type'] == 'withdrawal']['amount'].sum()
             net_flow = total_income - total_expenses
 
-            # Calculate average per month (for context)
+            # Calculate transfers total (not included in cash flow)
+            total_transfers = len(df_transfers)
+            total_transfer_amount = df_transfers['amount'].sum() if not df_transfers.empty else 0
+
+            # Calculate useful metrics
             days_in_range = (end_date - start_date).days
             months_in_range = max(1, days_in_range / 30)
             avg_monthly_income = total_income / months_in_range
             avg_monthly_expenses = total_expenses / months_in_range
             avg_monthly_net = net_flow / months_in_range
+            savings_rate = (net_flow / total_income * 100) if total_income > 0 else 0
 
-            # Display summary metrics
-            st.header("💰 Summary Metrics")
+            # Calculate daily burn rate and runway
+            daily_expenses = total_expenses / max(1, days_in_range)
 
-            col1, col2, col3, col4 = st.columns(4)
+            # Transaction counts
+            income_count = len(df_filtered[df_filtered['type'] == 'deposit'])
+            expense_count = len(df_filtered[df_filtered['type'] == 'withdrawal'])
 
-            with col1:
-                st.metric(
-                    label="Total Income",
-                    value=f"€{total_income:,.2f}",
-                    delta=None
-                )
+            # Display all metrics in single compact section
+            st.markdown("### 💰 Financial Summary")
 
-            with col2:
-                st.metric(
-                    label="Total Expenses",
-                    value=f"€{total_expenses:,.2f}",
-                    delta=None
-                )
+            # Row 1: Totals and rates
+            cols = st.columns(7)
+            cols[0].metric("Total Income", f"€{total_income:,.0f}")
+            cols[1].metric("Total Expenses", f"€{total_expenses:,.0f}")
+            cols[2].metric("Net Flow", f"€{net_flow:,.0f}")
+            cols[3].metric("Savings Rate", f"{savings_rate:.1f}%")
+            cols[4].metric("Avg Monthly Net", f"€{avg_monthly_net:,.0f}")
+            cols[5].metric("Daily Burn", f"€{daily_expenses:,.0f}")
+            cols[6].metric("Transactions", f"{income_count + expense_count}")
 
-            with col3:
-                delta_color = "normal" if net_flow >= 0 else "inverse"
-                st.metric(
-                    label="Net Cash Flow",
-                    value=f"€{net_flow:,.2f}",
-                    delta=None
-                )
+            # Show transfers info if any exist
+            if total_transfers > 0:
+                st.markdown("**ℹ️ Note:** This period includes **{:,} transfer(s)** totaling **€{:,.0f}** between your accounts (not included in cash flow calculations)".format(total_transfers, total_transfer_amount))
 
-            with col4:
-                savings_rate = (net_flow / total_income * 100) if total_income > 0 else 0
-                st.metric(
-                    label="Savings Rate",
-                    value=f"{savings_rate:.1f}%",
-                    delta=None
-                )
+            st.markdown("---")
 
-            st.divider()
+            # Cash flow charts - side by side
+            st.markdown("### 📈 Cash Flow Analysis")
 
-            # Display average monthly metrics
-            st.subheader("📊 Average Monthly")
+            chart_col1, chart_col2 = st.columns(2)
 
-            col1, col2, col3 = st.columns(3)
+            with chart_col1:
+                if not cash_flow_df.empty:
+                    # Format period for display
+                    if aggregation == "Monthly":
+                        cash_flow_df['period_display'] = cash_flow_df['period'].dt.strftime('%b %Y')
+                    elif aggregation == "Weekly":
+                        cash_flow_df['period_display'] = cash_flow_df['period'].dt.strftime('%Y-W%U')
+                    elif aggregation == "Quarterly":
+                        cash_flow_df['period_display'] = cash_flow_df['period'].dt.to_period('Q').astype(str)
+                    else:  # Daily
+                        cash_flow_df['period_display'] = cash_flow_df['period'].dt.strftime('%Y-%m-%d')
 
-            with col1:
-                st.metric(
-                    label="Avg. Monthly Income",
-                    value=f"€{avg_monthly_income:,.2f}"
-                )
+                    fig = create_net_flow_chart(
+                        cash_flow_df,
+                        x='period_display',
+                        income_col='income',
+                        expense_col='expenses',
+                        title=f"Income vs. Expenses ({aggregation})",
+                        height=350
+                    )
 
-            with col2:
-                st.metric(
-                    label="Avg. Monthly Expenses",
-                    value=f"€{avg_monthly_expenses:,.2f}"
-                )
+                    st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
+                else:
+                    st.warning("No data available for the selected period.")
 
-            with col3:
-                st.metric(
-                    label="Avg. Monthly Net",
-                    value=f"€{avg_monthly_net:,.2f}"
-                )
+            with chart_col2:
+                if aggregation == "Monthly" and not cash_flow_df.empty:
+                    # Create waterfall data
+                    waterfall_categories = ['Starting'] + cash_flow_df['period_display'].tolist() + ['Ending']
+                    waterfall_values = [0] + cash_flow_df['net_flow'].tolist() + [0]
 
-            st.divider()
+                    # Set first value to 0 and last to total
+                    waterfall_values[0] = 0
+                    waterfall_values[-1] = net_flow
 
-            # Cash flow chart
-            st.header("📈 Cash Flow Over Time")
+                    fig_waterfall = create_waterfall_chart(
+                        waterfall_categories,
+                        waterfall_values,
+                        title="Cash Flow Waterfall",
+                        height=350
+                    )
 
-            if not cash_flow_df.empty:
-                # Format period for display
-                if aggregation == "Monthly":
-                    cash_flow_df['period_display'] = cash_flow_df['period'].dt.strftime('%b %Y')
-                elif aggregation == "Weekly":
-                    cash_flow_df['period_display'] = cash_flow_df['period'].dt.strftime('%Y-W%U')
-                elif aggregation == "Quarterly":
-                    cash_flow_df['period_display'] = cash_flow_df['period'].dt.to_period('Q').astype(str)
-                else:  # Daily
-                    cash_flow_df['period_display'] = cash_flow_df['period'].dt.strftime('%Y-%m-%d')
+                    st.plotly_chart(fig_waterfall, use_container_width=True, config={'displayModeBar': False})
+                else:
+                    st.info("Waterfall chart is only available for monthly aggregation.")
 
-                fig = create_net_flow_chart(
-                    cash_flow_df,
-                    x='period_display',
-                    income_col='income',
-                    expense_col='expenses',
-                    title=f"Income vs. Expenses ({aggregation})",
-                    height=500
-                )
+            st.markdown("---")
 
-                st.plotly_chart(fig, use_container_width=True)
-            else:
-                st.warning("No data available for the selected period.")
-
-            st.divider()
-
-            # Category spending and income sources
+            # Category spending and income sources - more compact
             col1, col2 = st.columns(2)
 
             with col1:
-                st.subheader("💸 Top Expense Categories")
+                st.markdown("**💸 Expense Categories**")
 
                 category_spending = calculate_category_spending(df_filtered, start_date_str, end_date_str)
 
@@ -340,170 +377,195 @@ try:
                     # Show top 10 categories
                     top_categories = category_spending.head(10)
 
-                    # Create pie chart
+                    # Create pie chart - smaller
                     fig_categories = create_pie_chart(
                         top_categories,
                         labels='category_name',
                         values='total_amount',
                         title="Top 10 Expense Categories",
-                        height=400
+                        height=300
                     )
 
-                    st.plotly_chart(fig_categories, use_container_width=True)
+                    st.plotly_chart(fig_categories, use_container_width=True, config={'displayModeBar': False})
 
-                    # Show table
-                    with st.expander("View All Categories"):
+                    # Show table in expander
+                    with st.expander("View All Categories", expanded=False):
                         category_spending_display = category_spending.copy()
                         category_spending_display['total_amount'] = category_spending_display['total_amount'].apply(lambda x: f"€{x:,.2f}")
                         st.dataframe(
                             category_spending_display,
                             use_container_width=True,
                             hide_index=True,
+                            height=250,
                             column_config={
                                 'category_name': 'Category',
                                 'total_amount': 'Total Spent',
-                                'transaction_count': 'Transactions'
+                                'transaction_count': 'Count'
                             }
                         )
                 else:
                     st.info("No categorized expenses found.")
 
             with col2:
-                st.subheader("💵 Income Sources")
+                st.markdown("**💵 Income Sources**")
 
                 income_sources = calculate_income_sources(df_filtered, start_date_str, end_date_str)
 
                 if not income_sources.empty:
-                    # Create pie chart
+                    # Create pie chart - smaller
                     fig_income = create_pie_chart(
                         income_sources,
                         labels='source_name',
                         values='total_amount',
                         title="Income by Source",
-                        height=400
+                        height=300
                     )
 
-                    st.plotly_chart(fig_income, use_container_width=True)
+                    st.plotly_chart(fig_income, use_container_width=True, config={'displayModeBar': False})
 
-                    # Show table
-                    with st.expander("View All Income Sources"):
+                    # Show table in expander
+                    with st.expander("View All Sources", expanded=False):
                         income_sources_display = income_sources.copy()
                         income_sources_display['total_amount'] = income_sources_display['total_amount'].apply(lambda x: f"€{x:,.2f}")
                         st.dataframe(
                             income_sources_display,
                             use_container_width=True,
                             hide_index=True,
+                            height=250,
                             column_config={
                                 'source_name': 'Source',
                                 'total_amount': 'Total Income',
-                                'transaction_count': 'Transactions'
+                                'transaction_count': 'Count'
                             }
                         )
                 else:
                     st.info("No income sources found.")
 
-            st.divider()
+            # Transaction details table - collapsible
+            with st.expander("📋 Transaction Details", expanded=False):
+                # Add tab for transfers vs income/expenses
+                tab1, tab2 = st.tabs(["💸 Income & Expenses", "🔄 Transfers"])
 
-            # Waterfall chart - Monthly breakdown
-            st.header("🌊 Cash Flow Waterfall")
+                with tab1:
+                    # Add filters - compact
+                    col1, col2, col3 = st.columns(3)
 
-            if aggregation == "Monthly" and not cash_flow_df.empty:
-                # Create waterfall data
-                waterfall_categories = ['Starting'] + cash_flow_df['period_display'].tolist() + ['Ending']
-                waterfall_values = [0] + cash_flow_df['net_flow'].tolist() + [0]
+                    with col1:
+                        transaction_type_filter = st.multiselect(
+                            "Type",
+                            options=['deposit', 'withdrawal'],
+                            default=['deposit', 'withdrawal']
+                        )
 
-                # Set first value to 0 and last to total
-                waterfall_values[0] = 0
-                waterfall_values[-1] = net_flow
+                    with col2:
+                        # Get unique categories (replace None with 'Uncategorized')
+                        unique_categories = df_filtered['category_name'].fillna('Uncategorized').unique().tolist()
+                        categories = sorted(unique_categories)
+                        category_filter = st.multiselect(
+                            "Category",
+                            options=categories,
+                            default=[]
+                        )
 
-                fig_waterfall = create_waterfall_chart(
-                    waterfall_categories,
-                    waterfall_values,
-                    title="Monthly Cash Flow Progression",
-                    height=400
-                )
+                    with col3:
+                        min_amount = st.number_input(
+                            "Min Amount",
+                            min_value=0.0,
+                            value=0.0,
+                            step=10.0
+                        )
 
-                st.plotly_chart(fig_waterfall, use_container_width=True)
-            else:
-                st.info("Waterfall chart is only available for monthly aggregation.")
+                    # Apply filters
+                    df_display = df_filtered.copy()
 
-            st.divider()
+                    if transaction_type_filter:
+                        df_display = df_display[df_display['type'].isin(transaction_type_filter)]
 
-            # Transaction details table
-            st.header("📋 Transaction Details")
+                    if category_filter:
+                        df_display = df_display[df_display['category_name'].isin(category_filter)]
 
-            # Add filters
-            col1, col2, col3 = st.columns(3)
+                    if min_amount > 0:
+                        df_display = df_display[df_display['amount'] >= min_amount]
 
-            with col1:
-                transaction_type_filter = st.multiselect(
-                    "Transaction Type",
-                    options=['deposit', 'withdrawal'],
-                    default=['deposit', 'withdrawal']
-                )
+                    # Sort by date descending
+                    df_display = df_display.sort_values('date', ascending=False)
 
-            with col2:
-                # Get unique categories (replace None with 'Uncategorized')
-                unique_categories = df_filtered['category_name'].fillna('Uncategorized').unique().tolist()
-                categories = sorted(unique_categories)
-                category_filter = st.multiselect(
-                    "Category",
-                    options=categories,
-                    default=[]
-                )
+                    # Format for display
+                    df_display_formatted = df_display[['date', 'description', 'type', 'category_name', 'amount', 'currency_code']].copy()
+                    df_display_formatted['date'] = df_display_formatted['date'].dt.strftime('%Y-%m-%d')
+                    df_display_formatted['amount'] = df_display_formatted['amount'].apply(lambda x: f"{x:,.2f}")
 
-            with col3:
-                min_amount = st.number_input(
-                    "Min Amount",
-                    min_value=0.0,
-                    value=0.0,
-                    step=10.0
-                )
+                    st.dataframe(
+                        df_display_formatted,
+                        use_container_width=True,
+                        hide_index=True,
+                        column_config={
+                            'date': 'Date',
+                            'description': 'Description',
+                            'type': 'Type',
+                            'category_name': 'Category',
+                            'amount': 'Amount',
+                            'currency_code': 'Currency'
+                        },
+                        height=400
+                    )
 
-            # Apply filters
-            df_display = df_filtered.copy()
+                    # Export option
+                    csv = df_display.to_csv(index=False)
+                    st.download_button(
+                        label="📥 Download CSV",
+                        data=csv,
+                        file_name=f"firefly_cashflow_{start_date_str}_to_{end_date_str}.csv",
+                        mime="text/csv"
+                    )
 
-            if transaction_type_filter:
-                df_display = df_display[df_display['type'].isin(transaction_type_filter)]
+                with tab2:
+                    # Transfers tab
+                    if not df_transfers.empty:
+                        st.markdown(f"**Total Transfers:** {total_transfers} | **Total Amount:** €{total_transfer_amount:,.2f}")
+                        st.caption("ℹ️ Transfers between your accounts are not included in cash flow calculations (income/expenses)")
 
-            if category_filter:
-                df_display = df_display[df_display['category_name'].isin(category_filter)]
+                        # Sort by date descending
+                        df_transfers_display = df_transfers.sort_values('date', ascending=False)
 
-            if min_amount > 0:
-                df_display = df_display[df_display['amount'] >= min_amount]
+                        # Check if source and destination columns exist
+                        display_cols = ['date', 'description', 'amount', 'currency_code']
+                        if 'source_name' in df_transfers_display.columns and 'destination_name' in df_transfers_display.columns:
+                            display_cols = ['date', 'source_name', 'destination_name', 'description', 'amount', 'currency_code']
 
-            # Sort by date descending
-            df_display = df_display.sort_values('date', ascending=False)
+                        # Format for display
+                        df_transfers_formatted = df_transfers_display[display_cols].copy()
+                        df_transfers_formatted['date'] = df_transfers_formatted['date'].dt.strftime('%Y-%m-%d')
+                        df_transfers_formatted['amount'] = df_transfers_formatted['amount'].apply(lambda x: f"{x:,.2f}")
 
-            # Format for display
-            df_display_formatted = df_display[['date', 'description', 'type', 'category_name', 'amount', 'currency_code']].copy()
-            df_display_formatted['date'] = df_display_formatted['date'].dt.strftime('%Y-%m-%d')
-            df_display_formatted['amount'] = df_display_formatted['amount'].apply(lambda x: f"{x:,.2f}")
+                        column_config = {
+                            'date': 'Date',
+                            'description': 'Description',
+                            'amount': 'Amount',
+                            'currency_code': 'Currency'
+                        }
+                        if 'source_name' in display_cols:
+                            column_config['source_name'] = 'From'
+                            column_config['destination_name'] = 'To'
 
-            st.dataframe(
-                df_display_formatted,
-                use_container_width=True,
-                hide_index=True,
-                column_config={
-                    'date': 'Date',
-                    'description': 'Description',
-                    'type': 'Type',
-                    'category_name': 'Category',
-                    'amount': 'Amount',
-                    'currency_code': 'Currency'
-                },
-                height=400
-            )
+                        st.dataframe(
+                            df_transfers_formatted,
+                            use_container_width=True,
+                            hide_index=True,
+                            column_config=column_config,
+                            height=400
+                        )
 
-            # Export option
-            st.divider()
-            csv = df_display.to_csv(index=False)
-            st.download_button(
-                label="📥 Download Transaction Data (CSV)",
-                data=csv,
-                file_name=f"firefly_cashflow_{start_date_str}_to_{end_date_str}.csv",
-                mime="text/csv"
-            )
+                        # Export option for transfers
+                        csv_transfers = df_transfers_display.to_csv(index=False)
+                        st.download_button(
+                            label="📥 Download Transfers CSV",
+                            data=csv_transfers,
+                            file_name=f"firefly_transfers_{start_date_str}_to_{end_date_str}.csv",
+                            mime="text/csv"
+                        )
+                    else:
+                        st.info("No transfers found in the selected date range.")
 
         else:
             st.warning("No transactions found in the selected date range. Please adjust your date range or check your API connection.")

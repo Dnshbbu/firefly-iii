@@ -190,7 +190,10 @@ def create_waterfall_chart(
         connector={"line": {"color": "rgb(63, 63, 63)"}},
         increasing={"marker": {"color": "#4ade80"}},
         decreasing={"marker": {"color": "#f87171"}},
-        totals={"marker": {"color": "#60a5fa"}}
+        totals={"marker": {"color": "#60a5fa"}},
+        text=[f'€{v:,.0f}' if v != 0 else '' for v in values],
+        textposition='outside',
+        textfont=dict(size=9)
     ))
 
     fig.update_layout(
@@ -370,30 +373,39 @@ def create_net_flow_chart(
 
     fig = go.Figure()
 
-    # Income bars (green)
+    # Income bars (green) with data labels
     fig.add_trace(go.Bar(
         x=df_copy[x],
         y=df_copy[income_col],
         name='Income',
-        marker=dict(color='#4ade80')
+        marker=dict(color='#4ade80'),
+        text=df_copy[income_col].apply(lambda v: f'€{v:,.0f}' if v != 0 else ''),
+        textposition='outside',
+        textfont=dict(size=9)
     ))
 
-    # Expense bars (red) - already negative values
+    # Expense bars (red) - already negative values with data labels
     fig.add_trace(go.Bar(
         x=df_copy[x],
         y=df_copy[expense_col],
         name='Expenses',
-        marker=dict(color='#f87171')
+        marker=dict(color='#f87171'),
+        text=df_copy[expense_col].apply(lambda v: f'€{abs(v):,.0f}' if v != 0 else ''),
+        textposition='outside',
+        textfont=dict(size=9)
     ))
 
-    # Net flow line (blue)
+    # Net flow line (blue) with data labels
     fig.add_trace(go.Scatter(
         x=df_copy[x],
         y=df_copy['net_flow'],
         name='Net Flow',
-        mode='lines+markers',
+        mode='lines+markers+text',
         line=dict(color='#60a5fa', width=3),
         marker=dict(size=8),
+        text=df_copy['net_flow'].apply(lambda v: f'€{v:,.0f}'),
+        textposition='top center',
+        textfont=dict(size=9),
         yaxis='y'
     ))
 
