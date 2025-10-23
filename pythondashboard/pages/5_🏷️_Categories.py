@@ -546,19 +546,58 @@ body {
                     # Show placeholder when nothing is selected
                     st.info("👈 Click on a category in the pie chart to view transaction timeline")
 
-            # Pareto chart - compact
+            # Pareto chart - compact with category filter
             st.markdown("**Pareto Analysis (80/20 Rule)**")
 
-            fig_pareto = create_pareto_chart(
-                category_percentage.head(15),
-                title="Category Spending - Pareto Analysis",
-                height=350
-            )
-            st.plotly_chart(fig_pareto, use_container_width=True, config={'displayModeBar': False})
+            # Category multiselect for filtering
+            all_categories = category_percentage.head(15)['category_name'].tolist()
 
-            # Find 80% threshold
-            categories_80 = category_percentage[category_percentage['cumulative_pct'] <= 80]
-            st.markdown(f"📌 **Insight:** {len(categories_80)} categories account for 80% of your total spending ({len(categories_80) / len(category_percentage) * 100:.1f}% of all categories)")
+            # Initialize session state for selected categories if not exists
+            if 'pareto_selected_categories' not in st.session_state:
+                st.session_state.pareto_selected_categories = all_categories
+
+            col_filter, col_reset = st.columns([4, 1])
+            with col_filter:
+                selected_for_pareto = st.multiselect(
+                    "Select categories to include:",
+                    options=all_categories,
+                    default=st.session_state.pareto_selected_categories,
+                    key='pareto_category_filter'
+                )
+            with col_reset:
+                st.write("")  # Spacing
+                if st.button("Reset All", key='pareto_reset'):
+                    st.session_state.pareto_selected_categories = all_categories
+                    st.rerun()
+
+            # Update session state
+            st.session_state.pareto_selected_categories = selected_for_pareto
+
+            if selected_for_pareto:
+                # Filter data based on selection
+                filtered_data = category_percentage[category_percentage['category_name'].isin(selected_for_pareto)].copy()
+
+                # Recalculate cumulative percentage for filtered data
+                filtered_data = filtered_data.sort_values('amount', ascending=False)
+                filtered_data['percentage'] = (filtered_data['amount'] / filtered_data['amount'].sum()) * 100
+                filtered_data['cumulative_pct'] = filtered_data['percentage'].cumsum()
+
+                # Create Pareto chart with recalculated data
+                fig_pareto = create_pareto_chart(
+                    filtered_data,
+                    title=f"Pareto Analysis - {len(selected_for_pareto)} Categories",
+                    height=350
+                )
+                st.plotly_chart(fig_pareto, use_container_width=True, config={'displayModeBar': False})
+
+                # Find 80% threshold
+                categories_80 = filtered_data[filtered_data['cumulative_pct'] <= 80]
+                if len(categories_80) > 0:
+                    st.markdown(f"📌 **Insight:** {len(categories_80)} out of {len(selected_for_pareto)} selected categories account for 80% of spending")
+                else:
+                    st.markdown(f"📌 **Insight:** Analyzing {len(selected_for_pareto)} categories")
+            else:
+                st.info("Please select at least one category to display the Pareto analysis")
 
         with tab2:
             st.markdown("**Category Spending Trends**")
