@@ -403,7 +403,7 @@ try:
                         # Create vertical timeline using components
                         import streamlit.components.v1 as components
 
-                        # Create vertical timeline HTML with JavaScript to handle dynamic height
+                        # Create simple vertical timeline with proper styling
                         timeline_html = """
 <!DOCTYPE html>
 <html>
@@ -419,6 +419,8 @@ body {
     position: relative;
     height: 600px;
     overflow-y: auto;
+    padding-left: 10px;
+    padding-bottom: 20px;
 }
 /* Custom scrollbar for timeline */
 .timeline-container::-webkit-scrollbar {
@@ -435,86 +437,87 @@ body {
 .timeline-container::-webkit-scrollbar-thumb:hover {
     background: #64748b;
 }
-.timeline-line {
+.timeline {
+    position: relative;
+    padding: 5px 0;
+    margin: 0;
+}
+/* Timeline line - drawn using border on timeline itself */
+.timeline::before {
+    content: '';
     position: absolute;
     left: 20px;
     top: 0;
-    width: 4px;
+    bottom: 20px;
+    width: 3px;
     background: linear-gradient(to bottom, #60a5fa, #f87171);
-    box-shadow: 0 0 10px rgba(96, 165, 250, 0.3);
+    box-shadow: 0 0 8px rgba(96, 165, 250, 0.3);
     z-index: 0;
-}
-.timeline {
-    position: relative;
-    padding: 10px 0;
-    margin: 0;
 }
 .timeline-item {
     position: relative;
-    padding: 12px 0 12px 55px;
-    margin-bottom: 20px;
+    padding: 6px 0 6px 55px;
+    margin-bottom: 12px;
     background: rgba(38, 39, 48, 0.4);
-    border-radius: 8px;
-    padding-left: 60px;
-    padding-right: 15px;
-    padding-top: 10px;
-    padding-bottom: 10px;
+    border-radius: 6px;
+    padding-left: 50px;
+    padding-right: 10px;
+    padding-top: 6px;
+    padding-bottom: 6px;
     transition: all 0.3s ease;
 }
 .timeline-item:hover {
     background: rgba(38, 39, 48, 0.7);
-    transform: translateX(5px);
+    transform: translateX(3px);
 }
 .timeline-item::before {
     content: '';
     position: absolute;
-    left: -47px;
-    top: 18px;
-    width: 16px;
-    height: 16px;
+    left: -37px;
+    top: 12px;
+    width: 12px;
+    height: 12px;
     border-radius: 50%;
     background: #60a5fa;
-    border: 4px solid #0e1117;
+    border: 3px solid #0e1117;
     box-shadow: 0 0 0 2px #60a5fa;
     z-index: 1;
 }
 .timeline-date {
-    font-size: 0.7rem;
+    font-size: 0.65rem;
     color: #94a3b8;
     font-weight: 600;
-    margin-bottom: 2px;
-    letter-spacing: 0.5px;
+    margin-bottom: 1px;
+    letter-spacing: 0.3px;
 }
 .timeline-month {
-    font-size: 0.95rem;
+    font-size: 0.85rem;
     color: #60a5fa;
     font-weight: 700;
-    margin-bottom: 5px;
+    margin-bottom: 3px;
     text-transform: uppercase;
-    letter-spacing: 1px;
+    letter-spacing: 0.8px;
 }
 .timeline-amount {
-    font-size: 1.2rem;
+    font-size: 1rem;
     color: #f87171;
     font-weight: 700;
-    margin-bottom: 5px;
-    text-shadow: 0 0 10px rgba(248, 113, 113, 0.3);
+    margin-bottom: 3px;
+    text-shadow: 0 0 8px rgba(248, 113, 113, 0.3);
 }
 .timeline-description {
-    font-size: 0.75rem;
+    font-size: 0.7rem;
     color: #94a3b8;
-    line-height: 1.4;
+    line-height: 1.3;
 }
 </style>
 </head>
 <body>
-<div class="timeline-container" id="timelineContainer">
-    <div class="timeline-line" id="timelineLine"></div>
-    <div class="timeline" id="timeline">
+<div class="timeline-container">
+    <div class="timeline">
 """
 
                         for _, row in monthly_data.iterrows():
-                            month_str = row['month'].strftime('%B %Y')  # e.g., "September 2025"
                             year_str = row['month'].strftime('%Y')
                             month_name = row['month'].strftime('%B').upper()
                             total_str = f"€{row['total_amount']:,.2f}"
@@ -533,24 +536,6 @@ body {
                         timeline_html += """
     </div>
 </div>
-<script>
-// Calculate and set the timeline line height based on content
-function updateTimelineHeight() {
-    const timeline = document.getElementById('timeline');
-    const timelineLine = document.getElementById('timelineLine');
-    if (timeline && timelineLine) {
-        const height = timeline.scrollHeight;
-        timelineLine.style.height = height + 'px';
-    }
-}
-
-// Update on load and whenever window resizes
-window.addEventListener('load', updateTimelineHeight);
-window.addEventListener('resize', updateTimelineHeight);
-
-// Also update after a short delay to ensure content is rendered
-setTimeout(updateTimelineHeight, 100);
-</script>
 </body>
 </html>
 """
