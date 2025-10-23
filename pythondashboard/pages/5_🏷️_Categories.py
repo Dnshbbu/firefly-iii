@@ -297,26 +297,269 @@ try:
             col1, col2 = st.columns(2)
 
             with col1:
-                # Pie chart - compact
+                # Pie chart - compact with click interactivity
                 fig_pie = create_pie_chart(
                     category_spending.head(10),
                     labels='category_name',
                     values='total_amount',
-                    title="Top 10 Categories by Spending",
+                    title="Top 10 Categories by Spending (Click to drill down)",
                     height=300
                 )
-                st.plotly_chart(fig_pie, use_container_width=True, config={'displayModeBar': False})
+
+                # Display chart with click events
+                from streamlit_plotly_events import plotly_events
+
+                selected_points_pie = plotly_events(
+                    fig_pie,
+                    click_event=True,
+                    hover_event=False,
+                    select_event=False,
+                    override_height=300,
+                    override_width="100%",
+                    key="category_overview_pie"
+                )
+
+                # Show category details when clicked
+                if selected_points_pie and len(selected_points_pie) > 0:
+                    # Get the clicked point data
+                    point_data = selected_points_pie[0]
+
+                    # Try to get category name from different possible keys
+                    selected_category_name = None
+                    if 'pointNumber' in point_data:
+                        point_index = point_data['pointNumber']
+                        selected_category_name = category_spending.head(10).iloc[point_index]['category_name']
+                    elif 'pointIndex' in point_data:
+                        point_index = point_data['pointIndex']
+                        selected_category_name = category_spending.head(10).iloc[point_index]['category_name']
+                    elif 'label' in point_data:
+                        selected_category_name = point_data['label']
+                    elif 'x' in point_data:
+                        selected_category_name = point_data['x']
+
+                    if selected_category_name and selected_category_name in category_spending['category_name'].values:
+                        st.markdown(f"#### 🔍 Quick View: {selected_category_name}")
+
+                        # Get transactions for this category
+                        cat_txns = df_expenses[df_expenses['category_name'] == selected_category_name].copy()
+
+                        if not cat_txns.empty:
+                            # Statistics
+                            cols_stats = st.columns(5)
+                            cols_stats[0].metric("Count", len(cat_txns))
+                            cols_stats[1].metric("Total", f"€{cat_txns['amount'].sum():,.0f}")
+                            cols_stats[2].metric("Avg", f"€{cat_txns['amount'].mean():,.0f}")
+                            cols_stats[3].metric("Min", f"€{cat_txns['amount'].min():,.0f}")
+                            cols_stats[4].metric("Max", f"€{cat_txns['amount'].max():,.0f}")
+
+                            # Transaction table
+                            st.caption("📋 All Transactions:")
+
+                            # Show all transactions sorted by date
+                            all_txns = cat_txns.sort_values('date', ascending=False)[['date', 'description', 'destination_name', 'amount']].copy()
+                            all_txns['date'] = pd.to_datetime(all_txns['date']).dt.strftime('%Y-%m-%d')
+                            all_txns['amount'] = all_txns['amount'].apply(lambda x: f"€{x:,.2f}")
+
+                            st.dataframe(
+                                all_txns,
+                                use_container_width=True,
+                                hide_index=True,
+                                column_config={
+                                    'date': 'Date',
+                                    'description': 'Description',
+                                    'destination_name': 'Merchant',
+                                    'amount': 'Amount'
+                                },
+                                height=400
+                            )
 
             with col2:
-                # Treemap - compact
-                fig_treemap = create_treemap_chart(
-                    category_spending.head(15),
-                    labels_col='category_name',
-                    values_col='total_amount',
-                    title="Category Spending Treemap",
-                    height=300
-                )
-                st.plotly_chart(fig_treemap, use_container_width=True, config={'displayModeBar': False})
+                # Vertical Timeline of Transactions
+                if selected_points_pie and len(selected_points_pie) > 0:
+                    # Use the same category from pie chart click
+                    point_data = selected_points_pie[0]
+                    timeline_category = None
+                    if 'pointNumber' in point_data:
+                        point_index = point_data['pointNumber']
+                        timeline_category = category_spending.head(10).iloc[point_index]['category_name']
+
+                    if timeline_category and timeline_category in category_spending['category_name'].values:
+                        st.markdown(f"**📅 Transaction Timeline - {timeline_category}**")
+
+                        # Get transactions and group by month
+                        timeline_txns = df_expenses[df_expenses['category_name'] == timeline_category].copy()
+                        timeline_txns['month'] = pd.to_datetime(timeline_txns['date']).dt.to_period('M')
+
+                        # Group by month and calculate statistics
+                        monthly_data = timeline_txns.groupby('month').agg({
+                            'amount': ['sum', 'count', 'mean'],
+                            'date': 'max'
+                        }).reset_index()
+
+                        # Flatten column names
+                        monthly_data.columns = ['month', 'total_amount', 'transaction_count', 'avg_amount', 'last_date']
+                        monthly_data = monthly_data.sort_values('month', ascending=False)
+
+                        # Create vertical timeline using components
+                        import streamlit.components.v1 as components
+
+                        # Create vertical timeline HTML with JavaScript to handle dynamic height
+                        timeline_html = """
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+body {
+    background-color: #0e1117;
+    margin: 0;
+    padding: 10px;
+    font-family: "Source Sans Pro", sans-serif;
+}
+.timeline-container {
+    position: relative;
+    height: 600px;
+    overflow-y: auto;
+}
+/* Custom scrollbar for timeline */
+.timeline-container::-webkit-scrollbar {
+    width: 6px;
+}
+.timeline-container::-webkit-scrollbar-track {
+    background: #1e293b;
+    border-radius: 10px;
+}
+.timeline-container::-webkit-scrollbar-thumb {
+    background: #475569;
+    border-radius: 10px;
+}
+.timeline-container::-webkit-scrollbar-thumb:hover {
+    background: #64748b;
+}
+.timeline-line {
+    position: absolute;
+    left: 20px;
+    top: 0;
+    width: 4px;
+    background: linear-gradient(to bottom, #60a5fa, #f87171);
+    box-shadow: 0 0 10px rgba(96, 165, 250, 0.3);
+    z-index: 0;
+}
+.timeline {
+    position: relative;
+    padding: 10px 0;
+    margin: 0;
+}
+.timeline-item {
+    position: relative;
+    padding: 12px 0 12px 55px;
+    margin-bottom: 20px;
+    background: rgba(38, 39, 48, 0.4);
+    border-radius: 8px;
+    padding-left: 60px;
+    padding-right: 15px;
+    padding-top: 10px;
+    padding-bottom: 10px;
+    transition: all 0.3s ease;
+}
+.timeline-item:hover {
+    background: rgba(38, 39, 48, 0.7);
+    transform: translateX(5px);
+}
+.timeline-item::before {
+    content: '';
+    position: absolute;
+    left: -47px;
+    top: 18px;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: #60a5fa;
+    border: 4px solid #0e1117;
+    box-shadow: 0 0 0 2px #60a5fa;
+    z-index: 1;
+}
+.timeline-date {
+    font-size: 0.7rem;
+    color: #94a3b8;
+    font-weight: 600;
+    margin-bottom: 2px;
+    letter-spacing: 0.5px;
+}
+.timeline-month {
+    font-size: 0.95rem;
+    color: #60a5fa;
+    font-weight: 700;
+    margin-bottom: 5px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+.timeline-amount {
+    font-size: 1.2rem;
+    color: #f87171;
+    font-weight: 700;
+    margin-bottom: 5px;
+    text-shadow: 0 0 10px rgba(248, 113, 113, 0.3);
+}
+.timeline-description {
+    font-size: 0.75rem;
+    color: #94a3b8;
+    line-height: 1.4;
+}
+</style>
+</head>
+<body>
+<div class="timeline-container" id="timelineContainer">
+    <div class="timeline-line" id="timelineLine"></div>
+    <div class="timeline" id="timeline">
+"""
+
+                        for _, row in monthly_data.iterrows():
+                            month_str = row['month'].strftime('%B %Y')  # e.g., "September 2025"
+                            year_str = row['month'].strftime('%Y')
+                            month_name = row['month'].strftime('%B').upper()
+                            total_str = f"€{row['total_amount']:,.2f}"
+                            count = int(row['transaction_count'])
+                            avg_str = f"€{row['avg_amount']:,.2f}"
+
+                            timeline_html += f"""
+<div class="timeline-item">
+    <div class="timeline-date">{year_str}</div>
+    <div class="timeline-month">{month_name}</div>
+    <div class="timeline-amount">{total_str}</div>
+    <div class="timeline-description">{count} transaction{'s' if count != 1 else ''} • Avg: {avg_str}</div>
+</div>
+"""
+
+                        timeline_html += """
+    </div>
+</div>
+<script>
+// Calculate and set the timeline line height based on content
+function updateTimelineHeight() {
+    const timeline = document.getElementById('timeline');
+    const timelineLine = document.getElementById('timelineLine');
+    if (timeline && timelineLine) {
+        const height = timeline.scrollHeight;
+        timelineLine.style.height = height + 'px';
+    }
+}
+
+// Update on load and whenever window resizes
+window.addEventListener('load', updateTimelineHeight);
+window.addEventListener('resize', updateTimelineHeight);
+
+// Also update after a short delay to ensure content is rendered
+setTimeout(updateTimelineHeight, 100);
+</script>
+</body>
+</html>
+"""
+
+                        # Display timeline using iframe component
+                        components.html(timeline_html, height=620, scrolling=False)
+                else:
+                    # Show placeholder when nothing is selected
+                    st.info("👈 Click on a category in the pie chart to view transaction timeline")
 
             # Pareto chart - compact
             st.markdown("**Pareto Analysis (80/20 Rule)**")

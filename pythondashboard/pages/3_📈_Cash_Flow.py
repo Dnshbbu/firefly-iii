@@ -382,11 +382,80 @@ try:
                         top_categories,
                         labels='category_name',
                         values='total_amount',
-                        title="Top 10 Expense Categories",
+                        title="Top 10 Expense Categories (Click to drill down)",
                         height=300
                     )
 
-                    st.plotly_chart(fig_categories, use_container_width=True, config={'displayModeBar': False})
+                    # Display chart with click events
+                    from streamlit_plotly_events import plotly_events
+
+                    selected_points = plotly_events(
+                        fig_categories,
+                        click_event=True,
+                        hover_event=False,
+                        select_event=False,
+                        override_height=300,
+                        override_width="100%",
+                        key="category_pie_chart"
+                    )
+
+                    # Show category details when clicked
+                    if selected_points and len(selected_points) > 0:
+                        # Get the clicked point data
+                        point_data = selected_points[0]
+
+                        # Try to get category name from different possible keys
+                        selected_category = None
+                        if 'pointNumber' in point_data:
+                            point_index = point_data['pointNumber']
+                            selected_category = top_categories.iloc[point_index]['category_name']
+                        elif 'pointIndex' in point_data:
+                            point_index = point_data['pointIndex']
+                            selected_category = top_categories.iloc[point_index]['category_name']
+                        elif 'label' in point_data:
+                            selected_category = point_data['label']
+                        elif 'x' in point_data:
+                            selected_category = point_data['x']
+
+                        if selected_category and selected_category in category_spending['category_name'].values:
+                            st.markdown(f"### 🔍 {selected_category}")
+
+                            # Get transactions for this category
+                            category_txns = df_filtered[
+                                (df_filtered['category_name'] == selected_category) &
+                                (df_filtered['type'] == 'withdrawal')
+                            ].copy()
+
+                            if not category_txns.empty:
+                                # Statistics
+                                cols = st.columns(5)
+                                cols[0].metric("Transactions", len(category_txns))
+                                cols[1].metric("Total", f"€{category_txns['amount'].sum():,.0f}")
+                                cols[2].metric("Average", f"€{category_txns['amount'].mean():,.0f}")
+                                cols[3].metric("Min", f"€{category_txns['amount'].min():,.0f}")
+                                cols[4].metric("Max", f"€{category_txns['amount'].max():,.0f}")
+
+                                # Transaction table
+                                st.caption("📋 All Transactions:")
+
+                                # Show all transactions sorted by date
+                                category_txns_sorted = category_txns.sort_values('date', ascending=False)
+                                display_df = category_txns_sorted[['date', 'description', 'destination_name', 'amount']].copy()
+                                display_df['date'] = display_df['date'].dt.strftime('%Y-%m-%d')
+                                display_df['amount'] = display_df['amount'].apply(lambda x: f"€{x:,.2f}")
+
+                                st.dataframe(
+                                    display_df,
+                                    use_container_width=True,
+                                    hide_index=True,
+                                    column_config={
+                                        'date': 'Date',
+                                        'description': 'Description',
+                                        'destination_name': 'Merchant',
+                                        'amount': 'Amount'
+                                    },
+                                    height=350
+                                )
 
                     # Show table in expander
                     with st.expander("View All Categories", expanded=False):
