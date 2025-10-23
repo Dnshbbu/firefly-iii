@@ -310,7 +310,7 @@ try:
             st.subheader("Category Spending Trends")
 
             # Calculate trends
-            category_trends = calculate_category_trends(df_expenses, period='M')
+            category_trends = calculate_category_trends(df_expenses, period='ME')
 
             # Select categories to display
             top_5_categories = category_spending.head(5)['category_name'].tolist()

@@ -546,7 +546,7 @@ def calculate_category_trends(
 
     Args:
         transactions_df: DataFrame with transaction data
-        period: Pandas period string ('M' = monthly, 'W' = weekly, 'Q' = quarterly)
+        period: Pandas period string ('ME' = monthly, 'W' = weekly, 'QE' = quarterly)
 
     Returns:
         DataFrame with date, category_name, and amount columns
@@ -603,7 +603,7 @@ def calculate_category_monthly_comparison(
     df['date'] = pd.to_datetime(df['date'])
 
     # Group by month
-    monthly = df.groupby(pd.Grouper(key='date', freq='M'))['amount'].sum().reset_index()
+    monthly = df.groupby(pd.Grouper(key='date', freq='ME'))['amount'].sum().reset_index()
     monthly.columns = ['month', 'amount']
 
     # Calculate month-over-month change
