@@ -15,9 +15,9 @@ st.set_page_config(
 # Compact CSS styling
 st.markdown("""
 <style>
-    /* Reduce padding and margins */
+    /* Reduce padding and margins - but keep enough space for header */
     .block-container {
-        padding-top: 1rem;
+        padding-top: 5rem !important;
         padding-bottom: 0rem;
         padding-left: 2rem;
         padding-right: 2rem;
@@ -28,6 +28,7 @@ st.markdown("""
         padding-top: 0rem;
         padding-bottom: 0.5rem;
         font-size: 2rem;
+        margin-top: 0;
     }
 
     h2 {

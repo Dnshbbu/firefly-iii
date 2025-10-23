@@ -1,12 +1,10 @@
 import streamlit as st
-import streamlit.components.v1 as components
 import pandas as pd
 import requests
 import plotly.graph_objects as go
 import plotly.express as px
 from datetime import datetime
 from typing import Dict, List, Optional
-import json
 
 # Page configuration
 st.set_page_config(
@@ -19,7 +17,7 @@ st.set_page_config(
 st.markdown("""
 <style>
     .block-container {
-        padding-top: 1rem;
+        padding-top: 5rem !important;
         padding-bottom: 0rem;
         padding-left: 2rem;
         padding-right: 2rem;
@@ -28,6 +26,7 @@ st.markdown("""
         padding-top: 0rem;
         padding-bottom: 0.5rem;
         font-size: 2rem;
+        margin-top: 0;
     }
     h2 {
         padding-top: 0.5rem;
@@ -143,10 +142,14 @@ def calculate_net_worth(df: pd.DataFrame) -> Dict[str, float]:
     return net_worth_by_currency
 
 
-def create_account_type_chart(df: pd.DataFrame) -> go.Figure:
-    """Create pie chart showing balance by account type"""
+def create_account_type_chart(df: pd.DataFrame, currency: str = None) -> go.Figure:
+    """Create pie chart showing balance by account type for a specific currency"""
     # Filter accounts included in net worth
     df_filtered = df[df['include_net_worth'] == True].copy()
+
+    # Filter by currency if specified
+    if currency:
+        df_filtered = df_filtered[df_filtered['currency_code'] == currency]
 
     # Group by account type
     type_summary = df_filtered.groupby('type')['current_balance'].sum().reset_index()
@@ -159,8 +162,9 @@ def create_account_type_chart(df: pd.DataFrame) -> go.Figure:
         marker=dict(colors=px.colors.qualitative.Set3)
     )])
 
+    title = f"Balance by Account Type ({currency})" if currency else "Balance by Account Type"
     fig.update_layout(
-        title="Balance by Account Type",
+        title=title,
         height=400,
         margin=dict(t=50, b=20, l=20, r=20)
     )
@@ -168,10 +172,15 @@ def create_account_type_chart(df: pd.DataFrame) -> go.Figure:
     return fig
 
 
-def create_account_breakdown_chart(df: pd.DataFrame) -> go.Figure:
-    """Create horizontal bar chart showing individual account balances"""
+def create_account_breakdown_chart(df: pd.DataFrame, currency: str = None) -> go.Figure:
+    """Create horizontal bar chart showing individual account balances for a specific currency"""
     # Filter active accounts with non-zero balance
     df_filtered = df[(df['active'] == True) & (df['current_balance'] != 0)].copy()
+
+    # Filter by currency if specified
+    if currency:
+        df_filtered = df_filtered[df_filtered['currency_code'] == currency]
+
     df_filtered = df_filtered.sort_values('current_balance', ascending=True)
 
     # Create color based on positive/negative
@@ -186,8 +195,9 @@ def create_account_breakdown_chart(df: pd.DataFrame) -> go.Figure:
         textposition='auto',
     )])
 
+    title = f"Account Balances ({currency})" if currency else "Account Balances"
     fig.update_layout(
-        title="Account Balances",
+        title=title,
         xaxis_title="Balance",
         yaxis_title="Account",
         height=max(400, len(df_filtered) * 25),
@@ -198,130 +208,10 @@ def create_account_breakdown_chart(df: pd.DataFrame) -> go.Figure:
     return fig
 
 
-def create_gridstack_dashboard(widgets_html: str, height: int = 800) -> None:
-    """Create a gridstack.js dashboard with draggable/resizable widgets - dark mode compatible"""
-
-    gridstack_component = f"""
-    <!DOCTYPE html>
-    <html>
-    <head>
-        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/gridstack@9.4.0/dist/gridstack.min.css" />
-        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/gridstack@9.4.0/dist/gridstack-extra.min.css" />
-        <script src="https://cdn.jsdelivr.net/npm/gridstack@9.4.0/dist/gridstack-all.js"></script>
-        <style>
-            body {{
-                margin: 0;
-                padding: 10px;
-                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-                background: #0e1117;
-                color: #fafafa;
-            }}
-            .grid-stack {{
-                background: #0e1117;
-            }}
-            .grid-stack-item-content {{
-                background: #262730;
-                border: 1px solid rgba(250, 250, 250, 0.1);
-                border-radius: 8px;
-                padding: 15px;
-                box-shadow: 0 2px 8px rgba(0,0,0,0.5);
-                overflow: auto;
-            }}
-            .widget-header {{
-                font-size: 1.1rem;
-                font-weight: 600;
-                margin-bottom: 10px;
-                color: #fafafa;
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-                cursor: move;
-                border-bottom: 1px solid rgba(250, 250, 250, 0.1);
-                padding-bottom: 8px;
-            }}
-            .drag-handle {{
-                color: #b0b0b0;
-                font-size: 0.9rem;
-            }}
-            .grid-stack-item.grid-stack-item-moving .grid-stack-item-content {{
-                box-shadow: 0 4px 16px rgba(0,0,0,0.5);
-                border-color: rgba(250, 250, 250, 0.2);
-            }}
-            .widget-content {{
-                font-size: 0.95rem;
-                color: #e0e0e0;
-            }}
-            .metric {{
-                text-align: center;
-                padding: 20px;
-            }}
-            .metric-value {{
-                font-size: 2rem;
-                font-weight: 700;
-                color: #fafafa;
-            }}
-            .metric-label {{
-                font-size: 0.9rem;
-                color: #b0b0b0;
-                margin-top: 5px;
-            }}
-            table {{
-                color: #e0e0e0;
-            }}
-            th {{
-                background: rgba(250, 250, 250, 0.05) !important;
-                color: #fafafa !important;
-            }}
-            tr:hover {{
-                background: rgba(250, 250, 250, 0.03);
-            }}
-        </style>
-    </head>
-    <body>
-        <div class="grid-stack">
-            {widgets_html}
-        </div>
-
-        <script>
-            GridStack.init({{
-                float: true,
-                cellHeight: '70px',
-                minRow: 1,
-                margin: 10,
-                resizable: {{
-                    handles: 'e, se, s, sw, w'
-                }}
-            }});
-        </script>
-    </body>
-    </html>
-    """
-
-    components.html(gridstack_component, height=height, scrolling=True)
-
-
-def create_widget(title: str, content: str, x: int, y: int, w: int, h: int, widget_id: str = "") -> str:
-    """Create a single gridstack widget"""
-    return f"""
-    <div class="grid-stack-item" gs-x="{x}" gs-y="{y}" gs-w="{w}" gs-h="{h}" gs-id="{widget_id}">
-        <div class="grid-stack-item-content">
-            <div class="widget-header">
-                {title}
-                <span class="drag-handle">⋮⋮</span>
-            </div>
-            <div class="widget-content">
-                {content}
-            </div>
-        </div>
-    </div>
-    """
 
 
 # Main app
 st.title("📊 Net Worth Dashboard")
-
-# Add layout toggle
-use_gridstack = st.sidebar.checkbox("🎨 Use Draggable Dashboard Layout", value=False, help="Enable drag-and-drop widgets")
 
 # Sidebar for API configuration
 st.sidebar.header("🔧 API Configuration")
@@ -430,11 +320,15 @@ try:
             # Display net worth summary
             st.header("💰 Net Worth Summary")
 
-            cols = st.columns(len(net_worth) if len(net_worth) > 0 else 1)
+            # Get available currencies
+            available_currencies = sorted(net_worth.keys()) if net_worth else []
 
-            if net_worth:
-                for idx, (currency, total) in enumerate(net_worth.items()):
-                    with cols[idx % len(cols)]:
+            if net_worth and len(available_currencies) > 0:
+                # Display metrics for each currency
+                cols = st.columns(len(available_currencies))
+                for idx, currency in enumerate(available_currencies):
+                    total = net_worth[currency]
+                    with cols[idx]:
                         delta_color = "normal" if total >= 0 else "inverse"
                         st.metric(
                             label=f"Total Net Worth ({currency})",
@@ -446,85 +340,22 @@ try:
 
             st.divider()
 
-            # Display charts - either gridstack or regular layout
-            if use_gridstack:
-                # Prepare data for widgets
-                type_summary = df[df['include_net_worth'] == True].groupby('type').agg({
-                    'current_balance': 'sum',
-                    'name': 'count'
-                }).rename(columns={'name': 'count', 'current_balance': 'total_balance'})
-                type_summary = type_summary.reset_index()
+            # Display charts - separated by currency
+            for currency in available_currencies:
+                st.header(f"💵 {currency} Accounts")
 
-                # Create table HTML (dark mode)
-                type_table_html = "<table style='width:100%; border-collapse: collapse;'>"
-                type_table_html += "<tr style='background: rgba(250, 250, 250, 0.05);'><th style='padding:8px; text-align:left; color: #fafafa;'>Type</th><th style='padding:8px; text-align:right; color: #fafafa;'>Count</th><th style='padding:8px; text-align:right; color: #fafafa;'>Total</th></tr>"
-                for _, row in type_summary.iterrows():
-                    type_table_html += f"<tr style='border-bottom: 1px solid rgba(250, 250, 250, 0.1);'><td style='padding:8px; color: #e0e0e0;'>{row['type']}</td><td style='padding:8px; text-align:right; color: #e0e0e0;'>{row['count']}</td><td style='padding:8px; text-align:right; color: #e0e0e0;'>{row['total_balance']:,.2f}</td></tr>"
-                type_table_html += "</table>"
+                # Filter data for this currency
+                df_currency = df[df['currency_code'] == currency].copy()
 
-                # Account balance list (dark mode)
-                df_active = df[(df['active'] == True) & (df['current_balance'] != 0)].copy()
-                df_active = df_active.sort_values('current_balance', ascending=False)
-
-                accounts_html = "<div style='max-height: 400px; overflow-y: auto;'>"
-                for _, acc in df_active.head(10).iterrows():
-                    color = '#4ade80' if acc['current_balance'] >= 0 else '#f87171'  # Green-400 / Red-400
-                    accounts_html += f"<div style='padding: 8px; border-bottom: 1px solid rgba(250, 250, 250, 0.1); display: flex; justify-content: space-between;'>"
-                    accounts_html += f"<span style='color: #e0e0e0;'>{acc['name']}</span>"
-                    accounts_html += f"<span style='color: {color}; font-weight: 600;'>{acc['current_balance']:,.2f} {acc['currency_code']}</span>"
-                    accounts_html += "</div>"
-                accounts_html += "</div>"
-
-                # Create gridstack widgets
-                widgets = ""
-
-                # Net worth widget(s)
-                widget_y = 0
-                for idx, (currency, total) in enumerate(net_worth.items()):
-                    color = '#4ade80' if total >= 0 else '#f87171'  # Green-400 / Red-400
-                    content = f"""
-                    <div class="metric">
-                        <div class="metric-value" style="color: {color};">{total:,.2f}</div>
-                        <div class="metric-label">{currency}</div>
-                    </div>
-                    """
-                    widgets += create_widget(f"💰 Net Worth ({currency})", content, idx * 3, widget_y, 3, 2, f"net-worth-{currency}")
-
-                widget_y = 2
-
-                # Account type summary widget
-                widgets += create_widget("📊 Account Type Summary", type_table_html, 0, widget_y, 6, 4, "type-summary")
-
-                # Top accounts widget
-                widgets += create_widget("🏦 Top Accounts", accounts_html, 6, widget_y, 6, 4, "top-accounts")
-
-                # Info widget (dark mode)
-                info_html = f"""
-                <div style='padding: 10px; color: #e0e0e0;'>
-                    <p style='margin: 8px 0;'><strong style='color: #fafafa;'>Total Accounts:</strong> {len(df)}</p>
-                    <p style='margin: 8px 0;'><strong style='color: #fafafa;'>Active Accounts:</strong> {len(df[df['active'] == True])}</p>
-                    <p style='margin: 8px 0;'><strong style='color: #fafafa;'>Asset Accounts:</strong> {len(df[df['type'] == 'asset'])}</p>
-                    <p style='margin: 8px 0;'><strong style='color: #fafafa;'>Liability Accounts:</strong> {len(df[df['type'] == 'liabilities'])}</p>
-                </div>
-                """
-                widgets += create_widget("ℹ️ Account Statistics", info_html, 0, widget_y + 4, 4, 3, "stats")
-
-                # Create the gridstack dashboard
-                create_gridstack_dashboard(widgets, height=900)
-
-                st.info("💡 **Tip:** Drag widgets by their headers and resize them by their corners to customize your dashboard!")
-
-            else:
-                # Regular Streamlit layout
                 col1, col2 = st.columns(2)
 
                 with col1:
-                    st.plotly_chart(create_account_type_chart(df), use_container_width=True)
+                    st.plotly_chart(create_account_type_chart(df, currency), use_container_width=True)
 
                 with col2:
-                    # Account type summary table
-                    st.subheader("Account Type Summary")
-                    type_summary = df[df['include_net_worth'] == True].groupby('type').agg({
+                    # Account type summary table for this currency
+                    st.subheader(f"Account Type Summary ({currency})")
+                    type_summary = df_currency[df_currency['include_net_worth'] == True].groupby('type').agg({
                         'current_balance': 'sum',
                         'name': 'count'
                     }).rename(columns={'name': 'count', 'current_balance': 'total_balance'})
@@ -534,8 +365,10 @@ try:
 
                 st.divider()
 
-                # Account breakdown chart
-                st.plotly_chart(create_account_breakdown_chart(df), use_container_width=True)
+                # Account breakdown chart for this currency
+                st.plotly_chart(create_account_breakdown_chart(df, currency), use_container_width=True)
+
+                st.divider()
 
             st.divider()
 
@@ -543,7 +376,7 @@ try:
             st.header("📋 Account Details")
 
             # Filter options
-            col1, col2, col3 = st.columns(3)
+            col1, col2, col3, col4 = st.columns(4)
             with col1:
                 show_inactive = st.checkbox("Show inactive accounts", value=False)
             with col2:
@@ -553,6 +386,12 @@ try:
                     default=df['type'].unique().tolist()
                 )
             with col3:
+                currency_filter = st.multiselect(
+                    "Filter by currency",
+                    options=sorted(df['currency_code'].unique().tolist()),
+                    default=sorted(df['currency_code'].unique().tolist())
+                )
+            with col4:
                 show_zero_balance = st.checkbox("Show zero balances", value=False)
 
             # Apply filters
@@ -561,6 +400,8 @@ try:
                 df_display = df_display[df_display['active'] == True]
             if account_type_filter:
                 df_display = df_display[df_display['type'].isin(account_type_filter)]
+            if currency_filter:
+                df_display = df_display[df_display['currency_code'].isin(currency_filter)]
             if not show_zero_balance:
                 df_display = df_display[df_display['current_balance'] != 0]
 
