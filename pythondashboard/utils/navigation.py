@@ -37,8 +37,102 @@ def render_sidebar_navigation():
     Renders a collapsible navigation sidebar with grouped sections.
     Uses buttons with st.switch_page for navigation.
     """
+    # Load compact CSS for entire sidebar
+    st.markdown("""
+    <style>
+        /* Compact all buttons in sidebar */
+        section[data-testid="stSidebar"] button {
+            padding: 0.25rem 0.5rem !important;
+            font-size: 0.8rem !important;
+            height: auto !important;
+            margin-bottom: 0.1rem !important;
+            min-height: 2rem !important;
+        }
+
+        /* Compact expanders */
+        section[data-testid="stSidebar"] details summary {
+            font-size: 0.85rem !important;
+            padding: 0.25rem 0.5rem !important;
+            font-weight: 600 !important;
+            min-height: 2rem !important;
+        }
+
+        section[data-testid="stSidebar"] details[open] > div {
+            padding-top: 0.2rem !important;
+            padding-bottom: 0.2rem !important;
+        }
+
+        /* Compact all headers */
+        section[data-testid="stSidebar"] h1 {
+            font-size: 1.2rem !important;
+            margin: 0.3rem 0 0.4rem 0 !important;
+            padding: 0 !important;
+        }
+
+        section[data-testid="stSidebar"] h2 {
+            font-size: 1rem !important;
+            margin: 0.3rem 0 !important;
+            padding: 0 !important;
+        }
+
+        section[data-testid="stSidebar"] h3 {
+            font-size: 0.9rem !important;
+            margin: 0.2rem 0 0.4rem 0 !important;
+            padding: 0 !important;
+        }
+
+        /* Compact alerts/notifications */
+        section[data-testid="stSidebar"] div[role="alert"] {
+            padding: 0.3rem 0.5rem !important;
+            font-size: 0.8rem !important;
+            margin-bottom: 0.3rem !important;
+        }
+
+        /* Compact markdown */
+        section[data-testid="stSidebar"] p {
+            font-size: 0.82rem !important;
+            margin-bottom: 0.3rem !important;
+        }
+
+        /* Compact captions */
+        section[data-testid="stSidebar"] small {
+            font-size: 0.72rem !important;
+        }
+
+        /* Compact dividers */
+        section[data-testid="stSidebar"] hr {
+            margin: 0.5rem 0 !important;
+        }
+
+        /* Compact forms */
+        section[data-testid="stSidebar"] form {
+            padding: 0.3rem !important;
+        }
+
+        /* Compact inputs */
+        section[data-testid="stSidebar"] input {
+            font-size: 0.8rem !important;
+            padding: 0.3rem 0.5rem !important;
+        }
+
+        /* Compact labels */
+        section[data-testid="stSidebar"] label {
+            font-size: 0.8rem !important;
+            margin-bottom: 0.2rem !important;
+        }
+
+        /* Reduce spacing between elements */
+        section[data-testid="stSidebar"] div.element-container {
+            margin-bottom: 0.3rem !important;
+        }
+
+        section[data-testid="stSidebar"] div[data-testid="stVerticalBlock"] > div {
+            gap: 0.3rem !important;
+        }
+    </style>
+    """, unsafe_allow_html=True)
+
     st.sidebar.markdown("### 🔥 Navigation")
-    st.sidebar.markdown("")  # Add some spacing
 
     for section_name, page_list in PAGE_SECTIONS.items():
         # Create an expander for each section (default collapsed)
@@ -51,4 +145,3 @@ def render_sidebar_navigation():
                     st.switch_page(page_path)
 
     st.sidebar.markdown("---")
-    st.sidebar.caption("💡 Click sections to expand/collapse")
