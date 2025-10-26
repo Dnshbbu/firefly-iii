@@ -11,6 +11,7 @@ sys.path.append(str(Path(__file__).parent.parent))
 from utils.api_client import FireflyAPIClient
 from utils.charts import create_net_flow_chart, create_pie_chart, create_waterfall_chart
 from utils.calculations import calculate_cash_flow, calculate_category_spending, calculate_income_sources
+from utils.navigation import render_sidebar_navigation
 
 # Page configuration
 st.set_page_config(
@@ -18,6 +19,9 @@ st.set_page_config(
     page_icon="📈",
     layout="wide"
 )
+
+# Render custom navigation
+render_sidebar_navigation()
 
 # Ultra-compact CSS styling - DENSE dashboard
 st.markdown("""

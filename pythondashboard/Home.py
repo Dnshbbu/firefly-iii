@@ -1,4 +1,5 @@
 import streamlit as st
+from utils.navigation import render_sidebar_navigation
 
 # Page configuration
 st.set_page_config(
@@ -6,6 +7,9 @@ st.set_page_config(
     page_icon="🔥",
     layout="wide"
 )
+
+# Render custom navigation
+render_sidebar_navigation()
 
 # Compact CSS styling for dark mode
 st.markdown("""

@@ -23,6 +23,7 @@ from utils.calculations import (
     get_top_transactions_by_category,
     calculate_category_statistics
 )
+from utils.navigation import render_sidebar_navigation
 
 # Page configuration
 st.set_page_config(
@@ -30,6 +31,9 @@ st.set_page_config(
     page_icon="🏷️",
     layout="wide"
 )
+
+# Render custom navigation
+render_sidebar_navigation()
 
 # Ultra-compact CSS styling - DENSE dashboard
 st.markdown("""

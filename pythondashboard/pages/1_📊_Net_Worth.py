@@ -5,6 +5,12 @@ import plotly.graph_objects as go
 import plotly.express as px
 from datetime import datetime
 from typing import Dict, List, Optional
+import sys
+from pathlib import Path
+
+# Add parent directory to path to import utils
+sys.path.append(str(Path(__file__).parent.parent))
+from utils.navigation import render_sidebar_navigation
 
 # Page configuration
 st.set_page_config(
@@ -12,6 +18,9 @@ st.set_page_config(
     page_icon="📊",
     layout="wide"
 )
+
+# Render custom navigation
+render_sidebar_navigation()
 
 # Ultra-compact CSS styling - DENSE dashboard
 st.markdown("""

@@ -1,0 +1,18 @@
+[client]
+# Show the default Streamlit toolbar
+toolbarMode = "minimal"
+
+# Control sidebar navigation visibility (replaces deprecated ui.hideSidebarNav)
+showSidebarNavigation = true
+
+[ui]
+# Hide the default "Deploy" button
+hideTopBar = false
+
+[theme]
+# Optional: Customize theme colors for dark mode
+primaryColor = "#FF8C00"
+backgroundColor = "#0E1117"
+secondaryBackgroundColor = "#262730"
+textColor = "#FAFAFA"
+font = "sans serif"

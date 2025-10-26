@@ -12,6 +12,7 @@ import sys
 # Add parent directory to path to import firefly_api
 sys.path.append(str(Path(__file__).parent.parent))
 from firefly_api import FireflyAPIClient
+from utils.navigation import render_sidebar_navigation
 
 # Page configuration
 st.set_page_config(
@@ -19,6 +20,9 @@ st.set_page_config(
     page_icon="📅",
     layout="wide"
 )
+
+# Render custom navigation
+render_sidebar_navigation()
 
 st.title("📅 Bills & Subscriptions Management")
 st.markdown("Manage your Firefly III bills: export, view, create, update, delete, and import")

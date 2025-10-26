@@ -19,6 +19,7 @@ from utils.calculations import (
     calculate_budget_burn_rate,
     get_date_ranges
 )
+from utils.navigation import render_sidebar_navigation
 
 # Page configuration
 st.set_page_config(
@@ -26,6 +27,9 @@ st.set_page_config(
     page_icon="💰",
     layout="wide"
 )
+
+# Render custom navigation
+render_sidebar_navigation()
 
 # Ultra-compact CSS styling - DENSE dashboard
 st.markdown("""

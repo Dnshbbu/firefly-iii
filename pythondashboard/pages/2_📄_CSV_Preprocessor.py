@@ -3,6 +3,11 @@ import pandas as pd
 import os
 from pathlib import Path
 from datetime import datetime
+import sys
+
+# Add parent directory to path to import utils
+sys.path.append(str(Path(__file__).parent.parent))
+from utils.navigation import render_sidebar_navigation
 
 # Page configuration
 st.set_page_config(
@@ -10,6 +15,9 @@ st.set_page_config(
     page_icon="🔥",
     layout="wide"
 )
+
+# Render custom navigation
+render_sidebar_navigation()
 
 # Compact CSS styling
 st.markdown("""
