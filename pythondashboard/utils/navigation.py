@@ -81,11 +81,39 @@ def render_sidebar_navigation():
             padding: 0 !important;
         }
 
-        /* Compact alerts/notifications */
+        /* Fix alerts - force proper text accommodation */
         section[data-testid="stSidebar"] div[role="alert"] {
-            padding: 0.3rem 0.5rem !important;
-            font-size: 0.8rem !important;
+            padding: 0.6rem 0.6rem 0.95rem 0.6rem !important;
             margin-bottom: 0.3rem !important;
+            font-size: 0.8rem !important;
+            line-height: 1.5 !important;
+            display: block !important;
+            box-sizing: content-box !important;
+        }
+        
+        /* Reset all inner elements to prevent clipping */
+        section[data-testid="stSidebar"] div[role="alert"] div {
+            line-height: inherit !important;
+            height: auto !important;
+            min-height: 0 !important;
+            overflow: visible !important;
+        }
+        
+        /* Alert text - add pseudo element for descender space */
+        section[data-testid="stSidebar"] div[role="alert"] p {
+            margin: 0 !important;
+            padding: 0 !important;
+            font-size: 0.8rem !important;
+            line-height: 1.5 !important;
+            display: block !important;
+        }
+        
+        /* Force descender space with after pseudo-element */
+        section[data-testid="stSidebar"] div[role="alert"] p::after {
+            content: "";
+            display: block;
+            height: 0.2rem;
+            width: 100%;
         }
 
         /* Compact markdown */
