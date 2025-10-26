@@ -115,14 +115,16 @@ def get_monthly_budget_data(
     budgets_data: List[Dict],
     budget_limits_data: Dict[str, List[Dict]],
     transactions_df: pd.DataFrame,
-    year: int
+    start_date_str: str,
+    end_date_str: str
 ) -> pd.DataFrame:
     """
-    Calculate monthly budget data across all budgets.
+    Calculate monthly budget data across all budgets for a date range.
 
     Returns DataFrame with columns:
     - month: Month number (1-12)
     - month_name: Month name
+    - year_month: YYYY-MM format for unique identification
     - budgeted: Total budgeted amount for the month
     - spent: Total spent amount for the month
     - remaining: Remaining budget
@@ -132,7 +134,25 @@ def get_monthly_budget_data(
     """
     monthly_data = []
 
-    for month in range(1, 13):
+    # Parse start and end dates
+    range_start = datetime.strptime(start_date_str, '%Y-%m-%d')
+    range_end = datetime.strptime(end_date_str, '%Y-%m-%d')
+
+    # Generate list of months in the range
+    current = range_start.replace(day=1)
+    months_in_range = []
+
+    while current <= range_end:
+        months_in_range.append(current)
+        # Move to next month
+        if current.month == 12:
+            current = current.replace(year=current.year + 1, month=1)
+        else:
+            current = current.replace(month=current.month + 1)
+
+    for month_date in months_in_range:
+        year = month_date.year
+        month = month_date.month
         # Get start and end dates for this month
         start_date = datetime(year, month, 1)
         last_day = calendar.monthrange(year, month)[1]
@@ -197,8 +217,11 @@ def get_monthly_budget_data(
         deviation = -remaining  # Negative deviation means over budget
         deviation_pct = (deviation / total_budgeted * 100) if total_budgeted > 0 else 0
 
-        # Determine status
-        if month > datetime.now().month and year == datetime.now().year:
+        # Determine status (check if this month is in the future)
+        today = datetime.now()
+        is_future = month_date.replace(day=1) > today.replace(day=1)
+
+        if is_future:
             status = 'Future'
         elif total_budgeted == 0:
             status = 'No Budget'
@@ -209,10 +232,19 @@ def get_monthly_budget_data(
         else:
             status = 'Under Budget'
 
+        # Create month label (show year if spanning multiple years)
+        if range_start.year != range_end.year:
+            month_label = f"{calendar.month_abbr[month]} {str(year)[2:]}"
+        else:
+            month_label = calendar.month_abbr[month]
+
         monthly_data.append({
             'month': month,
-            'month_name': calendar.month_abbr[month],
+            'month_name': month_label,
             'month_full': calendar.month_name[month],
+            'year': year,
+            'year_month': f"{year}-{month:02d}",
+            'date': month_date,
             'budgeted': total_budgeted,
             'spent': total_spent,
             'remaining': remaining,
@@ -224,7 +256,7 @@ def get_monthly_budget_data(
     return pd.DataFrame(monthly_data)
 
 
-def create_timeline_chart(monthly_df: pd.DataFrame, current_month: int) -> go.Figure:
+def create_timeline_chart(monthly_df: pd.DataFrame, current_month_index: int) -> go.Figure:
     """Create a timeline chart showing budgeted vs actual spending"""
     fig = go.Figure()
 
@@ -239,10 +271,10 @@ def create_timeline_chart(monthly_df: pd.DataFrame, current_month: int) -> go.Fi
         textfont=dict(size=9)
     ))
 
-    # Add actual spending bars with conditional coloring
+    # Add actual spending bars with conditional coloring based on status
     actual_colors = monthly_df.apply(
         lambda row: 'crimson' if row['spent'] > row['budgeted'] and row['budgeted'] > 0
-        else 'lightgreen' if row['month'] <= current_month
+        else 'lightgreen' if row['status'] != 'Future'
         else 'lightgray',
         axis=1
     )
@@ -258,7 +290,7 @@ def create_timeline_chart(monthly_df: pd.DataFrame, current_month: int) -> go.Fi
     ))
 
     fig.update_layout(
-        title="Annual Budget Timeline: Expected vs Actual Spending",
+        title="Budget Timeline: Expected vs Actual Spending",
         xaxis_title="Month",
         yaxis_title="Amount (€)",
         barmode='group',  # Changed from 'overlay' to 'group' for clustered bars
@@ -276,23 +308,24 @@ def create_timeline_chart(monthly_df: pd.DataFrame, current_month: int) -> go.Fi
         hovermode='x unified'
     )
 
-    # Add vertical line for current month
-    fig.add_vline(
-        x=current_month - 1,
-        line_dash="dash",
-        line_color="orange",
-        annotation_text="Today",
-        annotation_position="top",
-        annotation_font_size=9
-    )
+    # Add vertical line for current month if we can identify it
+    if current_month_index > 0 and current_month_index <= len(monthly_df):
+        fig.add_vline(
+            x=current_month_index - 1,
+            line_dash="dash",
+            line_color="orange",
+            annotation_text="Today",
+            annotation_position="top",
+            annotation_font_size=9
+        )
 
     return fig
 
 
-def create_deviation_chart(monthly_df: pd.DataFrame, current_month: int) -> go.Figure:
+def create_deviation_chart(monthly_df: pd.DataFrame, current_month_index: int) -> go.Figure:
     """Create a chart showing budget deviations by month"""
-    # Filter to only show past and current months
-    past_months = monthly_df[monthly_df['month'] <= current_month].copy()
+    # Filter to only show past and current months (not future)
+    past_months = monthly_df[monthly_df['status'] != 'Future'].copy()
 
     colors = past_months['deviation'].apply(
         lambda x: 'red' if x > 0 else 'green'
@@ -325,61 +358,64 @@ def create_deviation_chart(monthly_df: pd.DataFrame, current_month: int) -> go.F
     return fig
 
 
-def create_cumulative_chart(monthly_df: pd.DataFrame, current_month: int) -> go.Figure:
+def create_cumulative_chart(monthly_df: pd.DataFrame, current_month_index: int) -> go.Figure:
     """Create a chart showing cumulative budget vs actual over time"""
+    # Make a copy to avoid modifying the original
+    df = monthly_df.copy()
+
     # Calculate cumulative values
-    monthly_df['cumulative_budgeted'] = monthly_df['budgeted'].cumsum()
-    monthly_df['cumulative_spent'] = monthly_df['spent'].cumsum()
+    df['cumulative_budgeted'] = df['budgeted'].cumsum()
+    df['cumulative_spent'] = df['spent'].cumsum()
 
     fig = go.Figure()
 
     # Cumulative budgeted line
     fig.add_trace(go.Scatter(
-        x=monthly_df['month_name'],
-        y=monthly_df['cumulative_budgeted'],
+        x=df['month_name'],
+        y=df['cumulative_budgeted'],
         mode='lines+markers',
         name='Cumulative Budget',
         line=dict(color='blue', width=2),
         marker=dict(size=6)
     ))
 
-    # Cumulative spent line (only up to current month)
-    actual_data = monthly_df[monthly_df['month'] <= current_month]
-    fig.add_trace(go.Scatter(
-        x=actual_data['month_name'],
-        y=actual_data['cumulative_spent'],
-        mode='lines+markers',
-        name='Cumulative Spent',
-        line=dict(color='red', width=2, dash='dash'),
-        marker=dict(size=6)
-    ))
+    # Cumulative spent line (only up to current month - exclude future)
+    actual_data = df[df['status'] != 'Future'].copy()
+    if not actual_data.empty:
+        fig.add_trace(go.Scatter(
+            x=actual_data['month_name'],
+            y=actual_data['cumulative_spent'],
+            mode='lines+markers',
+            name='Cumulative Spent',
+            line=dict(color='red', width=2, dash='dash'),
+            marker=dict(size=6)
+        ))
 
-    # Projection line (from current month to end of year)
-    if current_month < 12:
-        # Calculate average monthly spending so far
-        avg_monthly_spend = monthly_df[monthly_df['month'] <= current_month]['spent'].mean()
+        # Projection line (for future months if any)
+        future_data = df[df['status'] == 'Future']
+        if not future_data.empty:
+            # Calculate average monthly spending so far
+            avg_monthly_spend = actual_data['spent'].mean()
 
-        # Project future spending
-        projection_months = list(range(current_month, 13))
-        projection_values = []
-        last_cumulative = actual_data['cumulative_spent'].iloc[-1] if not actual_data.empty else 0
+            # Get last cumulative value
+            last_cumulative = actual_data['cumulative_spent'].iloc[-1]
 
-        for i, month in enumerate(projection_months):
-            if i == 0:
-                projection_values.append(last_cumulative)
-            else:
+            # Build projection values
+            projection_values = [last_cumulative]
+            for i in range(len(future_data)):
                 projection_values.append(projection_values[-1] + avg_monthly_spend)
 
-        projection_names = [monthly_df[monthly_df['month'] == m]['month_name'].iloc[0] for m in projection_months]
+            # Combine current month with future months for projection line
+            projection_months = [actual_data['month_name'].iloc[-1]] + future_data['month_name'].tolist()
 
-        fig.add_trace(go.Scatter(
-            x=projection_names,
-            y=projection_values,
-            mode='lines+markers',
-            name='Projected Spending',
-            line=dict(color='orange', width=2, dash='dot'),
-            marker=dict(size=5, symbol='diamond')
-        ))
+            fig.add_trace(go.Scatter(
+                x=projection_months,
+                y=projection_values,
+                mode='lines+markers',
+                name='Projected Spending',
+                line=dict(color='orange', width=2, dash='dot'),
+                marker=dict(size=5, symbol='diamond')
+            ))
 
     fig.update_layout(
         title="Cumulative Budget vs Actual Spending",
@@ -419,15 +455,32 @@ def get_per_budget_monthly_data(
     budgets_data: List[Dict],
     budget_limits_data: Dict[str, List[Dict]],
     transactions_df: pd.DataFrame,
-    year: int
+    start_date_str: str,
+    end_date_str: str
 ) -> Dict[str, pd.DataFrame]:
     """
-    Calculate monthly data for each individual budget.
+    Calculate monthly data for each individual budget for a date range.
 
     Returns:
         Dictionary mapping budget_name to DataFrame with monthly data
     """
     budget_monthly_data = {}
+
+    # Parse start and end dates
+    range_start = datetime.strptime(start_date_str, '%Y-%m-%d')
+    range_end = datetime.strptime(end_date_str, '%Y-%m-%d')
+
+    # Generate list of months in the range
+    current = range_start.replace(day=1)
+    months_in_range = []
+
+    while current <= range_end:
+        months_in_range.append(current)
+        # Move to next month
+        if current.month == 12:
+            current = current.replace(year=current.year + 1, month=1)
+        else:
+            current = current.replace(month=current.month + 1)
 
     for budget in budgets_data:
         budget_id = budget.get('id')
@@ -435,7 +488,9 @@ def get_per_budget_monthly_data(
 
         monthly_records = []
 
-        for month in range(1, 13):
+        for month_date in months_in_range:
+            year = month_date.year
+            month = month_date.month
             # Get start and end dates for this month
             start_date = datetime(year, month, 1)
             last_day = calendar.monthrange(year, month)[1]
@@ -490,9 +545,15 @@ def get_per_budget_monthly_data(
                 ]
                 spent_amount = budget_transactions['amount'].sum()
 
+            # Create month label (show year if spanning multiple years)
+            if range_start.year != range_end.year:
+                month_label = f"{calendar.month_abbr[month]} {str(year)[2:]}"
+            else:
+                month_label = calendar.month_abbr[month]
+
             monthly_records.append({
                 'month': month,
-                'month_name': calendar.month_abbr[month],
+                'month_name': month_label,
                 'budgeted': budgeted_amount,
                 'spent': spent_amount
             })
@@ -655,14 +716,77 @@ if not st.session_state.api_connected:
     """)
     st.stop()
 
-# Sidebar year selection
+# Sidebar time period selection
 st.sidebar.header("📅 Timeline Period")
-current_year = datetime.now().year
-selected_year = st.sidebar.selectbox(
-    "Select Year",
-    options=[current_year - 1, current_year, current_year + 1],
-    index=1
+
+period_type = st.sidebar.selectbox(
+    "Select Timeframe",
+    options=[
+        "Last 6 Months",
+        "Last 12 Months",
+        "Current Year",
+        "Last Year",
+        "Last 2 Years",
+        "Custom Range"
+    ],
+    index=2  # Default to "Current Year"
 )
+
+# Calculate date range based on selection
+today = datetime.now()
+current_year = today.year
+
+if period_type == "Last 6 Months":
+    end_date = today
+    start_date = end_date - timedelta(days=180)
+    selected_start = start_date.strftime('%Y-%m-%d')
+    selected_end = end_date.strftime('%Y-%m-%d')
+    period_label = "Last 6 Months"
+
+elif period_type == "Last 12 Months":
+    end_date = today
+    start_date = end_date - timedelta(days=365)
+    selected_start = start_date.strftime('%Y-%m-%d')
+    selected_end = end_date.strftime('%Y-%m-%d')
+    period_label = "Last 12 Months"
+
+elif period_type == "Current Year":
+    selected_year = current_year
+    selected_start = f"{selected_year}-01-01"
+    selected_end = f"{selected_year}-12-31"
+    period_label = f"Year {selected_year}"
+
+elif period_type == "Last Year":
+    selected_year = current_year - 1
+    selected_start = f"{selected_year}-01-01"
+    selected_end = f"{selected_year}-12-31"
+    period_label = f"Year {selected_year}"
+
+elif period_type == "Last 2 Years":
+    end_date = today
+    start_date = end_date - timedelta(days=730)
+    selected_start = start_date.strftime('%Y-%m-%d')
+    selected_end = end_date.strftime('%Y-%m-%d')
+    period_label = "Last 2 Years"
+
+else:  # Custom Range
+    col1, col2 = st.sidebar.columns(2)
+    with col1:
+        custom_start = st.date_input(
+            "Start Date",
+            value=datetime(current_year, 1, 1),
+            max_value=today
+        )
+    with col2:
+        custom_end = st.date_input(
+            "End Date",
+            value=today,
+            max_value=today
+        )
+
+    selected_start = custom_start.strftime('%Y-%m-%d')
+    selected_end = custom_end.strftime('%Y-%m-%d')
+    period_label = f"{selected_start} to {selected_end}"
 
 # Main content
 try:
@@ -675,16 +799,14 @@ try:
             st.cache_data.clear()
             st.rerun()
     with col2:
-        st.caption(f"Last updated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')} | Year: {selected_year}")
+        st.caption(f"Last updated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')} | Period: {period_label}")
 
     st.markdown("---")
 
     # Cache data fetching
     @st.cache_data(ttl=300)
-    def fetch_timeline_data(_client, year):
-        """Fetch all budget data for the entire year"""
-        start_date, end_date = get_year_date_range(year)
-
+    def fetch_timeline_data(_client, start_date, end_date):
+        """Fetch all budget data for the specified date range"""
         budgets = _client.get_budgets()
 
         # Fetch budget limits for each budget
@@ -694,7 +816,7 @@ try:
             limits = _client.get_budget_limits(budget_id, start_date, end_date)
             budget_limits[budget_id] = limits
 
-        # Fetch all transactions for the year
+        # Fetch all transactions for the period
         transactions = _client.get_transactions(start_date=start_date, end_date=end_date)
 
         return budgets, budget_limits, transactions
@@ -702,7 +824,7 @@ try:
     # Fetch data
     with st.spinner("Loading budget timeline data..."):
         budgets_data, budget_limits_data, transactions_data = fetch_timeline_data(
-            client, selected_year
+            client, selected_start, selected_end
         )
 
         if not budgets_data:
@@ -727,26 +849,45 @@ try:
             budgets_data,
             budget_limits_data,
             df_transactions,
-            selected_year
+            selected_start,
+            selected_end
         )
 
-        current_month = datetime.now().month if selected_year == datetime.now().year else 12
+        # Determine the current period index for charts
+        today = datetime.now()
+        if not monthly_df.empty and 'date' in monthly_df.columns:
+            # Find the index of the current month in the data
+            current_month_mask = monthly_df['date'].apply(
+                lambda x: x.year == today.year and x.month == today.month
+            )
+            if current_month_mask.any():
+                current_month_index = current_month_mask.idxmax() + 1
+            else:
+                # If current month not in range, use the last month
+                current_month_index = len(monthly_df)
+        else:
+            current_month_index = today.month
 
         # Calculate summary metrics
         total_budgeted = monthly_df['budgeted'].sum()
-        total_spent = monthly_df[monthly_df['month'] <= current_month]['spent'].sum()
+        # Calculate total spent for past/current months only (exclude future)
+        past_months = monthly_df[monthly_df['status'] != 'Future']
+        total_spent = past_months['spent'].sum()
         total_remaining = total_budgeted - total_spent
-        ytd_months = current_month if selected_year == datetime.now().year else 12
-        avg_monthly_budget = total_budgeted / 12
-        avg_monthly_spend = total_spent / ytd_months if ytd_months > 0 else 0
 
-        # Projection for rest of year
-        months_remaining = 12 - current_month if selected_year == datetime.now().year else 0
+        total_months = len(monthly_df)
+        past_months_count = len(past_months)
+        avg_monthly_budget = total_budgeted / total_months if total_months > 0 else 0
+        avg_monthly_spend = total_spent / past_months_count if past_months_count > 0 else 0
+
+        # Projection for remaining months
+        future_months = monthly_df[monthly_df['status'] == 'Future']
+        months_remaining = len(future_months)
         projected_spend = total_spent + (avg_monthly_spend * months_remaining)
         projected_remaining = total_budgeted - projected_spend
 
         # === SECTION 1: Summary Metrics ===
-        st.markdown("### 💰 Annual Budget Summary")
+        st.markdown("### 💰 Budget Summary")
 
         cols = st.columns(8)
         cols[0].metric("Total Budget", f"€{total_budgeted:,.0f}")
@@ -769,7 +910,7 @@ try:
         # === SECTION 2: Timeline Visualization ===
         st.markdown("### 📊 Budget Timeline")
 
-        fig_timeline = create_timeline_chart(monthly_df, current_month)
+        fig_timeline = create_timeline_chart(monthly_df, current_month_index)
         st.plotly_chart(fig_timeline, use_container_width=True, config={'displayModeBar': False})
 
         st.markdown("---")
@@ -780,11 +921,11 @@ try:
         col1, col2 = st.columns(2)
 
         with col1:
-            fig_cumulative = create_cumulative_chart(monthly_df, current_month)
+            fig_cumulative = create_cumulative_chart(monthly_df, current_month_index)
             st.plotly_chart(fig_cumulative, use_container_width=True, config={'displayModeBar': False})
 
         with col2:
-            fig_deviation = create_deviation_chart(monthly_df, current_month)
+            fig_deviation = create_deviation_chart(monthly_df, current_month_index)
             st.plotly_chart(fig_deviation, use_container_width=True, config={'displayModeBar': False})
 
         st.markdown("---")
@@ -797,7 +938,8 @@ try:
             budgets_data,
             budget_limits_data,
             df_transactions,
-            selected_year
+            selected_start,
+            selected_end
         )
 
         # Filter out budgets with no data
@@ -819,10 +961,10 @@ try:
                         budget_df = active_budgets[budget_name]
 
                         with cols[j]:
-                            fig = create_small_budget_chart(budget_name, budget_df, current_month)
+                            fig = create_small_budget_chart(budget_name, budget_df, today.month)
                             st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
         else:
-            st.info("No budget data available for this year.")
+            st.info("No budget data available for the selected period.")
 
         st.markdown("---")
 
@@ -865,7 +1007,7 @@ try:
         st.download_button(
             label="📥 Download CSV",
             data=csv,
-            file_name=f"budget_timeline_{selected_year}.csv",
+            file_name=f"budget_timeline_{selected_start}_to_{selected_end}.csv",
             mime="text/csv"
         )
 
