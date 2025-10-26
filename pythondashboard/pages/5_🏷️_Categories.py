@@ -169,21 +169,80 @@ if not st.session_state.api_connected:
 st.sidebar.header("📅 Date Range")
 
 preset_range = st.sidebar.selectbox(
-    "Select Preset",
-    ["Last 3 Months", "Last 6 Months", "Last Year", "Year to Date", "Custom"]
+    "Select Period",
+    ["Last 7 Days", "Last 30 Days", "Last 3 Months", "Last 6 Months", "Last 12 Months",
+     "Last Exact 3 Months", "Last Exact 6 Months", "Last Exact 12 Months",
+     "Current Month", "Current Quarter", "Current Year", 
+     "Last Month", "Last Quarter", "Last Year", "Year to Date", "Custom"],
+    index=2  # Default to "Last 3 Months"
 )
 
 today = datetime.now()
+first_day_of_month = datetime(today.year, today.month, 1)
 
-if preset_range == "Last 3 Months":
+if preset_range == "Last 7 Days":
+    start_date = today - timedelta(days=7)
+    end_date = today
+elif preset_range == "Last 30 Days":
+    start_date = today - timedelta(days=30)
+    end_date = today
+elif preset_range == "Last 3 Months":
     start_date = today - timedelta(days=90)
     end_date = today
 elif preset_range == "Last 6 Months":
     start_date = today - timedelta(days=180)
     end_date = today
-elif preset_range == "Last Year":
+elif preset_range == "Last 12 Months":
     start_date = today - timedelta(days=365)
     end_date = today
+elif preset_range == "Last Exact 3 Months":
+    # Get complete months only (e.g., if today is Oct 26, show Jul 1 - Sep 30)
+    if today.month <= 3:
+        start_date = datetime(today.year - 1, today.month + 9, 1)
+        end_date = datetime(today.year, today.month - 1, 1) - timedelta(days=1) if today.month > 1 else datetime(today.year - 1, 12, 31)
+    else:
+        start_date = datetime(today.year, today.month - 3, 1)
+        end_date = datetime(today.year, today.month, 1) - timedelta(days=1)
+elif preset_range == "Last Exact 6 Months":
+    # Get complete months only
+    if today.month <= 6:
+        start_date = datetime(today.year - 1, today.month + 6, 1)
+        end_date = datetime(today.year, today.month - 1, 1) - timedelta(days=1) if today.month > 1 else datetime(today.year - 1, 12, 31)
+    else:
+        start_date = datetime(today.year, today.month - 6, 1)
+        end_date = datetime(today.year, today.month, 1) - timedelta(days=1)
+elif preset_range == "Last Exact 12 Months":
+    # Get complete months only (previous 12 full months)
+    start_date = datetime(today.year - 1, today.month, 1)
+    end_date = datetime(today.year, today.month, 1) - timedelta(days=1)
+elif preset_range == "Current Month":
+    start_date = first_day_of_month
+    end_date = today
+elif preset_range == "Current Quarter":
+    quarter = (today.month - 1) // 3
+    start_date = datetime(today.year, quarter * 3 + 1, 1)
+    end_date = today
+elif preset_range == "Current Year":
+    start_date = datetime(today.year, 1, 1)
+    end_date = today
+elif preset_range == "Last Month":
+    if today.month == 1:
+        start_date = datetime(today.year - 1, 12, 1)
+        end_date = first_day_of_month - timedelta(days=1)
+    else:
+        start_date = datetime(today.year, today.month - 1, 1)
+        end_date = first_day_of_month - timedelta(days=1)
+elif preset_range == "Last Quarter":
+    quarter = (today.month - 1) // 3
+    if quarter == 0:
+        start_date = datetime(today.year - 1, 10, 1)
+        end_date = datetime(today.year - 1, 12, 31)
+    else:
+        start_date = datetime(today.year, (quarter - 1) * 3 + 1, 1)
+        end_date = datetime(today.year, quarter * 3, 1) - timedelta(days=1)
+elif preset_range == "Last Year":
+    start_date = datetime(today.year - 1, 1, 1)
+    end_date = datetime(today.year - 1, 12, 31)
 elif preset_range == "Year to Date":
     start_date = datetime(today.year, 1, 1)
     end_date = today

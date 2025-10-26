@@ -782,23 +782,43 @@ if not st.session_state.api_connected:
 st.sidebar.header("📅 Timeline Period")
 
 period_type = st.sidebar.selectbox(
-    "Select Timeframe",
+    "Select Period",
     options=[
-        "Last 6 Months",
-        "Last 12 Months",
-        "Current Year",
-        "Last Year",
-        "Last 2 Years",
-        "Custom Range"
+        "Last 7 Days", "Last 30 Days", "Last 3 Months", "Last 6 Months", "Last 12 Months",
+        "Last Exact 3 Months", "Last Exact 6 Months", "Last Exact 12 Months",
+        "Current Month", "Current Quarter", "Current Year", 
+        "Last Month", "Last Quarter", "Last Year", "Year to Date", "Custom"
     ],
-    index=2  # Default to "Current Year"
+    index=10  # Default to "Current Year"
 )
 
 # Calculate date range based on selection
 today = datetime.now()
 current_year = today.year
+first_day_of_month = datetime(today.year, today.month, 1)
 
-if period_type == "Last 6 Months":
+if period_type == "Last 7 Days":
+    end_date = today
+    start_date = end_date - timedelta(days=7)
+    selected_start = start_date.strftime('%Y-%m-%d')
+    selected_end = end_date.strftime('%Y-%m-%d')
+    period_label = "Last 7 Days"
+
+elif period_type == "Last 30 Days":
+    end_date = today
+    start_date = end_date - timedelta(days=30)
+    selected_start = start_date.strftime('%Y-%m-%d')
+    selected_end = end_date.strftime('%Y-%m-%d')
+    period_label = "Last 30 Days"
+
+elif period_type == "Last 3 Months":
+    end_date = today
+    start_date = end_date - timedelta(days=90)
+    selected_start = start_date.strftime('%Y-%m-%d')
+    selected_end = end_date.strftime('%Y-%m-%d')
+    period_label = "Last 3 Months"
+
+elif period_type == "Last 6 Months":
     end_date = today
     start_date = end_date - timedelta(days=180)
     selected_start = start_date.strftime('%Y-%m-%d')
@@ -812,11 +832,79 @@ elif period_type == "Last 12 Months":
     selected_end = end_date.strftime('%Y-%m-%d')
     period_label = "Last 12 Months"
 
+elif period_type == "Last Exact 3 Months":
+    # Get complete months only (e.g., if today is Oct 26, show Jul 1 - Sep 30)
+    if today.month <= 3:
+        start_date = datetime(today.year - 1, today.month + 9, 1)
+        end_date = datetime(today.year, today.month - 1, 1) - timedelta(days=1) if today.month > 1 else datetime(today.year - 1, 12, 31)
+    else:
+        start_date = datetime(today.year, today.month - 3, 1)
+        end_date = datetime(today.year, today.month, 1) - timedelta(days=1)
+    selected_start = start_date.strftime('%Y-%m-%d')
+    selected_end = end_date.strftime('%Y-%m-%d')
+    period_label = f"{start_date.strftime('%b')} - {end_date.strftime('%b %Y')}"
+
+elif period_type == "Last Exact 6 Months":
+    # Get complete months only
+    if today.month <= 6:
+        start_date = datetime(today.year - 1, today.month + 6, 1)
+        end_date = datetime(today.year, today.month - 1, 1) - timedelta(days=1) if today.month > 1 else datetime(today.year - 1, 12, 31)
+    else:
+        start_date = datetime(today.year, today.month - 6, 1)
+        end_date = datetime(today.year, today.month, 1) - timedelta(days=1)
+    selected_start = start_date.strftime('%Y-%m-%d')
+    selected_end = end_date.strftime('%Y-%m-%d')
+    period_label = f"{start_date.strftime('%b %Y')} - {end_date.strftime('%b %Y')}"
+
+elif period_type == "Last Exact 12 Months":
+    # Get complete months only (previous 12 full months)
+    start_date = datetime(today.year - 1, today.month, 1)
+    end_date = datetime(today.year, today.month, 1) - timedelta(days=1)
+    selected_start = start_date.strftime('%Y-%m-%d')
+    selected_end = end_date.strftime('%Y-%m-%d')
+    period_label = f"{start_date.strftime('%b %Y')} - {end_date.strftime('%b %Y')}"
+
+elif period_type == "Current Month":
+    selected_start = first_day_of_month.strftime('%Y-%m-%d')
+    selected_end = today.strftime('%Y-%m-%d')
+    period_label = f"{today.strftime('%B %Y')}"
+
+elif period_type == "Current Quarter":
+    quarter = (today.month - 1) // 3
+    start_date = datetime(today.year, quarter * 3 + 1, 1)
+    selected_start = start_date.strftime('%Y-%m-%d')
+    selected_end = today.strftime('%Y-%m-%d')
+    period_label = f"Q{quarter + 1} {today.year}"
+
 elif period_type == "Current Year":
     selected_year = current_year
     selected_start = f"{selected_year}-01-01"
     selected_end = f"{selected_year}-12-31"
     period_label = f"Year {selected_year}"
+
+elif period_type == "Last Month":
+    if today.month == 1:
+        start_date = datetime(today.year - 1, 12, 1)
+        end_date = first_day_of_month - timedelta(days=1)
+    else:
+        start_date = datetime(today.year, today.month - 1, 1)
+        end_date = first_day_of_month - timedelta(days=1)
+    selected_start = start_date.strftime('%Y-%m-%d')
+    selected_end = end_date.strftime('%Y-%m-%d')
+    period_label = start_date.strftime('%B %Y')
+
+elif period_type == "Last Quarter":
+    quarter = (today.month - 1) // 3
+    if quarter == 0:
+        start_date = datetime(today.year - 1, 10, 1)
+        end_date = datetime(today.year - 1, 12, 31)
+        period_label = f"Q4 {today.year - 1}"
+    else:
+        start_date = datetime(today.year, (quarter - 1) * 3 + 1, 1)
+        end_date = datetime(today.year, quarter * 3, 1) - timedelta(days=1)
+        period_label = f"Q{quarter} {today.year}"
+    selected_start = start_date.strftime('%Y-%m-%d')
+    selected_end = end_date.strftime('%Y-%m-%d')
 
 elif period_type == "Last Year":
     selected_year = current_year - 1
@@ -824,14 +912,12 @@ elif period_type == "Last Year":
     selected_end = f"{selected_year}-12-31"
     period_label = f"Year {selected_year}"
 
-elif period_type == "Last 2 Years":
-    end_date = today
-    start_date = end_date - timedelta(days=730)
-    selected_start = start_date.strftime('%Y-%m-%d')
-    selected_end = end_date.strftime('%Y-%m-%d')
-    period_label = "Last 2 Years"
+elif period_type == "Year to Date":
+    selected_start = f"{current_year}-01-01"
+    selected_end = today.strftime('%Y-%m-%d')
+    period_label = f"YTD {current_year}"
 
-else:  # Custom Range
+else:  # Custom
     col1, col2 = st.sidebar.columns(2)
     with col1:
         custom_start = st.date_input(
