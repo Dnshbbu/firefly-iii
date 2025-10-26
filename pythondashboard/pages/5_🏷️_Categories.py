@@ -392,7 +392,9 @@ try:
 
                         # Get transactions and group by month
                         timeline_txns = df_expenses[df_expenses['category_name'] == timeline_category].copy()
-                        timeline_txns['month'] = pd.to_datetime(timeline_txns['date']).dt.to_period('M')
+                        # Remove timezone before converting to period to avoid warning
+                        # Note: to_period() still uses 'M' (not 'ME' like resample)
+                        timeline_txns['month'] = pd.to_datetime(timeline_txns['date']).dt.tz_localize(None).dt.to_period('M')
 
                         # Group by month and calculate statistics
                         monthly_data = timeline_txns.groupby('month').agg({

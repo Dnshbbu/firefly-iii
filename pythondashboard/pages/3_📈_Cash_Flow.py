@@ -329,7 +329,9 @@ try:
                     elif aggregation == "Weekly":
                         cash_flow_df['period_display'] = cash_flow_df['period'].dt.strftime('%Y-W%U')
                     elif aggregation == "Quarterly":
-                        cash_flow_df['period_display'] = cash_flow_df['period'].dt.to_period('Q').astype(str)
+                        # Remove timezone before converting to period to avoid warning
+                        # Note: to_period() still uses 'Q' (not 'QE' like resample)
+                        cash_flow_df['period_display'] = cash_flow_df['period'].dt.tz_localize(None).dt.to_period('Q').astype(str)
                     else:  # Daily
                         cash_flow_df['period_display'] = cash_flow_df['period'].dt.strftime('%Y-%m-%d')
 

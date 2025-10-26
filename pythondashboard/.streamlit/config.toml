@@ -1,6 +1,6 @@
 [client]
-# Show the default Streamlit toolbar
-toolbarMode = "minimal"
+# Show the default Streamlit toolbar (auto = show on hover, developer = always show)
+toolbarMode = "auto"
 
 # Hide the default sidebar navigation (we're using custom collapsible navigation)
 showSidebarNavigation = false
