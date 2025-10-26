@@ -129,6 +129,72 @@ def render_sidebar_navigation():
         section[data-testid="stSidebar"] div[data-testid="stVerticalBlock"] > div {
             gap: 0.3rem !important;
         }
+
+        /* Compact selectbox/dropdown elements */
+        section[data-testid="stSidebar"] div[data-baseweb="select"] {
+            font-size: 0.75rem !important;
+            min-height: 1.8rem !important;
+            height: 1.8rem !important;
+        }
+
+        section[data-testid="stSidebar"] div[data-baseweb="select"] > div {
+            min-height: 1.8rem !important;
+            height: 1.8rem !important;
+            padding: 0.15rem 0.4rem !important;
+            font-size: 0.75rem !important;
+        }
+
+        /* Target the input control inside selectbox */
+        section[data-testid="stSidebar"] div[data-baseweb="select"] input {
+            height: 1.8rem !important;
+            min-height: 1.8rem !important;
+            font-size: 0.75rem !important;
+        }
+
+        /* Target the value container */
+        section[data-testid="stSidebar"] div[data-baseweb="select"] > div > div {
+            padding: 0.15rem 0.25rem !important;
+            min-height: 1.8rem !important;
+            height: 1.8rem !important;
+        }
+
+        /* Compact the arrow/icon */
+        section[data-testid="stSidebar"] div[data-baseweb="select"] svg {
+            width: 16px !important;
+            height: 16px !important;
+        }
+
+        /* Compact selectbox label */
+        section[data-testid="stSidebar"] div[data-testid="stSelectbox"] label {
+            font-size: 0.75rem !important;
+            margin-bottom: 0.2rem !important;
+        }
+
+        /* Compact selectbox container */
+        section[data-testid="stSidebar"] div[data-testid="stSelectbox"] {
+            margin-bottom: 0.4rem !important;
+        }
+
+        /* Compact dropdown menu/popover - the options list that appears */
+        div[data-baseweb="popover"] ul[role="listbox"] {
+            max-height: 300px !important;
+        }
+
+        div[data-baseweb="popover"] li[role="option"] {
+            font-size: 0.75rem !important;
+            padding: 0.25rem 0.5rem !important;
+            min-height: 1.8rem !important;
+            line-height: 1.3 !important;
+        }
+
+        div[data-baseweb="popover"] ul {
+            padding: 0.2rem 0 !important;
+        }
+
+        /* Compact the popover container itself */
+        div[data-baseweb="popover"] {
+            font-size: 0.75rem !important;
+        }
     </style>
     """, unsafe_allow_html=True)
 
