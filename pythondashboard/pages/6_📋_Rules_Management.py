@@ -102,7 +102,8 @@ if not st.session_state.api_connected:
     """)
     st.warning("⚠️ **Important:** The token is shown only once. Store it securely!")
 else:
-    client = st.session_state.api_client
+    # Recreate client from stored credentials (compatible with Dashboard pages)
+    client = FireflyAPIClient(st.session_state.firefly_url, st.session_state.firefly_token)
 
     # Create tabs for different operations
     tab1, tab2, tab3 = st.tabs(["📋 View & Export Rules", "🗑️ Delete Rules", "📥 Import Rules"])

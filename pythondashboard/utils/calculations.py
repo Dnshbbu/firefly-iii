@@ -29,14 +29,14 @@ def calculate_net_worth(df: pd.DataFrame) -> Dict[str, float]:
 
 def calculate_cash_flow(
     transactions_df: pd.DataFrame,
-    period: str = 'M'
+    period: str = 'ME'
 ) -> pd.DataFrame:
     """
     Calculate cash flow (income vs expenses) aggregated by period.
 
     Args:
         transactions_df: DataFrame with transaction data (must have 'date', 'type', 'amount' columns)
-        period: Pandas period string ('D' = daily, 'W' = weekly, 'M' = monthly, 'Q' = quarterly, 'Y' = yearly)
+        period: Pandas period string ('D' = daily, 'W' = weekly, 'ME' = monthly, 'QE' = quarterly, 'YE' = yearly)
 
     Returns:
         DataFrame with columns: period, income, expenses, net_flow
@@ -539,7 +539,7 @@ def calculate_daily_budget_pace(
 
 def calculate_category_trends(
     transactions_df: pd.DataFrame,
-    period: str = 'M'
+    period: str = 'ME'
 ) -> pd.DataFrame:
     """
     Calculate category spending trends over time.

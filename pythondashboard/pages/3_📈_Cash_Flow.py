@@ -231,8 +231,8 @@ aggregation = st.sidebar.selectbox(
 aggregation_map = {
     "Daily": "D",
     "Weekly": "W",
-    "Monthly": "M",
-    "Quarterly": "Q"
+    "Monthly": "ME",
+    "Quarterly": "QE"
 }
 
 # Main content - Fetch and display data
