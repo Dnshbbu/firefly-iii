@@ -376,7 +376,8 @@ def create_cumulative_chart(monthly_df: pd.DataFrame, current_month_index: int) 
         mode='lines+markers',
         name='Cumulative Budget',
         line=dict(color='blue', width=2),
-        marker=dict(size=6)
+        marker=dict(size=6),
+        hovertemplate='€%{y:,.2f}<extra></extra>'
     ))
 
     # Cumulative spent line (only up to current month - exclude future)
@@ -388,7 +389,8 @@ def create_cumulative_chart(monthly_df: pd.DataFrame, current_month_index: int) 
             mode='lines+markers',
             name='Cumulative Spent',
             line=dict(color='red', width=2, dash='dash'),
-            marker=dict(size=6)
+            marker=dict(size=6),
+            hovertemplate='€%{y:,.2f}<extra></extra>'
         ))
 
         # Projection line (for future months if any)
@@ -414,7 +416,8 @@ def create_cumulative_chart(monthly_df: pd.DataFrame, current_month_index: int) 
                 mode='lines+markers',
                 name='Projected Spending',
                 line=dict(color='orange', width=2, dash='dot'),
-                marker=dict(size=5, symbol='diamond')
+                marker=dict(size=5, symbol='diamond'),
+                hovertemplate='€%{y:,.2f}<extra></extra>'
             ))
 
     fig.update_layout(
