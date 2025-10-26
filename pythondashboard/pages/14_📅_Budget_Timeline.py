@@ -563,6 +563,49 @@ def get_per_budget_monthly_data(
     return budget_monthly_data
 
 
+def create_budget_gauge(budget_name: str, total_budgeted: float, total_spent: float, avg_spent: float) -> go.Figure:
+    """Create a gauge chart for a budget showing utilization"""
+    # Calculate utilization percentage
+    utilization_pct = (total_spent / total_budgeted * 100) if total_budgeted > 0 else 0
+
+    # Determine color based on utilization
+    if utilization_pct >= 100:
+        color = "red"
+    elif utilization_pct >= 80:
+        color = "orange"
+    else:
+        color = "green"
+
+    fig = go.Figure(go.Indicator(
+        mode="gauge+number+delta",
+        value=total_spent,
+        delta={'reference': total_budgeted, 'valueformat': '€,.0f'},
+        title={'text': f"{budget_name}<br><sub>Avg: €{avg_spent:,.0f}/mo</sub>", 'font': {'size': 11}},
+        number={'valueformat': '€,.0f', 'font': {'size': 14}},
+        gauge={
+            'axis': {'range': [None, total_budgeted * 1.2], 'tickformat': '€,.0f'},
+            'bar': {'color': color},
+            'steps': [
+                {'range': [0, total_budgeted * 0.8], 'color': 'lightgray'},
+                {'range': [total_budgeted * 0.8, total_budgeted], 'color': 'lightyellow'}
+            ],
+            'threshold': {
+                'line': {'color': "blue", 'width': 2},
+                'thickness': 0.75,
+                'value': total_budgeted
+            }
+        }
+    ))
+
+    fig.update_layout(
+        height=200,
+        margin=dict(t=50, b=10, l=20, r=20),
+        font=dict(size=9)
+    )
+
+    return fig
+
+
 def create_small_budget_chart(budget_name: str, budget_df: pd.DataFrame, current_month: int) -> go.Figure:
     """Create a small chart for an individual budget showing expected, actual, and running average"""
     fig = go.Figure()
@@ -930,8 +973,8 @@ try:
 
         st.markdown("---")
 
-        # === SECTION 4: Individual Budget Charts ===
-        st.markdown("### 📊 Individual Budget Performance")
+        # === SECTION 4: Budget Gauges ===
+        st.markdown("### 🎯 Budget Utilization Overview")
 
         # Get per-budget monthly data
         budget_monthly_data = get_per_budget_monthly_data(
@@ -943,6 +986,44 @@ try:
         )
 
         # Filter out budgets with no data
+        active_budgets = {name: df for name, df in budget_monthly_data.items()
+                         if df['budgeted'].sum() > 0 or df['spent'].sum() > 0}
+
+        if active_budgets:
+            # Calculate totals for each budget and create gauges
+            budget_names = list(active_budgets.keys())
+            gauges_per_row = 3  # 3 gauges per row
+
+            for i in range(0, len(budget_names), gauges_per_row):
+                cols = st.columns(gauges_per_row)
+
+                for j in range(gauges_per_row):
+                    idx = i + j
+                    if idx < len(budget_names):
+                        budget_name = budget_names[idx]
+                        budget_df = active_budgets[budget_name]
+
+                        # Calculate totals
+                        total_budgeted = budget_df['budgeted'].sum()
+                        total_spent = budget_df['spent'].sum()
+
+                        # Calculate average monthly spending (only for months with data)
+                        months_with_data = len(budget_df[budget_df['spent'] > 0])
+                        avg_spent = total_spent / months_with_data if months_with_data > 0 else 0
+
+                        with cols[j]:
+                            fig_gauge = create_budget_gauge(budget_name, total_budgeted, total_spent, avg_spent)
+                            st.plotly_chart(fig_gauge, use_container_width=True, config={'displayModeBar': False})
+        else:
+            st.info("No budget data available for the selected period.")
+
+        st.markdown("---")
+
+        # === SECTION 5: Individual Budget Charts ===
+        st.markdown("### 📊 Individual Budget Performance")
+
+        # active_budgets already calculated above
+        # Filter out budgets with no data (redundant but kept for clarity)
         active_budgets = {name: df for name, df in budget_monthly_data.items()
                          if df['budgeted'].sum() > 0 or df['spent'].sum() > 0}
 
@@ -968,7 +1049,7 @@ try:
 
         st.markdown("---")
 
-        # === SECTION 5: Monthly Breakdown Table ===
+        # === SECTION 6: Monthly Breakdown Table ===
         st.markdown("### 📋 Monthly Breakdown")
 
         # Status filter
