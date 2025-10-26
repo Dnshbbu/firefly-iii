@@ -319,6 +319,9 @@ try:
             cols[4].metric("Top Category", top_category['category_name'])
             cols[5].metric("Top Spending", f"€{top_category['total_amount']:,.0f}")
 
+        # Related dashboards navigation - compact
+        st.markdown('<div style="background-color: rgba(49, 51, 63, 0.2); padding: 0.3rem 0.5rem; border-radius: 0.3rem; font-size: 0.75rem;">💡 <b>Related:</b> <a href="/Budget" style="color: #58a6ff;">💰 Budget</a> • <a href="/Budget_Timeline" style="color: #58a6ff;">📅 Timeline</a> • <a href="/Cash_Flow" style="color: #58a6ff;">📈 Cash Flow</a> • <a href="/Net_Worth" style="color: #58a6ff;">📊 Net Worth</a></div>', unsafe_allow_html=True)
+
         st.markdown("---")
 
         # Visualization tabs

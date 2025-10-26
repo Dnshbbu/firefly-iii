@@ -568,6 +568,11 @@ try:
 
             st.markdown("---")
 
+            # Related dashboards navigation - compact
+            st.markdown('<div style="background-color: rgba(49, 51, 63, 0.2); padding: 0.3rem 0.5rem; border-radius: 0.3rem; font-size: 0.75rem;">💡 <b>Related:</b> <a href="/Cash_Flow" style="color: #58a6ff;">📈 Cash Flow</a> for income/expense trends</div>', unsafe_allow_html=True)
+
+            st.markdown("---")
+
             # === SECTION 3: Per-Currency Breakdown (Dense) ===
             for currency in available_currencies:
                 st.markdown(f"### 💵 {currency} Accounts")

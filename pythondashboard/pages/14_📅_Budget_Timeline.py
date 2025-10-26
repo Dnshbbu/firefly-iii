@@ -1091,6 +1091,9 @@ try:
                 st.metric("Utilization", f"{utilization_pct:.1f}%")
                 st.markdown('</div>', unsafe_allow_html=True)
 
+        # Related dashboards navigation - compact
+        st.markdown('<div style="background-color: rgba(49, 51, 63, 0.2); padding: 0.3rem 0.5rem; border-radius: 0.3rem; font-size: 0.75rem;">💡 <b>Related:</b> <a href="/Budget" style="color: #58a6ff;">💰 Budget</a> • <a href="/Cash_Flow" style="color: #58a6ff;">📈 Cash Flow</a> • <a href="/Categories" style="color: #58a6ff;">🏷️ Categories</a></div>', unsafe_allow_html=True)
+
         st.markdown("---")
 
         # === SECTION 2: Timeline Visualization ===

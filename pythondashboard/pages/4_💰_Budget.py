@@ -357,6 +357,9 @@ try:
         cols[5].metric("⚠️ Warning", warning_count)
         cols[6].metric("🚨 Over", over_budget_count)
 
+        # Related dashboards navigation - compact
+        st.markdown('<div style="background-color: rgba(49, 51, 63, 0.2); padding: 0.3rem 0.5rem; border-radius: 0.3rem; font-size: 0.75rem;">💡 <b>Related:</b> <a href="/Budget_Timeline" style="color: #58a6ff;">📅 Timeline</a> • <a href="/Cash_Flow" style="color: #58a6ff;">📈 Cash Flow</a> • <a href="/Categories" style="color: #58a6ff;">🏷️ Categories</a></div>', unsafe_allow_html=True)
+
         st.markdown("---")
 
         # Budget charts - side by side
