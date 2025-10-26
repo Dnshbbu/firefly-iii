@@ -408,21 +408,12 @@ if not st.session_state.api_connected and st.session_state.firefly_url and st.se
         st.session_state.api_connected = True
 
 # Show config source
-if st.session_state.firefly_url and st.session_state.firefly_token:
-    st.sidebar.info("📄 Configuration loaded from `.env` file")
-else:
+if not st.session_state.firefly_url or not st.session_state.firefly_token:
     st.sidebar.warning("⚠️ No credentials found in `.env` file")
 
 # Connection status
 if st.session_state.api_connected:
     st.sidebar.success(f"✅ Connected to {st.session_state.firefly_url}")
-
-    # Show option to reconfigure
-    with st.sidebar.expander("🔄 Change Configuration"):
-        st.markdown("To change API credentials, edit the `.env` file and restart the app.")
-        st.code("""# .env file
-FIREFLY_III_URL=http://your-url
-FIREFLY_III_TOKEN=your_token""", language="bash")
 else:
     st.sidebar.error("❌ Connection failed")
     st.sidebar.markdown("Check your `.env` file configuration:")
