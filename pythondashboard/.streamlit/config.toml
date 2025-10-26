@@ -2,8 +2,8 @@
 # Show the default Streamlit toolbar
 toolbarMode = "minimal"
 
-# Control sidebar navigation visibility (replaces deprecated ui.hideSidebarNav)
-showSidebarNavigation = true
+# Hide the default sidebar navigation (we're using custom collapsible navigation)
+showSidebarNavigation = false
 
 [ui]
 # Hide the default "Deploy" button
