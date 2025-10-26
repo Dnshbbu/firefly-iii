@@ -977,21 +977,59 @@ try:
         # === SECTION 1: Summary Metrics ===
         st.markdown("### 💰 Budget Summary")
 
+        # Single row with visual grouping via subtle background colors
         cols = st.columns(8)
-        cols[0].metric("Total Budget", f"€{total_budgeted:,.0f}")
-        cols[1].metric("YTD Spent", f"€{total_spent:,.0f}")
-        cols[2].metric("Remaining", f"€{total_remaining:,.0f}")
-        cols[3].metric("Avg Monthly Budget", f"€{avg_monthly_budget:,.0f}")
-        cols[4].metric("Avg Monthly Spend", f"€{avg_monthly_spend:,.0f}")
 
+        # Group 1: Period Totals (light blue background)
+        with cols[0]:
+            st.markdown('<div style="background-color: rgba(173, 216, 230, 0.15); padding: 10px; border-radius: 5px; height: 100%;">', unsafe_allow_html=True)
+            st.metric("Total Budget", f"€{total_budgeted:,.0f}")
+            st.markdown('</div>', unsafe_allow_html=True)
+
+        with cols[1]:
+            st.markdown('<div style="background-color: rgba(173, 216, 230, 0.15); padding: 10px; border-radius: 5px; height: 100%;">', unsafe_allow_html=True)
+            st.metric("YTD Spent", f"€{total_spent:,.0f}")
+            st.markdown('</div>', unsafe_allow_html=True)
+
+        with cols[2]:
+            st.markdown('<div style="background-color: rgba(173, 216, 230, 0.15); padding: 10px; border-radius: 5px; height: 100%;">', unsafe_allow_html=True)
+            st.metric("Remaining", f"€{total_remaining:,.0f}")
+            st.markdown('</div>', unsafe_allow_html=True)
+
+        # Group 2: Monthly Averages (light green background)
+        with cols[3]:
+            st.markdown('<div style="background-color: rgba(144, 238, 144, 0.15); padding: 10px; border-radius: 5px; height: 100%;">', unsafe_allow_html=True)
+            st.metric("Avg Monthly Budget", f"€{avg_monthly_budget:,.0f}")
+            st.markdown('</div>', unsafe_allow_html=True)
+
+        with cols[4]:
+            st.markdown('<div style="background-color: rgba(144, 238, 144, 0.15); padding: 10px; border-radius: 5px; height: 100%;">', unsafe_allow_html=True)
+            st.metric("Avg Monthly Spend", f"€{avg_monthly_spend:,.0f}")
+            st.markdown('</div>', unsafe_allow_html=True)
+
+        # Group 3: Projections (light yellow background)
         if months_remaining > 0:
-            cols[5].metric("Projected Total", f"€{projected_spend:,.0f}")
-            cols[6].metric("Projected Remaining", f"€{projected_remaining:,.0f}")
-            status_emoji = "✅" if projected_remaining >= 0 else "⚠️"
-            cols[7].metric("Status", f"{status_emoji}")
+            with cols[5]:
+                st.markdown('<div style="background-color: rgba(255, 255, 224, 0.3); padding: 10px; border-radius: 5px; height: 100%;">', unsafe_allow_html=True)
+                st.metric("Projected Total", f"€{projected_spend:,.0f}")
+                st.markdown('</div>', unsafe_allow_html=True)
+
+            with cols[6]:
+                st.markdown('<div style="background-color: rgba(255, 255, 224, 0.3); padding: 10px; border-radius: 5px; height: 100%;">', unsafe_allow_html=True)
+                st.metric("Projected Remaining", f"€{projected_remaining:,.0f}")
+                st.markdown('</div>', unsafe_allow_html=True)
+
+            with cols[7]:
+                st.markdown('<div style="background-color: rgba(255, 255, 224, 0.3); padding: 10px; border-radius: 5px; height: 100%;">', unsafe_allow_html=True)
+                status_emoji = "✅" if projected_remaining >= 0 else "⚠️"
+                st.metric("Status", f"{status_emoji}")
+                st.markdown('</div>', unsafe_allow_html=True)
         else:
-            utilization_pct = (total_spent / total_budgeted * 100) if total_budgeted > 0 else 0
-            cols[5].metric("Utilization", f"{utilization_pct:.1f}%")
+            with cols[5]:
+                st.markdown('<div style="background-color: rgba(255, 255, 224, 0.3); padding: 10px; border-radius: 5px; height: 100%;">', unsafe_allow_html=True)
+                utilization_pct = (total_spent / total_budgeted * 100) if total_budgeted > 0 else 0
+                st.metric("Utilization", f"{utilization_pct:.1f}%")
+                st.markdown('</div>', unsafe_allow_html=True)
 
         st.markdown("---")
 
