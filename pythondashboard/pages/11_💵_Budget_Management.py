@@ -13,6 +13,7 @@ import sys
 sys.path.append(str(Path(__file__).parent.parent))
 from firefly_api import FireflyAPIClient
 from utils.navigation import render_sidebar_navigation
+from utils.config import get_firefly_url, get_firefly_token
 
 # Page configuration
 st.set_page_config(
@@ -30,77 +31,53 @@ st.markdown("Manage your Firefly III budgets: export, view, create, update, dele
 # Initialize session state for API connection
 if 'api_connected' not in st.session_state:
     st.session_state.api_connected = False
-if 'api_client' not in st.session_state:
-    st.session_state.api_client = None
+if 'firefly_url' not in st.session_state:
+    st.session_state.firefly_url = get_firefly_url()
+if 'firefly_token' not in st.session_state:
+    st.session_state.firefly_token = get_firefly_token()
 if 'budgets_cache' not in st.session_state:
     st.session_state.budgets_cache = None
+if 'last_refresh_budgets' not in st.session_state:
+    st.session_state.last_refresh_budgets = None
 if 'last_refresh' not in st.session_state:
     st.session_state.last_refresh = None
+
+# Auto-connect if credentials are available
+if not st.session_state.api_connected and st.session_state.firefly_url and st.session_state.firefly_token:
+    client = FireflyAPIClient(st.session_state.firefly_url, st.session_state.firefly_token)
+    success, message = client.test_connection()
+    if success:
+        st.session_state.api_connected = True
 
 # Sidebar - API Configuration
 st.sidebar.header("🔌 API Connection")
 
-# Get saved credentials from session state or use defaults
-if 'firefly_url' not in st.session_state:
-    st.session_state.firefly_url = "http://localhost"
-if 'firefly_token' not in st.session_state:
-    st.session_state.firefly_token = ""
-
-firefly_url = st.sidebar.text_input(
-    "Firefly III URL",
-    value=st.session_state.firefly_url,
-    help="Base URL of your Firefly III instance (e.g., http://localhost or http://app:8080 for Docker)"
-)
-
-firefly_token = st.sidebar.text_input(
-    "Personal Access Token",
-    value=st.session_state.firefly_token,
-    type="password",
-    help="Generate a Personal Access Token in Firefly III at Profile > OAuth > Personal Access Tokens"
-)
-
-if st.sidebar.button("Connect to Firefly III", type="primary"):
-    if not firefly_url or not firefly_token:
-        st.sidebar.error("Please provide both URL and Access Token")
-    else:
-        # Save credentials to session state
-        st.session_state.firefly_url = firefly_url
-        st.session_state.firefly_token = firefly_token
-
-        # Test connection
-        client = FireflyAPIClient(firefly_url, firefly_token)
-        success, message = client.test_connection()
-
-        if success:
-            st.session_state.api_client = client
-            st.session_state.api_connected = True
-            st.sidebar.success(message)
-        else:
-            st.session_state.api_connected = False
-            st.sidebar.error(message)
-
 # Show connection status
 if st.session_state.api_connected:
-    st.sidebar.success("✅ Connected")
+    st.sidebar.success(f"✅ Connected to {st.session_state.firefly_url}")
 else:
-    st.sidebar.warning("⚠️ Not connected")
+    st.sidebar.error("❌ Not Connected")
+    st.sidebar.markdown("Edit `.env` file with credentials")
 
-# Divider
 st.sidebar.markdown("---")
 
 # Main content
 if not st.session_state.api_connected:
-    st.info("👈 Please connect to your Firefly III instance using the sidebar to get started")
-    st.markdown("### How to get a Personal Access Token:")
-    st.markdown("""
-    1. Log in to your Firefly III instance
-    2. Go to **Options** (top right) → **Profile**
-    3. Navigate to the **OAuth** tab
-    4. Under **Personal Access Tokens**, click **Create New Token**
-    5. Give it a name (e.g., "Streamlit Category Manager") and click **Create**
-    6. Copy the generated token and paste it above
+    st.info("""
+    ### 🔑 Getting Started
+
+    Configure your Firefly III credentials in the `.env` file:
+
+    1. **Edit `.env`** in the `pythondashboard` directory
+    2. **Add credentials**:
+       ```
+       FIREFLY_III_URL=http://localhost
+       FIREFLY_III_TOKEN=your_token_here
+       ```
+    3. **Restart the app**
+
+    Generate a token at: Firefly III → Options → Profile → OAuth → Personal Access Tokens
     """)
-    st.warning("⚠️ **Important:** The token is shown only once. Store it securely!")
 else:
     # Recreate client from stored credentials (compatible with Dashboard pages)
     client = FireflyAPIClient(st.session_state.firefly_url, st.session_state.firefly_token)

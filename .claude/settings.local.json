@@ -47,7 +47,14 @@
       "Bash(docker logs firefly_iii_app --since 2m)",
       "Bash(curl -sI http://localhost:8080)",
       "Bash(docker-compose -f docker-compose.quick.yml --env-file .env.docker down)",
-      "Bash(curl -s http://localhost:8080)"
+      "Bash(curl -s http://localhost:8080)",
+      "Bash(for file in \"pages/4_💰_Budget.py\" \"pages/5_🏷️_Categories.py\" \"pages/14_📅_Budget_Timeline.py\")",
+      "Bash(do)",
+      "Bash(done)",
+      "Bash(python3:*)",
+      "Bash(for file in pages/6_*.py pages/7_*.py pages/8_*.py pages/9_*.py pages/10_*.py pages/11_*.py pages/12_*.py pages/13_*.py)",
+      "Bash(for file in pages/6_*.py pages/7_*.py pages/11_*.py pages/12_*.py pages/13_*.py)",
+      "Bash(do echo \"=== $file ===\" grep -n \"st.session_state.last_refresh[^_]\" \"$file\")"
     ],
     "deny": [],
     "ask": []

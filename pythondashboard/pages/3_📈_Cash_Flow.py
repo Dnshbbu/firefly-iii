@@ -12,6 +12,7 @@ from utils.api_client import FireflyAPIClient
 from utils.charts import create_net_flow_chart, create_pie_chart, create_waterfall_chart
 from utils.calculations import calculate_cash_flow, calculate_category_spending, calculate_income_sources
 from utils.navigation import render_sidebar_navigation
+from utils.config import get_firefly_url, get_firefly_token
 
 # Page configuration
 st.set_page_config(
@@ -111,75 +112,44 @@ st.title("📈 Cash Flow Dashboard")
 # Sidebar for API configuration
 st.sidebar.header("🔧 API Configuration")
 
-# Initialize session state for API credentials
+# Initialize session state for API credentials from .env
 if 'firefly_url' not in st.session_state:
-    st.session_state.firefly_url = "http://192.168.0.242"
+    st.session_state.firefly_url = get_firefly_url()
 if 'firefly_token' not in st.session_state:
-    st.session_state.firefly_token = ""
+    st.session_state.firefly_token = get_firefly_token()
 if 'api_connected' not in st.session_state:
     st.session_state.api_connected = False
 
-# API configuration form
-with st.sidebar.form("api_config"):
-    firefly_url = st.text_input(
-        "Firefly III URL",
-        value=st.session_state.firefly_url,
-        placeholder="http://192.168.0.242"
-    )
-
-    firefly_token = st.text_input(
-        "API Token",
-        value=st.session_state.firefly_token,
-        type="password",
-        help="Generate a Personal Access Token in Firefly III under Profile → OAuth"
-    )
-
-    submit_button = st.form_submit_button("Connect")
-
-    if submit_button:
-        if not firefly_url or not firefly_token:
-            st.sidebar.error("Please provide both URL and API token")
-        else:
-            st.session_state.firefly_url = firefly_url
-            st.session_state.firefly_token = firefly_token
-
-            # Test connection
-            client = FireflyAPIClient(firefly_url, firefly_token)
-            success, message = client.test_connection()
-
-            if success:
-                st.session_state.api_connected = True
-                st.sidebar.success(message)
-                st.rerun()
-            else:
-                st.session_state.api_connected = False
-                st.sidebar.error(message)
+# Auto-connect if credentials are available and not yet connected
+if not st.session_state.api_connected and st.session_state.firefly_url and st.session_state.firefly_token:
+    client = FireflyAPIClient(st.session_state.firefly_url, st.session_state.firefly_token)
+    success, message = client.test_connection()
+    if success:
+        st.session_state.api_connected = True
 
 # Connection status
 if st.session_state.api_connected:
-    st.sidebar.success("✅ Connected to Firefly III")
+    st.sidebar.success(f"✅ Connected to {st.session_state.firefly_url}")
 else:
-    st.sidebar.warning("⚠️ Not connected")
+    st.sidebar.error("❌ Connection failed")
+    st.sidebar.markdown("Check your `.env` file configuration")
 
 # Display help if not connected
 if not st.session_state.api_connected:
     st.info("""
     ### 🔑 Getting Started
 
-    To use this dashboard, you need to configure the API connection:
+    Configure your Firefly III credentials in the `.env` file:
 
-    1. **Generate an API Token** in Firefly III:
-       - Go to your Firefly III instance
-       - Navigate to **Profile → OAuth**
-       - Click **Create New Token**
-       - Copy the generated token
+    1. **Edit the `.env` file** in the `pythondashboard` directory
+    2. **Add your credentials**:
+       ```
+       FIREFLY_III_URL=http://192.168.0.242
+       FIREFLY_III_TOKEN=your_token_here
+       ```
+    3. **Restart the app** for changes to take effect
 
-    2. **Enter your details** in the sidebar:
-       - Firefly III URL (e.g., `http://192.168.0.242`)
-       - Paste the API token
-       - Click **Connect**
-
-    Once connected, your cash flow data will be displayed automatically.
+    Once configured, your cash flow data will be displayed automatically.
     """)
     st.stop()
 
