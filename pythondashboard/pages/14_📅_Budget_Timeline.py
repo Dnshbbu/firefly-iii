@@ -294,8 +294,8 @@ def create_timeline_chart(monthly_df: pd.DataFrame, current_month_index: int) ->
         xaxis_title="Month",
         yaxis_title="Amount (€)",
         barmode='group',  # Changed from 'overlay' to 'group' for clustered bars
-        height=400,
-        margin=dict(t=60, b=40, l=60, r=20),
+        height=450,
+        margin=dict(t=80, b=60, l=80, r=40),
         legend=dict(
             orientation="h",
             yanchor="bottom",
@@ -307,6 +307,10 @@ def create_timeline_chart(monthly_df: pd.DataFrame, current_month_index: int) ->
         font=dict(size=10),
         hovermode='x unified'
     )
+
+    # Enable automargin to prevent cutoff
+    fig.update_xaxes(automargin=True)
+    fig.update_yaxes(automargin=True)
 
     # Add vertical line for current month if we can identify it
     if current_month_index > 0 and current_month_index <= len(monthly_df):
@@ -339,21 +343,36 @@ def create_deviation_chart(monthly_df: pd.DataFrame, current_month_index: int) -
         marker_color=colors,
         text=past_months['deviation'].apply(lambda x: f'€{x:,.0f}'),
         textposition='outside',
-        textfont=dict(size=9),
+        textfont=dict(size=10),
         showlegend=False
     ))
 
     # Add zero line
     fig.add_hline(y=0, line_dash="solid", line_color="black", line_width=1)
 
+    # Calculate range to give space for labels
+    if not past_months.empty:
+        max_val = past_months['deviation'].max()
+        min_val = past_months['deviation'].min()
+        # Add 15% padding on top and bottom for labels
+        padding = max(abs(max_val), abs(min_val)) * 0.15
+        y_range = [min_val - padding, max_val + padding]
+    else:
+        y_range = None
+
     fig.update_layout(
         title="Budget Deviations (Over/Under Budget)",
         xaxis_title="Month",
         yaxis_title="Deviation (€)",
-        height=300,
-        margin=dict(t=40, b=30, l=60, r=20),
-        font=dict(size=10)
+        height=400,
+        margin=dict(t=80, b=80, l=80, r=40),
+        font=dict(size=10),
+        yaxis=dict(range=y_range) if y_range else {}
     )
+
+    # Enable automargin to prevent cutoff
+    fig.update_xaxes(automargin=True)
+    fig.update_yaxes(automargin=True)
 
     return fig
 
@@ -424,8 +443,8 @@ def create_cumulative_chart(monthly_df: pd.DataFrame, current_month_index: int) 
         title="Cumulative Budget vs Actual Spending",
         xaxis_title="Month",
         yaxis_title="Cumulative Amount (€)",
-        height=350,
-        margin=dict(t=40, b=30, l=60, r=20),
+        height=400,
+        margin=dict(t=70, b=50, l=80, r=40),
         legend=dict(
             orientation="h",
             yanchor="bottom",
@@ -437,6 +456,10 @@ def create_cumulative_chart(monthly_df: pd.DataFrame, current_month_index: int) 
         font=dict(size=10),
         hovermode='x unified'
     )
+
+    # Enable automargin to prevent cutoff
+    fig.update_xaxes(automargin=True)
+    fig.update_yaxes(automargin=True)
 
     return fig
 
@@ -571,28 +594,41 @@ def create_budget_gauge(budget_name: str, total_budgeted: float, total_spent: fl
     # Calculate utilization percentage
     utilization_pct = (total_spent / total_budgeted * 100) if total_budgeted > 0 else 0
 
+    # Calculate difference and round it properly
+    difference = round(total_spent - total_budgeted, 2)
+
     # Determine color based on utilization
     if utilization_pct >= 100:
         color = "red"
+        delta_color = "red"
     elif utilization_pct >= 80:
         color = "orange"
+        delta_color = "orange"
     else:
         color = "green"
+        delta_color = "green"
+
+    # Format delta text with proper sign
+    if difference > 0:
+        delta_text = f"+€{abs(difference):,.2f}"
+    elif difference < 0:
+        delta_text = f"-€{abs(difference):,.2f}"
+    else:
+        delta_text = "€0.00"
 
     fig = go.Figure(go.Indicator(
-        mode="gauge+number+delta",
+        mode="gauge+number",
         value=total_spent,
-        delta={
-            'reference': total_budgeted,
-            'valueformat': '€,.0f',
-            'increasing': {'color': 'red'},  # Over budget = red (bad)
-            'decreasing': {'color': 'green'},  # Under budget = green (good)
-            'font': {'size': 16}  # Larger delta text
+        title={'text': f"{budget_name}<br><sub>Avg: €{avg_spent:,.2f}/mo</sub>", 'font': {'size': 14}},
+        number={
+            'valueformat': '€,.2f',
+            'font': {'size': 22},
+            'prefix': '',
+            'suffix': f'<br><span style="font-size:16px; color:{delta_color};">{delta_text}</span>'
         },
-        title={'text': f"{budget_name}<br><sub>Avg: €{avg_spent:,.0f}/mo</sub>", 'font': {'size': 14}},
-        number={'valueformat': '€,.0f', 'font': {'size': 20}},
+        domain={'x': [0, 1], 'y': [0, 1]},
         gauge={
-            'axis': {'range': [None, total_budgeted * 1.2], 'tickformat': '€,.0f', 'tickfont': {'size': 11}},
+            'axis': {'range': [None, total_budgeted * 1.2], 'tickformat': '€,.0f', 'tickfont': {'size': 10}},
             'bar': {'color': color},
             'steps': [
                 {'range': [0, total_budgeted * 0.8], 'color': 'lightgray'},
@@ -607,8 +643,8 @@ def create_budget_gauge(budget_name: str, total_budgeted: float, total_spent: fl
     ))
 
     fig.update_layout(
-        height=220,
-        margin=dict(t=55, b=15, l=20, r=20),
+        height=270,
+        margin=dict(t=65, b=30, l=30, r=30),
         font=dict(size=12)
     )
 
@@ -669,12 +705,12 @@ def create_small_budget_chart(budget_name: str, budget_df: pd.DataFrame, current
         ),
         xaxis_title="",
         yaxis_title="€",
-        height=240,
-        margin=dict(t=55, b=30, l=50, r=10),
+        height=260,
+        margin=dict(t=65, b=50, l=60, r=30),
         legend=dict(
             orientation="h",
             yanchor="top",
-            y=-0.15,
+            y=-0.2,
             xanchor="center",
             x=0.5,
             font=dict(size=10)
@@ -683,9 +719,9 @@ def create_small_budget_chart(budget_name: str, budget_df: pd.DataFrame, current
         hovermode='x unified'
     )
 
-    # Customize axes
-    fig.update_xaxes(tickfont=dict(size=10))
-    fig.update_yaxes(tickfont=dict(size=10))
+    # Customize axes and enable automargin to prevent cutoff
+    fig.update_xaxes(tickfont=dict(size=10), automargin=True)
+    fig.update_yaxes(tickfont=dict(size=10), automargin=True)
 
     return fig
 
@@ -1012,13 +1048,13 @@ try:
                         budget_name = budget_names[idx]
                         budget_df = active_budgets[budget_name]
 
-                        # Calculate totals
-                        total_budgeted = budget_df['budgeted'].sum()
-                        total_spent = budget_df['spent'].sum()
+                        # Calculate totals and round to 2 decimal places to avoid floating point precision issues
+                        total_budgeted = round(budget_df['budgeted'].sum(), 2)
+                        total_spent = round(budget_df['spent'].sum(), 2)
 
                         # Calculate average monthly spending (only for months with data)
                         months_with_data = len(budget_df[budget_df['spent'] > 0])
-                        avg_spent = total_spent / months_with_data if months_with_data > 0 else 0
+                        avg_spent = round(total_spent / months_with_data, 2) if months_with_data > 0 else 0
 
                         with cols[j]:
                             fig_gauge = create_budget_gauge(budget_name, total_budgeted, total_spent, avg_spent)
