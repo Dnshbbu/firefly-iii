@@ -579,11 +579,17 @@ def create_budget_gauge(budget_name: str, total_budgeted: float, total_spent: fl
     fig = go.Figure(go.Indicator(
         mode="gauge+number+delta",
         value=total_spent,
-        delta={'reference': total_budgeted, 'valueformat': '€,.0f'},
-        title={'text': f"{budget_name}<br><sub>Avg: €{avg_spent:,.0f}/mo</sub>", 'font': {'size': 11}},
-        number={'valueformat': '€,.0f', 'font': {'size': 14}},
+        delta={
+            'reference': total_budgeted,
+            'valueformat': '€,.0f',
+            'increasing': {'color': 'red'},  # Over budget = red (bad)
+            'decreasing': {'color': 'green'},  # Under budget = green (good)
+            'font': {'size': 16}  # Larger delta text
+        },
+        title={'text': f"{budget_name}<br><sub>Avg: €{avg_spent:,.0f}/mo</sub>", 'font': {'size': 14}},
+        number={'valueformat': '€,.0f', 'font': {'size': 20}},
         gauge={
-            'axis': {'range': [None, total_budgeted * 1.2], 'tickformat': '€,.0f'},
+            'axis': {'range': [None, total_budgeted * 1.2], 'tickformat': '€,.0f', 'tickfont': {'size': 11}},
             'bar': {'color': color},
             'steps': [
                 {'range': [0, total_budgeted * 0.8], 'color': 'lightgray'},
@@ -598,9 +604,9 @@ def create_budget_gauge(budget_name: str, total_budgeted: float, total_spent: fl
     ))
 
     fig.update_layout(
-        height=200,
-        margin=dict(t=50, b=10, l=20, r=20),
-        font=dict(size=9)
+        height=220,
+        margin=dict(t=55, b=15, l=20, r=20),
+        font=dict(size=12)
     )
 
     return fig
