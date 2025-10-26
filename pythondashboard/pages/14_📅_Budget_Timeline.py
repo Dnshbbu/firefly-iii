@@ -415,6 +415,168 @@ def create_monthly_breakdown_table(monthly_df: pd.DataFrame) -> pd.DataFrame:
     return df[['month_full', 'budgeted', 'spent', 'remaining', 'deviation', 'deviation_pct', 'status']]
 
 
+def get_per_budget_monthly_data(
+    budgets_data: List[Dict],
+    budget_limits_data: Dict[str, List[Dict]],
+    transactions_df: pd.DataFrame,
+    year: int
+) -> Dict[str, pd.DataFrame]:
+    """
+    Calculate monthly data for each individual budget.
+
+    Returns:
+        Dictionary mapping budget_name to DataFrame with monthly data
+    """
+    budget_monthly_data = {}
+
+    for budget in budgets_data:
+        budget_id = budget.get('id')
+        budget_name = budget.get('attributes', {}).get('name', 'Unknown')
+
+        monthly_records = []
+
+        for month in range(1, 13):
+            # Get start and end dates for this month
+            start_date = datetime(year, month, 1)
+            last_day = calendar.monthrange(year, month)[1]
+            end_date = datetime(year, month, last_day)
+
+            start_str = start_date.strftime('%Y-%m-%d')
+            end_str = end_date.strftime('%Y-%m-%d')
+
+            budgeted_amount = 0.0
+            spent_amount = 0.0
+
+            # Get budget limits for this budget and month
+            limits = budget_limits_data.get(budget_id, [])
+
+            for limit in limits:
+                limit_attrs = limit.get('attributes', {})
+                limit_start = limit_attrs.get('start')
+                limit_end = limit_attrs.get('end')
+                limit_amount = float(limit_attrs.get('amount', 0))
+
+                # Check if this limit overlaps with our month
+                if limit_start and limit_end:
+                    limit_start_date = datetime.strptime(limit_start, '%Y-%m-%dT%H:%M:%S%z').replace(tzinfo=None) if 'T' in limit_start else datetime.strptime(limit_start, '%Y-%m-%d')
+                    limit_end_date = datetime.strptime(limit_end, '%Y-%m-%dT%H:%M:%S%z').replace(tzinfo=None) if 'T' in limit_end else datetime.strptime(limit_end, '%Y-%m-%d')
+
+                    # Check for overlap
+                    if limit_start_date <= end_date and limit_end_date >= start_date:
+                        # Calculate the overlap proportion
+                        overlap_start = max(limit_start_date, start_date)
+                        overlap_end = min(limit_end_date, end_date)
+                        overlap_days = (overlap_end - overlap_start).days + 1
+                        total_limit_days = (limit_end_date - limit_start_date).days + 1
+
+                        # Prorate the budget amount based on overlap
+                        prorated_amount = (limit_amount * overlap_days) / total_limit_days if total_limit_days > 0 else limit_amount
+                        budgeted_amount += prorated_amount
+
+            # Calculate spent amount for this budget in this month
+            if not transactions_df.empty:
+                # Make start_date and end_date timezone-aware if transactions have timezone info
+                compare_start = start_date
+                compare_end = end_date
+                if transactions_df['date'].dt.tz is not None:
+                    compare_start = pd.Timestamp(start_date).tz_localize(transactions_df['date'].dt.tz)
+                    compare_end = pd.Timestamp(end_date).tz_localize(transactions_df['date'].dt.tz)
+
+                budget_transactions = transactions_df[
+                    (transactions_df['budget_name'] == budget_name) &
+                    (transactions_df['type'] == 'withdrawal') &
+                    (transactions_df['date'] >= compare_start) &
+                    (transactions_df['date'] <= compare_end)
+                ]
+                spent_amount = budget_transactions['amount'].sum()
+
+            monthly_records.append({
+                'month': month,
+                'month_name': calendar.month_abbr[month],
+                'budgeted': budgeted_amount,
+                'spent': spent_amount
+            })
+
+        budget_monthly_data[budget_name] = pd.DataFrame(monthly_records)
+
+    return budget_monthly_data
+
+
+def create_small_budget_chart(budget_name: str, budget_df: pd.DataFrame, current_month: int) -> go.Figure:
+    """Create a small chart for an individual budget showing expected, actual, and running average"""
+    fig = go.Figure()
+
+    # Expected (budgeted) line
+    fig.add_trace(go.Scatter(
+        x=budget_df['month_name'],
+        y=budget_df['budgeted'],
+        mode='lines+markers',
+        name='Expected',
+        line=dict(color='steelblue', width=2),
+        marker=dict(size=4),
+        showlegend=True
+    ))
+
+    # Actual spending line (only up to current month)
+    actual_data = budget_df[budget_df['month'] <= current_month].copy()
+    total_spent = 0
+
+    if not actual_data.empty:
+        fig.add_trace(go.Scatter(
+            x=actual_data['month_name'],
+            y=actual_data['spent'],
+            mode='lines+markers',
+            name='Actual',
+            line=dict(color='crimson', width=2, dash='dash'),
+            marker=dict(size=4),
+            showlegend=True
+        ))
+
+        # Calculate running/cumulative average (average from month 1 up to each month)
+        actual_data['running_avg'] = actual_data['spent'].expanding().mean()
+
+        total_spent = actual_data['spent'].sum()
+
+        fig.add_trace(go.Scatter(
+            x=actual_data['month_name'],
+            y=actual_data['running_avg'],
+            mode='lines',
+            name='Running Avg',
+            line=dict(color='orange', width=2, dash='dot'),
+            showlegend=True
+        ))
+
+    # Calculate total budgeted
+    total_budgeted = budget_df['budgeted'].sum()
+
+    fig.update_layout(
+        title=dict(
+            text=f"{budget_name}<br><sub>Budget: €{total_budgeted:,.0f} | Spent: €{total_spent:,.0f}</sub>",
+            font=dict(size=10)
+        ),
+        xaxis_title="",
+        yaxis_title="€",
+        height=220,
+        margin=dict(t=50, b=25, l=45, r=10),
+        legend=dict(
+            orientation="h",
+            yanchor="top",
+            y=-0.15,
+            xanchor="center",
+            x=0.5,
+            font=dict(size=7)
+        ),
+        font=dict(size=8),
+        hovermode='x unified'
+    )
+
+    # Customize axes
+    fig.update_xaxes(tickfont=dict(size=7))
+    fig.update_yaxes(tickfont=dict(size=7))
+
+    return fig
+
+
 # Main app
 st.title("📅 Budget Timeline & Roadmap")
 
@@ -627,7 +789,44 @@ try:
 
         st.markdown("---")
 
-        # === SECTION 4: Monthly Breakdown Table ===
+        # === SECTION 4: Individual Budget Charts ===
+        st.markdown("### 📊 Individual Budget Performance")
+
+        # Get per-budget monthly data
+        budget_monthly_data = get_per_budget_monthly_data(
+            budgets_data,
+            budget_limits_data,
+            df_transactions,
+            selected_year
+        )
+
+        # Filter out budgets with no data
+        active_budgets = {name: df for name, df in budget_monthly_data.items()
+                         if df['budgeted'].sum() > 0 or df['spent'].sum() > 0}
+
+        if active_budgets:
+            # Display charts in a grid (3 per row)
+            budget_names = list(active_budgets.keys())
+            charts_per_row = 3
+
+            for i in range(0, len(budget_names), charts_per_row):
+                cols = st.columns(charts_per_row)
+
+                for j in range(charts_per_row):
+                    idx = i + j
+                    if idx < len(budget_names):
+                        budget_name = budget_names[idx]
+                        budget_df = active_budgets[budget_name]
+
+                        with cols[j]:
+                            fig = create_small_budget_chart(budget_name, budget_df, current_month)
+                            st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
+        else:
+            st.info("No budget data available for this year.")
+
+        st.markdown("---")
+
+        # === SECTION 5: Monthly Breakdown Table ===
         st.markdown("### 📋 Monthly Breakdown")
 
         # Status filter
