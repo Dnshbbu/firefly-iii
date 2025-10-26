@@ -622,8 +622,8 @@ def create_small_budget_chart(budget_name: str, budget_df: pd.DataFrame, current
         y=budget_df['budgeted'],
         mode='lines+markers',
         name='Expected',
-        line=dict(color='steelblue', width=2),
-        marker=dict(size=4),
+        line=dict(color='steelblue', width=2.5),
+        marker=dict(size=6),
         showlegend=True
     ))
 
@@ -637,8 +637,8 @@ def create_small_budget_chart(budget_name: str, budget_df: pd.DataFrame, current
             y=actual_data['spent'],
             mode='lines+markers',
             name='Actual',
-            line=dict(color='crimson', width=2, dash='dash'),
-            marker=dict(size=4),
+            line=dict(color='crimson', width=2.5, dash='dash'),
+            marker=dict(size=6),
             showlegend=True
         ))
 
@@ -652,7 +652,7 @@ def create_small_budget_chart(budget_name: str, budget_df: pd.DataFrame, current
             y=actual_data['running_avg'],
             mode='lines',
             name='Running Avg',
-            line=dict(color='orange', width=2, dash='dot'),
+            line=dict(color='orange', width=2.5, dash='dot'),
             showlegend=True
         ))
 
@@ -662,27 +662,27 @@ def create_small_budget_chart(budget_name: str, budget_df: pd.DataFrame, current
     fig.update_layout(
         title=dict(
             text=f"{budget_name}<br><sub>Budget: €{total_budgeted:,.0f} | Spent: €{total_spent:,.0f}</sub>",
-            font=dict(size=10)
+            font=dict(size=13)
         ),
         xaxis_title="",
         yaxis_title="€",
-        height=220,
-        margin=dict(t=50, b=25, l=45, r=10),
+        height=240,
+        margin=dict(t=55, b=30, l=50, r=10),
         legend=dict(
             orientation="h",
             yanchor="top",
             y=-0.15,
             xanchor="center",
             x=0.5,
-            font=dict(size=7)
+            font=dict(size=10)
         ),
-        font=dict(size=8),
+        font=dict(size=11),
         hovermode='x unified'
     )
 
     # Customize axes
-    fig.update_xaxes(tickfont=dict(size=7))
-    fig.update_yaxes(tickfont=dict(size=7))
+    fig.update_xaxes(tickfont=dict(size=10))
+    fig.update_yaxes(tickfont=dict(size=10))
 
     return fig
 
