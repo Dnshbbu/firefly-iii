@@ -263,520 +263,243 @@ if st.session_state.savings_list:
 
     st.divider()
 
-    # 2D Roadmap Visualization
-    st.subheader("🛣️ Savings Roadmap")
-    st.markdown("**Your journey to financial goals**")
-
     # Generate timeline data
     timeline_data = generate_timeline_data(st.session_state.savings_list)
 
-    # Prepare milestones (years + savings maturity)
-    milestones = []
-
-    # Add year milestones
-    years_seen = set()
+    # Create DataFrame for the projection chart
+    chart_data = []
     for point in timeline_data:
-        year = point['date'].year
-        if year not in years_seen:
-            years_seen.add(year)
-            milestones.append({
-                'date': point['date'],
-                'year': year,
-                'type': 'year',
-                'title': str(year),
-                'value': point['total'],
-                'description': f"Total Portfolio: €{point['total']:,.0f}"
-            })
+        row = {'Date': point['date'], 'Total': point['total']}
+        for item in point['breakdown']:
+            row[item['name']] = item['value']
+        chart_data.append(row)
 
-    # Add savings maturity milestones
-    for idx, saving in enumerate(st.session_state.savings_list):
-        color = saving.get('color', get_color_for_saving(idx))
-        milestones.append({
-            'date': saving['maturity_date'],
-            'year': saving['maturity_date'].year,
-            'type': 'saving',
-            'title': saving['name'],
-            'value': saving['maturity_value'],
-            'description': f"€{saving['maturity_value']:,.0f}",
-            'color': color['hex'],
-            'saving_data': saving
-        })
+    df_timeline = pd.DataFrame(chart_data)
 
-    # Sort milestones by date
-    milestones.sort(key=lambda x: x['date'])
+    # Create two columns for side-by-side charts
+    col1, col2 = st.columns([2, 1])
 
-    # Create milestones JSON for JavaScript
-    milestones_json = json.dumps(milestones, default=str)
+    with col1:
+        st.subheader("📈 Savings Growth Projection")
 
-    # 2D Roadmap visualization
-    st.components.v1.html(f"""
-    <!DOCTYPE html>
-    <html>
-    <head>
-        <style>
-            body {{
-                margin: 0;
-                padding: 0;
-                background: linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 100%);
-                font-family: 'Segoe UI', Arial, sans-serif;
-                overflow: hidden;
-            }}
-            .roadmap-container {{
-                position: relative;
-                width: 100%;
-                height: 700px;
-                overflow: hidden;
-                cursor: grab;
-            }}
-            .roadmap-container:active {{
-                cursor: grabbing;
-            }}
-            .roadmap-content {{
-                position: absolute;
-                width: 2000px;
-                height: 1000px;
-                left: 50%;
-                top: 50%;
-                transform-origin: center center;
-            }}
-            .zoom-controls {{
-                position: absolute;
-                top: 20px;
-                right: 20px;
-                z-index: 100;
-                display: flex;
-                flex-direction: column;
-                gap: 10px;
-            }}
-            .zoom-btn {{
-                width: 50px;
-                height: 50px;
-                background: rgba(0, 0, 0, 0.8);
-                border: 2px solid #FFD700;
-                border-radius: 8px;
-                color: #FFD700;
-                font-size: 24px;
-                font-weight: bold;
-                cursor: pointer;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                transition: all 0.3s ease;
-            }}
-            .zoom-btn:hover {{
-                background: #FFD700;
-                color: #000;
-                transform: scale(1.1);
-            }}
-            .zoom-level {{
-                position: absolute;
-                bottom: 20px;
-                right: 20px;
-                background: rgba(0, 0, 0, 0.8);
-                color: #FFD700;
-                padding: 10px 15px;
-                border-radius: 8px;
-                font-size: 14px;
-                font-weight: bold;
-                border: 2px solid #FFD700;
-                z-index: 100;
-            }}
-            .road-path {{
-                position: absolute;
-                width: 100%;
-                height: 100%;
-                z-index: 1;
-            }}
-            .milestone {{
-                position: absolute;
-                display: flex;
-                flex-direction: column;
-                align-items: center;
-                z-index: 10;
-                cursor: pointer;
-                transition: transform 0.3s ease;
-            }}
-            .milestone:hover {{
-                transform: scale(1.1);
-            }}
-            .milestone-marker {{
-                border-radius: 50%;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                font-weight: bold;
-                color: white;
-                position: relative;
-            }}
-            .milestone-marker.year {{
-                width: 60px;
-                height: 60px;
-                font-size: 16px;
-                background: rgba(120, 120, 120, 0.7);
-                border: 3px solid #AAA;
-                box-shadow: 0 3px 10px rgba(0,0,0,0.4);
-            }}
-            .milestone-marker.saving {{
-                width: 80px;
-                height: 80px;
-                font-size: 24px;
-                background: linear-gradient(135deg, var(--color-start) 0%, var(--color-end) 100%);
-                border: 4px solid #FFF;
-                box-shadow: 0 6px 20px rgba(0,0,0,0.6);
-                animation: pulse 2s ease-in-out infinite;
-            }}
-            @keyframes pulse {{
-                0%, 100% {{ box-shadow: 0 4px 15px rgba(0,0,0,0.5), 0 0 0 0 var(--color-start); }}
-                50% {{ box-shadow: 0 4px 20px rgba(0,0,0,0.7), 0 0 0 10px transparent; }}
-            }}
-            .milestone-label {{
-                background: rgba(0,0,0,0.9);
-                color: white;
-                padding: 12px 20px;
-                border-radius: 8px;
-                margin-top: 15px;
-                text-align: center;
-                box-shadow: 0 4px 12px rgba(0,0,0,0.6);
-                border-left: 5px solid var(--border-color, #FFD700);
-            }}
-            .milestone.year-milestone .milestone-label {{
-                padding: 8px 12px;
-                min-width: 100px;
-                background: rgba(0,0,0,0.7);
-                border-left: 3px solid #888;
-            }}
-            .milestone-title {{
-                font-size: 18px;
-                font-weight: bold;
-                margin-bottom: 5px;
-                color: var(--title-color, #FFD700);
-            }}
-            .year-milestone .milestone-title {{
-                font-size: 15px;
-                color: #BBB;
-                font-weight: 600;
-            }}
-            .milestone-description {{
-                font-size: 14px;
-                color: #8FE88F;
-                font-weight: bold;
-            }}
-            .year-milestone .milestone-description {{
-                font-size: 12px;
-                color: #8FE88F;
-                font-weight: bold;
-            }}
-            .legend {{
-                position: absolute;
-                top: 20px;
-                left: 20px;
-                background: rgba(0,0,0,0.9);
-                color: white;
-                padding: 15px 20px;
-                border-radius: 8px;
-                z-index: 100;
-                max-width: 250px;
-                border: 2px solid #FFD700;
-            }}
-            .legend h3 {{
-                margin: 0 0 10px 0;
-                font-size: 16px;
-                color: #FFD700;
-            }}
-            .legend-item {{
-                display: flex;
-                align-items: center;
-                margin: 8px 0;
-                font-size: 13px;
-            }}
-            .legend-color {{
-                width: 30px;
-                height: 30px;
-                border-radius: 50%;
-                margin-right: 10px;
-                border: 2px solid white;
-                flex-shrink: 0;
-            }}
-            .road-segment {{
-                position: absolute;
-                height: 60px;
-                background: linear-gradient(180deg, #333 0%, #222 50%, #333 100%);
-                border: 2px solid #555;
-                border-radius: 30px;
-                box-shadow: 0 4px 10px rgba(0,0,0,0.5);
-            }}
-            .road-stripe {{
-                position: absolute;
-                height: 4px;
-                background: #FFD700;
-                top: 50%;
-                transform: translateY(-50%);
-                border-radius: 2px;
-            }}
-        </style>
-    </head>
-    <body>
-        <div class="roadmap-container" id="roadmap">
-            <div class="roadmap-content" id="content">
-                <svg class="road-path" id="road-svg"></svg>
-            </div>
-        </div>
+        # Create the main projection chart with Plotly
+        fig = go.Figure()
 
-        <div class="legend" id="legend">
-            <h3>💰 Your Savings</h3>
-            <div id="legend-items"></div>
-        </div>
+        # Add stacked area chart for each saving
+        for idx, saving in enumerate(st.session_state.savings_list):
+            color_obj = saving.get('color', get_color_for_saving(idx))
 
-        <div class="zoom-controls">
-            <button class="zoom-btn" id="zoom-in">+</button>
-            <button class="zoom-btn" id="zoom-out">−</button>
-            <button class="zoom-btn" id="zoom-reset" style="font-size: 18px;">⟲</button>
-        </div>
-        <div class="zoom-level" id="zoom-level">100%</div>
+            fig.add_trace(go.Scatter(
+                x=df_timeline['Date'],
+                y=df_timeline[saving['name']],
+                name=saving['name'],
+                mode='lines',
+                line=dict(width=0.5, color=color_obj['hex']),
+                stackgroup='one',
+                fillcolor=color_obj['hex'],
+                hovertemplate='<b>%{fullData.name}</b><br>' +
+                              'Date: %{x|%Y-%m-%d}<br>' +
+                              'Value: €%{y:,.2f}<br>' +
+                              '<extra></extra>'
+            ))
 
-        <script>
-            const milestones = {milestones_json};
-            console.log('Milestones:', milestones);
+        # Add total portfolio line (bold, on top)
+        fig.add_trace(go.Scatter(
+            x=df_timeline['Date'],
+            y=df_timeline['Total'],
+            name='Total Portfolio',
+            mode='lines',
+            line=dict(width=3, color='#FFD700', dash='solid'),
+            hovertemplate='<b>Total Portfolio</b><br>' +
+                          'Date: %{x|%Y-%m-%d}<br>' +
+                          'Value: €%{y:,.2f}<br>' +
+                          '<extra></extra>'
+        ))
 
-            // Build legend
-            const legendItems = document.getElementById('legend-items');
-            const savingsMap = new Map();
+        # Add confidence bands (±5% for illustration)
+        upper_bound = df_timeline['Total'] * 1.05
+        lower_bound = df_timeline['Total'] * 0.95
 
-            milestones.forEach(m => {{
-                if (m.type === 'saving' && !savingsMap.has(m.title)) {{
-                    savingsMap.set(m.title, m.color);
-                }}
-            }});
+        fig.add_trace(go.Scatter(
+            x=df_timeline['Date'],
+            y=upper_bound,
+            mode='lines',
+            name='Upper Bound (+5%)',
+            line=dict(width=0),
+            showlegend=False,
+            hoverinfo='skip'
+        ))
 
-            savingsMap.forEach((color, name) => {{
-                const item = document.createElement('div');
-                item.className = 'legend-item';
-                item.innerHTML = `
-                    <div class="legend-color" style="background: ${{color}};"></div>
-                    <span>${{name}}</span>
-                `;
-                legendItems.appendChild(item);
-            }});
+        fig.add_trace(go.Scatter(
+            x=df_timeline['Date'],
+            y=lower_bound,
+            mode='lines',
+            name='Lower Bound (-5%)',
+            line=dict(width=0),
+            fillcolor='rgba(255, 215, 0, 0.1)',
+            fill='tonexty',
+            showlegend=False,
+            hoverinfo='skip'
+        ))
 
-            const container = document.getElementById('roadmap');
-            const content = document.getElementById('content');
-            const svg = document.getElementById('road-svg');
+        # Add maturity markers and vertical lines using shapes (to avoid datetime issues)
+        shapes = []
+        annotations = []
 
-            // Zoom and pan state
-            const defaultScale = 0.5;  // Start zoomed out to fit everything
-            let scale = defaultScale;
-            let translateX = 0;
-            let translateY = 0;
-            let isDragging = false;
-            let startX, startY;
+        for idx, saving in enumerate(st.session_state.savings_list):
+            color_obj = saving.get('color', get_color_for_saving(idx))
 
-            function updateTransform() {{
-                content.style.transform = `translate(${{translateX}}px, ${{translateY}}px) translate(-50%, -50%) scale(${{scale}})`;
-                document.getElementById('zoom-level').textContent = Math.round(scale * 100) + '%';
-            }}
+            # Add maturity marker (scatter point)
+            maturity_point = df_timeline[df_timeline['Date'] == saving['maturity_date']]
+            if not maturity_point.empty:
+                fig.add_trace(go.Scatter(
+                    x=[saving['maturity_date']],
+                    y=[maturity_point[saving['name']].values[0]],
+                    mode='markers',
+                    name=f"{saving['name']} Maturity",
+                    marker=dict(
+                        size=15,
+                        color=color_obj['hex'],
+                        symbol='diamond',
+                        line=dict(color='white', width=2)
+                    ),
+                    showlegend=False,
+                    hovertemplate=f'<b>{saving["name"]} Matures</b><br>' +
+                                  'Date: %{x|%Y-%m-%d}<br>' +
+                                  f'Final Value: €{saving["maturity_value"]:,.2f}<br>' +
+                                  f'Interest Earned: €{saving["interest_earned"]:,.2f}<br>' +
+                                  '<extra></extra>'
+                ))
 
-            // Zoom controls
-            document.getElementById('zoom-in').addEventListener('click', () => {{
-                scale = Math.min(scale * 1.2, 3);
-                updateTransform();
-            }});
+                # Add vertical line as a shape
+                shapes.append(dict(
+                    type='line',
+                    x0=saving['maturity_date'],
+                    x1=saving['maturity_date'],
+                    y0=0,
+                    y1=1,
+                    yref='paper',
+                    line=dict(
+                        color=color_obj['hex'],
+                        width=2,
+                        dash='dash'
+                    ),
+                    opacity=0.6
+                ))
 
-            document.getElementById('zoom-out').addEventListener('click', () => {{
-                scale = Math.max(scale / 1.2, 0.3);
-                updateTransform();
-            }});
+                # Add annotation for maturity
+                annotations.append(dict(
+                    x=saving['maturity_date'],
+                    y=1,
+                    yref='paper',
+                    text=f"{saving['name']} Matures",
+                    showarrow=False,
+                    yanchor='bottom',
+                    font=dict(size=10, color=color_obj['hex']),
+                    bgcolor='rgba(0,0,0,0.7)',
+                    bordercolor=color_obj['hex'],
+                    borderwidth=1,
+                    borderpad=4
+                ))
 
-            document.getElementById('zoom-reset').addEventListener('click', () => {{
-                scale = defaultScale;
-                translateX = 0;
-                translateY = 0;
-                updateTransform();
-            }});
+        # Update layout with shapes and annotations
+        fig.update_layout(
+            template='plotly_dark',
+            hovermode='x unified',
+            height=600,
+            margin=dict(l=10, r=10, t=10, b=10),
+            plot_bgcolor='rgba(10,10,30,0.9)',
+            paper_bgcolor='rgba(10,10,30,0.9)',
+            xaxis=dict(
+                title='Date',
+                showgrid=True,
+                gridwidth=1,
+                gridcolor='rgba(128,128,128,0.2)',
+                zeroline=False
+            ),
+            yaxis=dict(
+                title='Value (€)',
+                showgrid=True,
+                gridwidth=1,
+                gridcolor='rgba(128,128,128,0.2)',
+                zeroline=False,
+                tickformat=',.0f',
+                tickprefix='€'
+            ),
+            legend=dict(
+                orientation='h',
+                yanchor='bottom',
+                y=1.02,
+                xanchor='right',
+                x=1,
+                bgcolor='rgba(0,0,0,0.5)',
+                bordercolor='rgba(128,128,128,0.3)',
+                borderwidth=1
+            ),
+            font=dict(family='Segoe UI, Arial', size=12),
+            shapes=shapes,
+            annotations=annotations
+        )
 
-            // Mouse wheel zoom
-            container.addEventListener('wheel', (e) => {{
-                e.preventDefault();
-                const delta = e.deltaY > 0 ? 0.9 : 1.1;
-                scale = Math.max(0.3, Math.min(3, scale * delta));
-                updateTransform();
-            }});
+        st.plotly_chart(fig, use_container_width=True)
 
-            // Pan (drag)
-            container.addEventListener('mousedown', (e) => {{
-                isDragging = true;
-                startX = e.clientX - translateX;
-                startY = e.clientY - translateY;
-            }});
+    with col2:
+        st.subheader("💎 Maturity Values")
 
-            container.addEventListener('mousemove', (e) => {{
-                if (isDragging) {{
-                    translateX = e.clientX - startX;
-                    translateY = e.clientY - startY;
-                    updateTransform();
-                }}
-            }});
+        fig_bars = go.Figure()
 
-            container.addEventListener('mouseup', () => {{
-                isDragging = false;
-            }});
+        savings_names = [s['name'] for s in st.session_state.savings_list]
+        principals = [s['principal'] for s in st.session_state.savings_list]
+        interests = [s['interest_earned'] for s in st.session_state.savings_list]
+        colors = [s.get('color', get_color_for_saving(i))['hex'] for i, s in enumerate(st.session_state.savings_list)]
 
-            container.addEventListener('mouseleave', () => {{
-                isDragging = false;
-            }});
+        fig_bars.add_trace(go.Bar(
+            name='Principal',
+            x=savings_names,
+            y=principals,
+            marker_color='rgba(100,100,100,0.6)',
+            hovertemplate='<b>%{x}</b><br>Principal: €%{y:,.2f}<extra></extra>'
+        ))
 
-            // Calculate road path (S-curve)
-            const contentWidth = 1800;
-            const contentHeight = 600;
-            const roadStartX = 100;
-            const roadStartY = contentHeight / 2;
+        fig_bars.add_trace(go.Bar(
+            name='Interest Earned',
+            x=savings_names,
+            y=interests,
+            marker_color=colors,
+            hovertemplate='<b>%{x}</b><br>Interest: €%{y:,.2f}<extra></extra>'
+        ))
 
-            // Calculate initial positions for all milestones
-            const milestonePositions = milestones.map((milestone, index) => {{
-                const progress = index / (milestones.length - 1);
-                const x = roadStartX + progress * contentWidth;
-                const y = roadStartY + Math.sin(progress * Math.PI * 2) * 150;
-                return {{ x, y, milestone, index }};
-            }});
+        fig_bars.update_layout(
+            barmode='stack',
+            template='plotly_dark',
+            height=600,
+            margin=dict(l=10, r=10, t=10, b=10),
+            plot_bgcolor='rgba(10,10,30,0.9)',
+            paper_bgcolor='rgba(10,10,30,0.9)',
+            xaxis=dict(
+                title='',
+                showgrid=False
+            ),
+            yaxis=dict(
+                title='Amount (€)',
+                showgrid=True,
+                gridwidth=1,
+                gridcolor='rgba(128,128,128,0.2)',
+                tickformat=',.0f',
+                tickprefix='€'
+            ),
+            legend=dict(
+                orientation='h',
+                yanchor='bottom',
+                y=1.02,
+                xanchor='right',
+                x=1,
+                bgcolor='rgba(0,0,0,0.5)'
+            ),
+            font=dict(family='Segoe UI, Arial', size=12)
+        )
 
-            // Detect and resolve overlaps
-            const minDistance = 200; // Minimum horizontal distance between milestones
-            const verticalOffset = 180; // Vertical offset for overlapping milestones
-
-            for (let i = 0; i < milestonePositions.length; i++) {{
-                for (let j = i + 1; j < milestonePositions.length; j++) {{
-                    const pos1 = milestonePositions[i];
-                    const pos2 = milestonePositions[j];
-
-                    const distance = Math.abs(pos2.x - pos1.x);
-
-                    // If milestones are too close horizontally
-                    if (distance < minDistance) {{
-                        // Alternate above and below the road
-                        if (j % 2 === 0) {{
-                            pos2.y -= verticalOffset;
-                            pos2.offset = 'above';
-                        }} else {{
-                            pos2.y += verticalOffset;
-                            pos2.offset = 'below';
-                        }}
-                    }}
-                }}
-            }}
-
-            // Position milestones along curved path
-            milestonePositions.forEach(({{ x, y, milestone, index, offset }}) => {{
-                // Create milestone element
-                const milestoneEl = document.createElement('div');
-                milestoneEl.className = milestone.type === 'year' ? 'milestone year-milestone' : 'milestone';
-                milestoneEl.style.left = x + 'px';
-                milestoneEl.style.top = y + 'px';
-
-                // If milestone is offset, draw a connector line to the road
-                if (offset) {{
-                    const roadY = roadStartY + Math.sin((index / (milestones.length - 1)) * Math.PI * 2) * 150;
-                    const connector = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-                    connector.setAttribute('x1', x);
-                    connector.setAttribute('y1', y);
-                    connector.setAttribute('x2', x);
-                    connector.setAttribute('y2', roadY);
-                    connector.setAttribute('stroke', milestone.color || '#FFD700');
-                    connector.setAttribute('stroke-width', '3');
-                    connector.setAttribute('stroke-dasharray', '5,5');
-                    connector.setAttribute('opacity', '0.6');
-                    svg.appendChild(connector);
-                }}
-
-                // Create marker
-                const marker = document.createElement('div');
-                marker.className = `milestone-marker ${{milestone.type}}`;
-
-                if (milestone.type === 'year') {{
-                    marker.textContent = milestone.title;
-                }} else {{
-                    // Calculate years from today for savings
-                    const today = new Date();
-                    const maturityDate = new Date(milestone.date);
-                    const yearsFromNow = ((maturityDate - today) / (1000 * 60 * 60 * 24 * 365.25)).toFixed(1);
-                    marker.textContent = yearsFromNow + 'y';
-                    const colorHex = milestone.color || '#4CAF50';
-                    marker.style.setProperty('--color-start', colorHex);
-                    marker.style.setProperty('--color-end', colorHex + 'CC');
-                }}
-
-                // Create label
-                const label = document.createElement('div');
-                label.className = 'milestone-label';
-
-                // Apply color styling for saving milestones
-                if (milestone.type === 'saving') {{
-                    const colorHex = milestone.color || '#4CAF50';
-                    label.style.setProperty('--border-color', colorHex);
-                    label.style.setProperty('--title-color', colorHex);
-                    label.innerHTML = `
-                        <div class="milestone-title">${{milestone.title}}</div>
-                        <div class="milestone-description">${{milestone.description}}</div>
-                    `;
-                }} else {{
-                    // For year milestones, only show the portfolio value (no year in title)
-                    label.innerHTML = `
-                        <div class="milestone-description">${{milestone.description}}</div>
-                    `;
-                }}
-
-                milestoneEl.appendChild(marker);
-                milestoneEl.appendChild(label);
-                content.appendChild(milestoneEl);
-            }});
-
-            // Draw road path using SVG
-            let pathData = '';
-            for (let i = 0; i < milestones.length - 1; i++) {{
-                const progress1 = i / (milestones.length - 1);
-                const progress2 = (i + 1) / (milestones.length - 1);
-
-                const x1 = roadStartX + progress1 * contentWidth;
-                const y1 = roadStartY + Math.sin(progress1 * Math.PI * 2) * 150;
-                const x2 = roadStartX + progress2 * contentWidth;
-                const y2 = roadStartY + Math.sin(progress2 * Math.PI * 2) * 150;
-
-                if (i === 0) {{
-                    pathData += `M ${{x1}} ${{y1}} `;
-                }}
-
-                // Control points for smooth curve
-                const cpx1 = x1 + (x2 - x1) * 0.5;
-                const cpy1 = y1;
-                const cpx2 = x1 + (x2 - x1) * 0.5;
-                const cpy2 = y2;
-
-                pathData += `C ${{cpx1}} ${{cpy1}}, ${{cpx2}} ${{cpy2}}, ${{x2}} ${{y2}} `;
-            }}
-
-            // Create SVG path for road
-            const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-            path.setAttribute('d', pathData);
-            path.setAttribute('stroke', '#555');
-            path.setAttribute('stroke-width', '60');
-            path.setAttribute('fill', 'none');
-            path.setAttribute('stroke-linecap', 'round');
-            svg.appendChild(path);
-
-            // Create center stripe
-            const stripePath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-            stripePath.setAttribute('d', pathData);
-            stripePath.setAttribute('stroke', '#FFD700');
-            stripePath.setAttribute('stroke-width', '4');
-            stripePath.setAttribute('fill', 'none');
-            stripePath.setAttribute('stroke-dasharray', '20,15');
-            stripePath.setAttribute('stroke-linecap', 'round');
-            svg.appendChild(stripePath);
-
-            // Set initial transform
-            updateTransform();
-        </script>
-    </body>
-    </html>
-    """, height=700)
+        st.plotly_chart(fig_bars, use_container_width=True)
 
     st.divider()
 
