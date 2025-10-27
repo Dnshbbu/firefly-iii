@@ -84,6 +84,14 @@ Deep dive into your spending patterns by category:
 - Top transactions per category
 - Statistical analysis (mean, median, min, max)
 
+### 🚀 Savings Forecast & Roadmap
+Visualize your savings growth over time:
+- Interactive 3D timeline visualization
+- Fixed deposits, recurring deposits, retirement accounts
+- Compound interest calculations
+- Maturity date tracking and projections
+- Portfolio summary and growth metrics
+
 ### 📄 CSV Preprocessor
 Prepare bank statement CSV files for import:
 - Automatic bank type detection
