@@ -219,7 +219,7 @@ with st.sidebar:
             index=0
         )
 
-        submit = st.form_submit_button("Add Saving", use_container_width=True)
+        submit = st.form_submit_button("Add Saving", width="stretch")
 
         if submit and saving_name:
             start_dt = datetime.combine(start_date, datetime.min.time())
@@ -400,23 +400,34 @@ if st.session_state.savings_list:
                 transform: scale(1.1);
             }}
             .milestone-marker {{
-                width: 80px;
-                height: 80px;
                 border-radius: 50%;
                 display: flex;
                 align-items: center;
                 justify-content: center;
-                font-size: 24px;
                 font-weight: bold;
                 color: white;
-                box-shadow: 0 4px 15px rgba(0,0,0,0.5);
                 position: relative;
             }}
             .milestone-marker.year {{
-                background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%);
+                width: 60px;
+                height: 60px;
+                font-size: 16px;
+                background: rgba(120, 120, 120, 0.7);
+                border: 3px solid #AAA;
+                box-shadow: 0 3px 10px rgba(0,0,0,0.4);
             }}
             .milestone-marker.saving {{
+                width: 80px;
+                height: 80px;
+                font-size: 24px;
                 background: linear-gradient(135deg, var(--color-start) 0%, var(--color-end) 100%);
+                border: 4px solid #FFF;
+                box-shadow: 0 6px 20px rgba(0,0,0,0.6);
+                animation: pulse 2s ease-in-out infinite;
+            }}
+            @keyframes pulse {{
+                0%, 100% {{ box-shadow: 0 4px 15px rgba(0,0,0,0.5), 0 0 0 0 var(--color-start); }}
+                50% {{ box-shadow: 0 4px 20px rgba(0,0,0,0.7), 0 0 0 10px transparent; }}
             }}
             .milestone-label {{
                 background: rgba(0,0,0,0.9);
@@ -425,19 +436,66 @@ if st.session_state.savings_list:
                 border-radius: 8px;
                 margin-top: 15px;
                 text-align: center;
-                min-width: 150px;
                 box-shadow: 0 4px 12px rgba(0,0,0,0.6);
-                border: 2px solid rgba(255,255,255,0.1);
+                border-left: 5px solid var(--border-color, #FFD700);
+            }}
+            .milestone.year-milestone .milestone-label {{
+                padding: 8px 12px;
+                min-width: 100px;
+                background: rgba(0,0,0,0.7);
+                border-left: 3px solid #888;
             }}
             .milestone-title {{
                 font-size: 18px;
                 font-weight: bold;
                 margin-bottom: 5px;
+                color: var(--title-color, #FFD700);
+            }}
+            .year-milestone .milestone-title {{
+                font-size: 15px;
+                color: #BBB;
+                font-weight: 600;
             }}
             .milestone-description {{
                 font-size: 14px;
-                color: #4CAF50;
+                color: #8FE88F;
                 font-weight: bold;
+            }}
+            .year-milestone .milestone-description {{
+                font-size: 12px;
+                color: #8FE88F;
+                font-weight: bold;
+            }}
+            .legend {{
+                position: absolute;
+                top: 20px;
+                left: 20px;
+                background: rgba(0,0,0,0.9);
+                color: white;
+                padding: 15px 20px;
+                border-radius: 8px;
+                z-index: 100;
+                max-width: 250px;
+                border: 2px solid #FFD700;
+            }}
+            .legend h3 {{
+                margin: 0 0 10px 0;
+                font-size: 16px;
+                color: #FFD700;
+            }}
+            .legend-item {{
+                display: flex;
+                align-items: center;
+                margin: 8px 0;
+                font-size: 13px;
+            }}
+            .legend-color {{
+                width: 30px;
+                height: 30px;
+                border-radius: 50%;
+                margin-right: 10px;
+                border: 2px solid white;
+                flex-shrink: 0;
             }}
             .road-segment {{
                 position: absolute;
@@ -464,6 +522,11 @@ if st.session_state.savings_list:
             </div>
         </div>
 
+        <div class="legend" id="legend">
+            <h3>💰 Your Savings</h3>
+            <div id="legend-items"></div>
+        </div>
+
         <div class="zoom-controls">
             <button class="zoom-btn" id="zoom-in">+</button>
             <button class="zoom-btn" id="zoom-out">−</button>
@@ -474,6 +537,26 @@ if st.session_state.savings_list:
         <script>
             const milestones = {milestones_json};
             console.log('Milestones:', milestones);
+
+            // Build legend
+            const legendItems = document.getElementById('legend-items');
+            const savingsMap = new Map();
+
+            milestones.forEach(m => {{
+                if (m.type === 'saving' && !savingsMap.has(m.title)) {{
+                    savingsMap.set(m.title, m.color);
+                }}
+            }});
+
+            savingsMap.forEach((color, name) => {{
+                const item = document.createElement('div');
+                item.className = 'legend-item';
+                item.innerHTML = `
+                    <div class="legend-color" style="background: ${{color}};"></div>
+                    <span>${{name}}</span>
+                `;
+                legendItems.appendChild(item);
+            }});
 
             const container = document.getElementById('roadmap');
             const content = document.getElementById('content');
@@ -584,7 +667,7 @@ if st.session_state.savings_list:
             milestonePositions.forEach(({{ x, y, milestone, index, offset }}) => {{
                 // Create milestone element
                 const milestoneEl = document.createElement('div');
-                milestoneEl.className = 'milestone';
+                milestoneEl.className = milestone.type === 'year' ? 'milestone year-milestone' : 'milestone';
                 milestoneEl.style.left = x + 'px';
                 milestoneEl.style.top = y + 'px';
 
@@ -610,7 +693,11 @@ if st.session_state.savings_list:
                 if (milestone.type === 'year') {{
                     marker.textContent = milestone.title;
                 }} else {{
-                    marker.textContent = (index + 1);
+                    // Calculate years from today for savings
+                    const today = new Date();
+                    const maturityDate = new Date(milestone.date);
+                    const yearsFromNow = ((maturityDate - today) / (1000 * 60 * 60 * 24 * 365.25)).toFixed(1);
+                    marker.textContent = yearsFromNow + 'y';
                     const colorHex = milestone.color || '#4CAF50';
                     marker.style.setProperty('--color-start', colorHex);
                     marker.style.setProperty('--color-end', colorHex + 'CC');
@@ -619,10 +706,22 @@ if st.session_state.savings_list:
                 // Create label
                 const label = document.createElement('div');
                 label.className = 'milestone-label';
-                label.innerHTML = `
-                    <div class="milestone-title">${{milestone.title}}</div>
-                    <div class="milestone-description">${{milestone.description}}</div>
-                `;
+
+                // Apply color styling for saving milestones
+                if (milestone.type === 'saving') {{
+                    const colorHex = milestone.color || '#4CAF50';
+                    label.style.setProperty('--border-color', colorHex);
+                    label.style.setProperty('--title-color', colorHex);
+                    label.innerHTML = `
+                        <div class="milestone-title">${{milestone.title}}</div>
+                        <div class="milestone-description">${{milestone.description}}</div>
+                    `;
+                }} else {{
+                    // For year milestones, only show the portfolio value (no year in title)
+                    label.innerHTML = `
+                        <div class="milestone-description">${{milestone.description}}</div>
+                    `;
+                }}
 
                 milestoneEl.appendChild(marker);
                 milestoneEl.appendChild(label);
@@ -681,61 +780,61 @@ if st.session_state.savings_list:
 
     st.divider()
 
-    # Savings list table with delete buttons
+    # Savings list table
     st.subheader("📋 Your Savings")
 
-    # Display each saving with a delete button and color indicator
+    # Prepare data for table
+    table_data = []
+    compounding_map = {1: 'Annually', 2: 'Semi-annually', 4: 'Quarterly', 12: 'Monthly'}
+
     for idx, saving in enumerate(st.session_state.savings_list):
-        # Get or assign color
         color = saving.get('color', get_color_for_saving(idx))
-        color_hex = color['hex']
+        years_from_now = (saving['maturity_date'] - datetime.now()).days / 365.25
 
-        # Create colored header with emoji
-        with st.expander(f"💎 {saving['name']} - €{saving['maturity_value']:,.2f}", expanded=False):
-            # Color indicator bar
-            st.markdown(f"""
-            <div style="
-                background: linear-gradient(90deg, {color_hex} 0%, transparent 100%);
-                height: 4px;
-                border-radius: 2px;
-                margin-bottom: 10px;
-            "></div>
-            """, unsafe_allow_html=True)
+        table_data.append({
+            'Color': color['name'],
+            'Name': saving['name'],
+            'Type': saving['type'],
+            'Principal': f"€{saving['principal']:,.2f}",
+            'Rate': f"{saving['rate']*100:.2f}%",
+            'Compounding': compounding_map[saving['compounding_frequency']],
+            'Start Date': saving['start_date'].strftime('%Y-%m-%d'),
+            'Maturity Date': saving['maturity_date'].strftime('%Y-%m-%d'),
+            'Years': f"{years_from_now:.1f}y",
+            'Maturity Value': f"€{saving['maturity_value']:,.2f}",
+            'Interest': f"€{saving['interest_earned']:,.2f}",
+            'Delete': idx
+        })
 
-            col1, col2, col3 = st.columns([2, 2, 1])
+    # Display table with built-in row selection
+    if table_data:
+        df = pd.DataFrame(table_data)
 
+        # Display dataframe with row selection
+        event = st.dataframe(
+            df.drop(columns=['Delete']),
+            width="stretch",
+            height=min(400, (len(table_data) + 1) * 35 + 3),
+            on_select="rerun",
+            selection_mode="multi-row"
+        )
+
+        # Delete selected rows
+        if event.selection.rows:
+            col1, col2 = st.columns([4, 1])
             with col1:
-                compounding_map = {1: 'Annually', 2: 'Semi-annually', 4: 'Quarterly', 12: 'Monthly'}
-                compounding_text = compounding_map[saving['compounding_frequency']]
-                st.markdown(f"""
-                <div style="color: {color_hex}; font-weight: bold; margin-bottom: 8px;">
-                    ● {color['name']}
-                </div>
-                **Type:** {saving['type']}
-                **Principal:** €{saving['principal']:,.2f}
-                **Interest Rate:** {saving['rate']*100:.2f}%
-                **Compounding:** {compounding_text}
-                """, unsafe_allow_html=True)
-
+                st.info(f"✓ Selected {len(event.selection.rows)} saving(s)")
             with col2:
-                st.markdown(f"""
-                **Start Date:** {saving['start_date'].strftime('%Y-%m-%d')}
-                **Maturity Date:** {saving['maturity_date'].strftime('%Y-%m-%d')}
-                **Maturity Value:** €{saving['maturity_value']:,.2f}
-                **Interest Earned:** €{saving['interest_earned']:,.2f}
-                """)
-
-            with col3:
-                if st.button("🗑️ Delete", key=f"delete_{idx}", type="secondary", use_container_width=True):
-                    st.session_state.savings_list.pop(idx)
+                if st.button("🗑️ Delete Selected", type="secondary", width="stretch"):
+                    # Sort indices in reverse to delete from end to start
+                    for idx in sorted(event.selection.rows, reverse=True):
+                        st.session_state.savings_list.pop(idx)
                     st.rerun()
 
-    st.divider()
+        st.divider()
 
-    # Clear all button
-    col1, col2 = st.columns([3, 1])
-    with col2:
-        if st.button("🗑️ Clear All Savings", type="secondary", use_container_width=True):
+        # Clear all button
+        if st.button("🗑️ Clear All Savings", type="secondary"):
             st.session_state.savings_list = []
             st.rerun()
 
