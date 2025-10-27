@@ -263,438 +263,421 @@ if st.session_state.savings_list:
 
     st.divider()
 
-    # 3D Roadmap Visualization with Three.js
-    st.subheader("🚀 3D Savings Roadmap")
-    st.markdown("**Interactive 3D timeline** - Drag to rotate, scroll to zoom, click Reset to return to default view")
+    # 2D Roadmap Visualization
+    st.subheader("🛣️ Savings Roadmap")
+    st.markdown("**Your journey to financial goals**")
 
     # Generate timeline data
     timeline_data = generate_timeline_data(st.session_state.savings_list)
 
-    # Prepare data for Three.js
-    timeline_json = json.dumps([{
-        'date': point['date'].strftime('%Y-%m-%d'),
-        'year': point['date'].year,
-        'month': point['date'].month,
-        'total': point['total'],
-        'breakdown': point['breakdown']
-    } for point in timeline_data])
+    # Prepare milestones (years + savings maturity)
+    milestones = []
 
-    savings_json = json.dumps([{
-        'name': s['name'],
-        'type': s['type'],
-        'principal': s['principal'],
-        'maturity_value': s['maturity_value'],
-        'maturity_date': s['maturity_date'].strftime('%Y-%m-%d'),
-        'maturity_year': s['maturity_date'].year,
-        'rate': s['rate'] * 100,
-        'color': s.get('color', get_color_for_saving(idx))
-    } for idx, s in enumerate(st.session_state.savings_list)])
+    # Add year milestones
+    years_seen = set()
+    for point in timeline_data:
+        year = point['date'].year
+        if year not in years_seen:
+            years_seen.add(year)
+            milestones.append({
+                'date': point['date'],
+                'year': year,
+                'type': 'year',
+                'title': str(year),
+                'value': point['total'],
+                'description': f"Total Portfolio: €{point['total']:,.0f}"
+            })
 
-    # Three.js visualization with clear labels and story
+    # Add savings maturity milestones
+    for idx, saving in enumerate(st.session_state.savings_list):
+        color = saving.get('color', get_color_for_saving(idx))
+        milestones.append({
+            'date': saving['maturity_date'],
+            'year': saving['maturity_date'].year,
+            'type': 'saving',
+            'title': saving['name'],
+            'value': saving['maturity_value'],
+            'description': f"€{saving['maturity_value']:,.0f}",
+            'color': color['hex'],
+            'saving_data': saving
+        })
+
+    # Sort milestones by date
+    milestones.sort(key=lambda x: x['date'])
+
+    # Create milestones JSON for JavaScript
+    milestones_json = json.dumps(milestones, default=str)
+
+    # 2D Roadmap visualization
     st.components.v1.html(f"""
     <!DOCTYPE html>
     <html>
     <head>
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-        <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
         <style>
-            body {{ margin: 0; padding: 0; overflow: hidden; background: #0a0a0a; }}
-            #canvas-container {{ width: 100%; height: 700px; position: relative; }}
-            #reset-button {{
+            body {{
+                margin: 0;
+                padding: 0;
+                background: linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 100%);
+                font-family: 'Segoe UI', Arial, sans-serif;
+                overflow: hidden;
+            }}
+            .roadmap-container {{
+                position: relative;
+                width: 100%;
+                height: 700px;
+                overflow: hidden;
+                cursor: grab;
+            }}
+            .roadmap-container:active {{
+                cursor: grabbing;
+            }}
+            .roadmap-content {{
                 position: absolute;
-                top: 15px;
-                right: 15px;
-                background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%);
+                width: 2000px;
+                height: 1000px;
+                left: 50%;
+                top: 50%;
+                transform-origin: center center;
+            }}
+            .zoom-controls {{
+                position: absolute;
+                top: 20px;
+                right: 20px;
+                z-index: 100;
+                display: flex;
+                flex-direction: column;
+                gap: 10px;
+            }}
+            .zoom-btn {{
+                width: 50px;
+                height: 50px;
+                background: rgba(0, 0, 0, 0.8);
+                border: 2px solid #FFD700;
+                border-radius: 8px;
+                color: #FFD700;
+                font-size: 24px;
+                font-weight: bold;
+                cursor: pointer;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                transition: all 0.3s ease;
+            }}
+            .zoom-btn:hover {{
+                background: #FFD700;
                 color: #000;
-                border: none;
-                padding: 12px 24px;
+                transform: scale(1.1);
+            }}
+            .zoom-level {{
+                position: absolute;
+                bottom: 20px;
+                right: 20px;
+                background: rgba(0, 0, 0, 0.8);
+                color: #FFD700;
+                padding: 10px 15px;
                 border-radius: 8px;
                 font-size: 14px;
                 font-weight: bold;
-                cursor: pointer;
+                border: 2px solid #FFD700;
                 z-index: 100;
-                box-shadow: 0 4px 15px rgba(255, 215, 0, 0.4);
-                transition: all 0.3s ease;
             }}
-            #reset-button:hover {{
-                transform: translateY(-2px);
-                box-shadow: 0 6px 20px rgba(255, 215, 0, 0.6);
-            }}
-            .label-overlay {{
+            .road-path {{
                 position: absolute;
-                background: rgba(0, 0, 0, 0.85);
-                color: #fff;
-                padding: 8px 12px;
-                border-radius: 6px;
-                font-size: 13px;
-                font-family: 'Arial', sans-serif;
-                pointer-events: none;
-                border: 1px solid rgba(255, 255, 255, 0.2);
-                backdrop-filter: blur(10px);
+                width: 100%;
+                height: 100%;
+                z-index: 1;
             }}
-            .year-label {{
-                font-size: 20px;
+            .milestone {{
+                position: absolute;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                z-index: 10;
+                cursor: pointer;
+                transition: transform 0.3s ease;
+            }}
+            .milestone:hover {{
+                transform: scale(1.1);
+            }}
+            .milestone-marker {{
+                width: 80px;
+                height: 80px;
+                border-radius: 50%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 24px;
                 font-weight: bold;
-                color: #FFD700;
-                text-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
+                color: white;
+                box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+                position: relative;
             }}
-            .value-label {{
-                font-size: 16px;
+            .milestone-marker.year {{
+                background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%);
+            }}
+            .milestone-marker.saving {{
+                background: linear-gradient(135deg, var(--color-start) 0%, var(--color-end) 100%);
+            }}
+            .milestone-label {{
+                background: rgba(0,0,0,0.9);
+                color: white;
+                padding: 12px 20px;
+                border-radius: 8px;
+                margin-top: 15px;
+                text-align: center;
+                min-width: 150px;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.6);
+                border: 2px solid rgba(255,255,255,0.1);
+            }}
+            .milestone-title {{
+                font-size: 18px;
+                font-weight: bold;
+                margin-bottom: 5px;
+            }}
+            .milestone-description {{
+                font-size: 14px;
                 color: #4CAF50;
                 font-weight: bold;
+            }}
+            .road-segment {{
+                position: absolute;
+                height: 60px;
+                background: linear-gradient(180deg, #333 0%, #222 50%, #333 100%);
+                border: 2px solid #555;
+                border-radius: 30px;
+                box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+            }}
+            .road-stripe {{
+                position: absolute;
+                height: 4px;
+                background: #FFD700;
+                top: 50%;
+                transform: translateY(-50%);
+                border-radius: 2px;
             }}
         </style>
     </head>
     <body>
-        <div id="canvas-container">
-            <canvas id="threejs-canvas"></canvas>
-            <button id="reset-button">🔄 Reset View</button>
+        <div class="roadmap-container" id="roadmap">
+            <div class="roadmap-content" id="content">
+                <svg class="road-path" id="road-svg"></svg>
+            </div>
         </div>
 
+        <div class="zoom-controls">
+            <button class="zoom-btn" id="zoom-in">+</button>
+            <button class="zoom-btn" id="zoom-out">−</button>
+            <button class="zoom-btn" id="zoom-reset" style="font-size: 18px;">⟲</button>
+        </div>
+        <div class="zoom-level" id="zoom-level">100%</div>
+
         <script>
-            const timelineData = {timeline_json};
-            const savingsData = {savings_json};
+            const milestones = {milestones_json};
+            console.log('Milestones:', milestones);
 
-            // Scene setup
-            const canvas = document.getElementById('threejs-canvas');
-            const container = document.getElementById('canvas-container');
-            const scene = new THREE.Scene();
-            scene.background = new THREE.Color(0x0a0a0a);
-            scene.fog = new THREE.Fog(0x0a0a0a, 30, 60);
+            const container = document.getElementById('roadmap');
+            const content = document.getElementById('content');
+            const svg = document.getElementById('road-svg');
 
-            const camera = new THREE.PerspectiveCamera(
-                60,
-                container.clientWidth / container.clientHeight,
-                0.1,
-                1000
-            );
+            // Zoom and pan state
+            const defaultScale = 0.5;  // Start zoomed out to fit everything
+            let scale = defaultScale;
+            let translateX = 0;
+            let translateY = 0;
+            let isDragging = false;
+            let startX, startY;
 
-            const renderer = new THREE.WebGLRenderer({{ canvas: canvas, antialias: true }});
-            renderer.setSize(container.clientWidth, container.clientHeight);
-
-            // Orbit controls
-            const controls = new THREE.OrbitControls(camera, renderer.domElement);
-            controls.enableDamping = true;
-            controls.dampingFactor = 0.08;
-            controls.minDistance = 15;
-            controls.maxDistance = 60;
-            controls.maxPolarAngle = Math.PI / 2 + 0.3;
-
-            // Enhanced lighting
-            const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
-            scene.add(ambientLight);
-
-            const keyLight = new THREE.DirectionalLight(0xffffff, 0.8);
-            keyLight.position.set(15, 15, 15);
-            scene.add(keyLight);
-
-            const fillLight = new THREE.DirectionalLight(0x4488ff, 0.3);
-            fillLight.position.set(-10, 10, -10);
-            scene.add(fillLight);
-
-            // Create ground grid for reference
-            const gridHelper = new THREE.GridHelper(50, 20, 0x444444, 0x222222);
-            gridHelper.position.y = -2;
-            scene.add(gridHelper);
-
-            // Calculate timeline layout
-            const maxValue = Math.max(...timelineData.map(d => d.total));
-            const timelineLength = timelineData.length;
-            const startYear = timelineData[0].year;
-            const endYear = timelineData[timelineData.length - 1].year;
-            const yearSpan = endYear - startYear + 1;
-
-            // Create year markers along the timeline
-            const yearsToShow = [];
-            for (let year = startYear; year <= endYear; year++) {{
-                const yearData = timelineData.find(d => d.year === year && d.month === 1) ||
-                                timelineData.find(d => d.year === year);
-                if (yearData) {{
-                    yearsToShow.push({{
-                        year: year,
-                        index: timelineData.indexOf(yearData),
-                        total: yearData.total
-                    }});
-                }}
+            function updateTransform() {{
+                content.style.transform = `translate(${{translateX}}px, ${{translateY}}px) translate(-50%, -50%) scale(${{scale}})`;
+                document.getElementById('zoom-level').textContent = Math.round(scale * 100) + '%';
             }}
 
-            // Generate 3D roadmap path
-            const roadmapPoints = [];
-            timelineData.forEach((point, index) => {{
-                const progress = index / (timelineLength - 1);
-                const x = progress * 40 - 20;  // Spread along X axis
-                const y = (point.total / maxValue) * 15;  // Height = value
-                const z = Math.sin(progress * Math.PI) * 8;  // Slight curve for depth
-                roadmapPoints.push(new THREE.Vector3(x, y, z));
+            // Zoom controls
+            document.getElementById('zoom-in').addEventListener('click', () => {{
+                scale = Math.min(scale * 1.2, 3);
+                updateTransform();
             }});
 
-            // Create the main timeline path (glowing tube)
-            const curve = new THREE.CatmullRomCurve3(roadmapPoints);
-            const tubeGeometry = new THREE.TubeGeometry(curve, 200, 0.15, 16, false);
-            const tubeMaterial = new THREE.MeshPhongMaterial({{
-                color: 0xFFD700,
-                emissive: 0x886600,
-                shininess: 100,
-                transparent: true,
-                opacity: 0.9
+            document.getElementById('zoom-out').addEventListener('click', () => {{
+                scale = Math.max(scale / 1.2, 0.3);
+                updateTransform();
             }});
-            const tubeMesh = new THREE.Mesh(tubeGeometry, tubeMaterial);
-            scene.add(tubeMesh);
 
-            // Add individual colored paths for each saving
-            savingsData.forEach((saving, savingIndex) => {{
-                const savingPoints = [];
-                timelineData.forEach((point, timeIndex) => {{
-                    const progress = timeIndex / (timelineLength - 1);
-                    const x = progress * 40 - 20;
+            document.getElementById('zoom-reset').addEventListener('click', () => {{
+                scale = defaultScale;
+                translateX = 0;
+                translateY = 0;
+                updateTransform();
+            }});
 
-                    const breakdownItem = point.breakdown.find(b => b.name === saving.name);
-                    const value = breakdownItem ? breakdownItem.value : saving.principal;
-                    const y = (value / maxValue) * 15;
-                    const z = Math.sin(progress * Math.PI) * 8 + (savingIndex * 0.5);
+            // Mouse wheel zoom
+            container.addEventListener('wheel', (e) => {{
+                e.preventDefault();
+                const delta = e.deltaY > 0 ? 0.9 : 1.1;
+                scale = Math.max(0.3, Math.min(3, scale * delta));
+                updateTransform();
+            }});
 
-                    savingPoints.push(new THREE.Vector3(x, y, z));
-                }});
+            // Pan (drag)
+            container.addEventListener('mousedown', (e) => {{
+                isDragging = true;
+                startX = e.clientX - translateX;
+                startY = e.clientY - translateY;
+            }});
 
-                if (savingPoints.length > 1) {{
-                    const savingCurve = new THREE.CatmullRomCurve3(savingPoints);
-                    const geometry = new THREE.TubeGeometry(savingCurve, 150, 0.08, 12, false);
-
-                    const rgb = saving.color.rgb;
-                    const color = new THREE.Color(`rgb(${{rgb[0]}}, ${{rgb[1]}}, ${{rgb[2]}})`);
-
-                    const material = new THREE.MeshPhongMaterial({{
-                        color: color,
-                        emissive: color.clone().multiplyScalar(0.3),
-                        shininess: 80,
-                        transparent: true,
-                        opacity: 0.75
-                    }});
-
-                    const mesh = new THREE.Mesh(geometry, material);
-                    scene.add(mesh);
+            container.addEventListener('mousemove', (e) => {{
+                if (isDragging) {{
+                    translateX = e.clientX - startX;
+                    translateY = e.clientY - startY;
+                    updateTransform();
                 }}
             }});
 
-            // Function to create 3D text sprite
-            function createTextSprite(text, options = {{}}) {{
-                const canvas = document.createElement('canvas');
-                const context = canvas.getContext('2d');
-
-                const fontSize = options.fontSize || 48;
-                const fontWeight = options.fontWeight || 'bold';
-                const color = options.color || '#FFFFFF';
-                const bgColor = options.bgColor || 'rgba(0, 0, 0, 0.7)';
-
-                context.font = `${{fontWeight}} ${{fontSize}}px Arial`;
-                const metrics = context.measureText(text);
-                const textWidth = metrics.width;
-
-                canvas.width = textWidth + 40;
-                canvas.height = fontSize + 30;
-
-                // Background
-                context.fillStyle = bgColor;
-                context.roundRect = function(x, y, w, h, r) {{
-                    this.beginPath();
-                    this.moveTo(x + r, y);
-                    this.lineTo(x + w - r, y);
-                    this.quadraticCurveTo(x + w, y, x + w, y + r);
-                    this.lineTo(x + w, y + h - r);
-                    this.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
-                    this.lineTo(x + r, y + h);
-                    this.quadraticCurveTo(x, y + h, x, y + h - r);
-                    this.lineTo(x, y + r);
-                    this.quadraticCurveTo(x, y, x + r, y);
-                    this.closePath();
-                    this.fill();
-                }};
-                context.roundRect(5, 5, canvas.width - 10, canvas.height - 10, 10);
-
-                // Text
-                context.fillStyle = color;
-                context.font = `${{fontWeight}} ${{fontSize}}px Arial`;
-                context.textAlign = 'center';
-                context.textBaseline = 'middle';
-                context.fillText(text, canvas.width / 2, canvas.height / 2);
-
-                const texture = new THREE.CanvasTexture(canvas);
-                const spriteMaterial = new THREE.SpriteMaterial({{ map: texture, transparent: true }});
-                const sprite = new THREE.Sprite(spriteMaterial);
-
-                const scale = options.scale || 2;
-                sprite.scale.set(scale * canvas.width / 100, scale * canvas.height / 100, 1);
-
-                return sprite;
-            }}
-
-            // Add year labels along the timeline
-            yearsToShow.forEach(yearInfo => {{
-                const pos = roadmapPoints[yearInfo.index];
-                if (pos) {{
-                    // Year label above the timeline
-                    const yearLabel = createTextSprite(yearInfo.year.toString(), {{
-                        fontSize: 56,
-                        color: '#FFD700',
-                        bgColor: 'rgba(0, 0, 0, 0.85)',
-                        scale: 2.5
-                    }});
-                    yearLabel.position.set(pos.x, pos.y + 3.5, pos.z);
-                    scene.add(yearLabel);
-
-                    // Value label below year
-                    const valueLabel = createTextSprite(`€${{Math.round(yearInfo.total).toLocaleString()}}`, {{
-                        fontSize: 44,
-                        color: '#4CAF50',
-                        bgColor: 'rgba(0, 0, 0, 0.75)',
-                        scale: 2
-                    }});
-                    valueLabel.position.set(pos.x, pos.y + 1.5, pos.z);
-                    scene.add(valueLabel);
-
-                    // Vertical line from ground to timeline
-                    const lineGeometry = new THREE.BufferGeometry().setFromPoints([
-                        new THREE.Vector3(pos.x, -1.8, pos.z),
-                        new THREE.Vector3(pos.x, pos.y, pos.z)
-                    ]);
-                    const lineMaterial = new THREE.LineBasicMaterial({{
-                        color: 0xFFD700,
-                        transparent: true,
-                        opacity: 0.3,
-                        linewidth: 2
-                    }});
-                    const line = new THREE.Line(lineGeometry, lineMaterial);
-                    scene.add(line);
-
-                    // Glowing orb at year point
-                    const orbGeometry = new THREE.SphereGeometry(0.3, 32, 32);
-                    const orbMaterial = new THREE.MeshPhongMaterial({{
-                        color: 0xFFD700,
-                        emissive: 0xFFD700,
-                        emissiveIntensity: 0.8,
-                        shininess: 100
-                    }});
-                    const orb = new THREE.Mesh(orbGeometry, orbMaterial);
-                    orb.position.copy(pos);
-                    scene.add(orb);
-                }}
+            container.addEventListener('mouseup', () => {{
+                isDragging = false;
             }});
 
-            // Add maturity markers with names and values
-            savingsData.forEach((saving, idx) => {{
-                const maturityDate = saving.maturity_date;
-                const maturityPoint = timelineData.find(d => d.date === maturityDate);
+            container.addEventListener('mouseleave', () => {{
+                isDragging = false;
+            }});
 
-                if (maturityPoint) {{
-                    const maturityIndex = timelineData.indexOf(maturityPoint);
-                    const pos = roadmapPoints[maturityIndex];
+            // Calculate road path (S-curve)
+            const contentWidth = 1800;
+            const contentHeight = 600;
+            const roadStartX = 100;
+            const roadStartY = contentHeight / 2;
 
-                    if (pos) {{
-                        const rgb = saving.color.rgb;
-                        const color = new THREE.Color(`rgb(${{rgb[0]}}, ${{rgb[1]}}, ${{rgb[2]}})`);
+            // Calculate initial positions for all milestones
+            const milestonePositions = milestones.map((milestone, index) => {{
+                const progress = index / (milestones.length - 1);
+                const x = roadStartX + progress * contentWidth;
+                const y = roadStartY + Math.sin(progress * Math.PI * 2) * 150;
+                return {{ x, y, milestone, index }};
+            }});
 
-                        // Diamond marker
-                        const markerGeometry = new THREE.OctahedronGeometry(0.4);
-                        const markerMaterial = new THREE.MeshPhongMaterial({{
-                            color: color,
-                            emissive: color.clone().multiplyScalar(0.5),
-                            shininess: 100
-                        }});
-                        const marker = new THREE.Mesh(markerGeometry, markerMaterial);
-                        marker.position.set(pos.x, pos.y + 0.8, pos.z);
-                        scene.add(marker);
+            // Detect and resolve overlaps
+            const minDistance = 200; // Minimum horizontal distance between milestones
+            const verticalOffset = 180; // Vertical offset for overlapping milestones
 
-                        // Saving name label
-                        const nameLabel = createTextSprite(saving.name, {{
-                            fontSize: 40,
-                            color: saving.color.hex,
-                            bgColor: 'rgba(0, 0, 0, 0.9)',
-                            scale: 1.8
-                        }});
-                        nameLabel.position.set(pos.x, pos.y + 6, pos.z);
-                        scene.add(nameLabel);
+            for (let i = 0; i < milestonePositions.length; i++) {{
+                for (let j = i + 1; j < milestonePositions.length; j++) {{
+                    const pos1 = milestonePositions[i];
+                    const pos2 = milestonePositions[j];
 
-                        // Maturity value label
-                        const maturityLabel = createTextSprite(`€${{Math.round(saving.maturity_value).toLocaleString()}}`, {{
-                            fontSize: 48,
-                            color: '#4CAF50',
-                            bgColor: 'rgba(0, 0, 0, 0.85)',
-                            scale: 2
-                        }});
-                        maturityLabel.position.set(pos.x, pos.y + 4.5, pos.z);
-                        scene.add(maturityLabel);
+                    const distance = Math.abs(pos2.x - pos1.x);
+
+                    // If milestones are too close horizontally
+                    if (distance < minDistance) {{
+                        // Alternate above and below the road
+                        if (j % 2 === 0) {{
+                            pos2.y -= verticalOffset;
+                            pos2.offset = 'above';
+                        }} else {{
+                            pos2.y += verticalOffset;
+                            pos2.offset = 'below';
+                        }}
                     }}
                 }}
-            }});
-
-            // Initial camera position
-            const initialCameraPosition = {{ x: 25, y: 12, z: 25 }};
-            const initialTarget = {{ x: 0, y: 5, z: 0 }};
-
-            camera.position.set(initialCameraPosition.x, initialCameraPosition.y, initialCameraPosition.z);
-            controls.target.set(initialTarget.x, initialTarget.y, initialTarget.z);
-            controls.update();
-
-            // Reset button
-            document.getElementById('reset-button').addEventListener('click', () => {{
-                const duration = 1000;
-                const startTime = Date.now();
-                const startPos = {{ x: camera.position.x, y: camera.position.y, z: camera.position.z }};
-                const startTarget = {{ x: controls.target.x, y: controls.target.y, z: controls.target.z }};
-
-                function animateReset() {{
-                    const elapsed = Date.now() - startTime;
-                    const progress = Math.min(elapsed / duration, 1);
-                    const eased = progress < 0.5 ? 2 * progress * progress : 1 - Math.pow(-2 * progress + 2, 2) / 2;
-
-                    camera.position.x = startPos.x + (initialCameraPosition.x - startPos.x) * eased;
-                    camera.position.y = startPos.y + (initialCameraPosition.y - startPos.y) * eased;
-                    camera.position.z = startPos.z + (initialCameraPosition.z - startPos.z) * eased;
-
-                    controls.target.x = startTarget.x + (initialTarget.x - startTarget.x) * eased;
-                    controls.target.y = startTarget.y + (initialTarget.y - startTarget.y) * eased;
-                    controls.target.z = startTarget.z + (initialTarget.z - startTarget.z) * eased;
-
-                    controls.update();
-
-                    if (progress < 1) requestAnimationFrame(animateReset);
-                }}
-
-                animateReset();
-            }});
-
-            // Animation loop
-            const clock = new THREE.Clock();
-
-            function animate() {{
-                requestAnimationFrame(animate);
-                controls.update();
-
-                const time = clock.getElapsedTime();
-
-                // Gentle pulsing on markers
-                scene.children.forEach(child => {{
-                    if (child.geometry && child.geometry.type === 'OctahedronGeometry') {{
-                        child.rotation.y = time * 0.5;
-                        child.position.y += Math.sin(time * 3) * 0.002;
-                    }}
-                }});
-
-                renderer.render(scene, camera);
             }}
 
-            animate();
+            // Position milestones along curved path
+            milestonePositions.forEach(({{ x, y, milestone, index, offset }}) => {{
+                // Create milestone element
+                const milestoneEl = document.createElement('div');
+                milestoneEl.className = 'milestone';
+                milestoneEl.style.left = x + 'px';
+                milestoneEl.style.top = y + 'px';
 
-            // Handle resize
-            window.addEventListener('resize', () => {{
-                camera.aspect = container.clientWidth / container.clientHeight;
-                camera.updateProjectionMatrix();
-                renderer.setSize(container.clientWidth, container.clientHeight);
+                // If milestone is offset, draw a connector line to the road
+                if (offset) {{
+                    const roadY = roadStartY + Math.sin((index / (milestones.length - 1)) * Math.PI * 2) * 150;
+                    const connector = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                    connector.setAttribute('x1', x);
+                    connector.setAttribute('y1', y);
+                    connector.setAttribute('x2', x);
+                    connector.setAttribute('y2', roadY);
+                    connector.setAttribute('stroke', milestone.color || '#FFD700');
+                    connector.setAttribute('stroke-width', '3');
+                    connector.setAttribute('stroke-dasharray', '5,5');
+                    connector.setAttribute('opacity', '0.6');
+                    svg.appendChild(connector);
+                }}
+
+                // Create marker
+                const marker = document.createElement('div');
+                marker.className = `milestone-marker ${{milestone.type}}`;
+
+                if (milestone.type === 'year') {{
+                    marker.textContent = milestone.title;
+                }} else {{
+                    marker.textContent = (index + 1);
+                    const colorHex = milestone.color || '#4CAF50';
+                    marker.style.setProperty('--color-start', colorHex);
+                    marker.style.setProperty('--color-end', colorHex + 'CC');
+                }}
+
+                // Create label
+                const label = document.createElement('div');
+                label.className = 'milestone-label';
+                label.innerHTML = `
+                    <div class="milestone-title">${{milestone.title}}</div>
+                    <div class="milestone-description">${{milestone.description}}</div>
+                `;
+
+                milestoneEl.appendChild(marker);
+                milestoneEl.appendChild(label);
+                content.appendChild(milestoneEl);
             }});
+
+            // Draw road path using SVG
+            let pathData = '';
+            for (let i = 0; i < milestones.length - 1; i++) {{
+                const progress1 = i / (milestones.length - 1);
+                const progress2 = (i + 1) / (milestones.length - 1);
+
+                const x1 = roadStartX + progress1 * contentWidth;
+                const y1 = roadStartY + Math.sin(progress1 * Math.PI * 2) * 150;
+                const x2 = roadStartX + progress2 * contentWidth;
+                const y2 = roadStartY + Math.sin(progress2 * Math.PI * 2) * 150;
+
+                if (i === 0) {{
+                    pathData += `M ${{x1}} ${{y1}} `;
+                }}
+
+                // Control points for smooth curve
+                const cpx1 = x1 + (x2 - x1) * 0.5;
+                const cpy1 = y1;
+                const cpx2 = x1 + (x2 - x1) * 0.5;
+                const cpy2 = y2;
+
+                pathData += `C ${{cpx1}} ${{cpy1}}, ${{cpx2}} ${{cpy2}}, ${{x2}} ${{y2}} `;
+            }}
+
+            // Create SVG path for road
+            const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+            path.setAttribute('d', pathData);
+            path.setAttribute('stroke', '#555');
+            path.setAttribute('stroke-width', '60');
+            path.setAttribute('fill', 'none');
+            path.setAttribute('stroke-linecap', 'round');
+            svg.appendChild(path);
+
+            // Create center stripe
+            const stripePath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+            stripePath.setAttribute('d', pathData);
+            stripePath.setAttribute('stroke', '#FFD700');
+            stripePath.setAttribute('stroke-width', '4');
+            stripePath.setAttribute('fill', 'none');
+            stripePath.setAttribute('stroke-dasharray', '20,15');
+            stripePath.setAttribute('stroke-linecap', 'round');
+            svg.appendChild(stripePath);
+
+            // Set initial transform
+            updateTransform();
         </script>
     </body>
     </html>
-    """, height=720)
+    """, height=700)
 
     st.divider()
 
