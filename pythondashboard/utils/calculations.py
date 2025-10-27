@@ -461,25 +461,37 @@ def calculate_budget_burn_rate(
     """
     start = pd.to_datetime(start_date)
     end = pd.to_datetime(end_date)
-    current = pd.to_datetime(current_date) if current_date else pd.Timestamp.now()
+    today = pd.Timestamp.now()
+    
+    # Determine the effective "current" date for calculations
+    if current_date:
+        current = pd.to_datetime(current_date)
+    elif end < today:
+        # Period has already ended - use the end date
+        current = end
+    else:
+        # Period is ongoing - use today but cap at end date
+        current = min(today, end)
 
     # Calculate days
     total_days = (end - start).days + 1
-    days_elapsed = (current - start).days + 1
-    days_remaining = (end - current).days
+    days_elapsed = min((current - start).days + 1, total_days)  # Can't exceed total days
+    days_remaining = max(0, (end - current).days)
 
     # Prevent division by zero
     days_elapsed = max(1, days_elapsed)
-    days_remaining = max(0, days_remaining)
 
     # Calculate burn rate (spend per day)
     burn_rate = spent / days_elapsed if days_elapsed > 0 else 0
 
-    # Project total spend at current burn rate
-    projected_spend = spent + (burn_rate * days_remaining)
-
-    # Calculate projected over/under budget
-    projected_over_under = budgeted - projected_spend
+    # For completed periods, no projection needed
+    if end < today:
+        projected_spend = spent  # Actual final amount
+        projected_over_under = budgeted - spent  # Actual over/under
+    else:
+        # Project total spend at current burn rate for ongoing periods
+        projected_spend = spent + (burn_rate * days_remaining)
+        projected_over_under = budgeted - projected_spend
 
     return {
         'burn_rate': burn_rate,
