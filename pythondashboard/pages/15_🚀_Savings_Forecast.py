@@ -97,18 +97,21 @@ st.markdown("""
 if 'savings_list' not in st.session_state:
     st.session_state.savings_list = []
 
-# Color palette for different savings (vibrant, modern colors)
+# Color palette for different savings - optimized for dark mode
+# Uses colors that have good contrast on dark backgrounds and match the app's color scheme
 COLOR_PALETTE = [
-    {'name': 'Ocean Blue', 'hex': '#00D4FF', 'rgb': [0, 212, 255]},
-    {'name': 'Neon Purple', 'hex': '#B24BF3', 'rgb': [178, 75, 243]},
-    {'name': 'Sunset Orange', 'hex': '#FF6B35', 'rgb': [255, 107, 53]},
-    {'name': 'Electric Green', 'hex': '#39FF14', 'rgb': [57, 255, 20]},
-    {'name': 'Hot Pink', 'hex': '#FF1493', 'rgb': [255, 20, 147]},
-    {'name': 'Golden Yellow', 'hex': '#FFD700', 'rgb': [255, 215, 0]},
-    {'name': 'Aqua Mint', 'hex': '#7FFFD4', 'rgb': [127, 255, 212]},
-    {'name': 'Ruby Red', 'hex': '#FF073A', 'rgb': [255, 7, 58]},
-    {'name': 'Lime Zest', 'hex': '#CCFF00', 'rgb': [204, 255, 0]},
-    {'name': 'Lavender', 'hex': '#E6E6FA', 'rgb': [230, 230, 250]}
+    {'name': 'Sky Blue', 'hex': '#60a5fa', 'rgb': [96, 165, 250]},        # Primary blue (matches charts.py)
+    {'name': 'Emerald Green', 'hex': '#4ade80', 'rgb': [74, 222, 128]},   # Success green (matches charts.py)
+    {'name': 'Amber', 'hex': '#fbbf24', 'rgb': [251, 191, 36]},          # Warning yellow (matches charts.py)
+    {'name': 'Rose', 'hex': '#f87171', 'rgb': [248, 113, 113]},          # Alert red (matches charts.py)
+    {'name': 'Violet', 'hex': '#a78bfa', 'rgb': [167, 139, 250]},        # Purple accent
+    {'name': 'Cyan', 'hex': '#22d3ee', 'rgb': [34, 211, 238]},           # Bright cyan
+    {'name': 'Lime', 'hex': '#a3e635', 'rgb': [163, 230, 53]},           # Lime green
+    {'name': 'Pink', 'hex': '#f472b6', 'rgb': [244, 114, 182]},          # Pink accent
+    {'name': 'Teal', 'hex': '#2dd4bf', 'rgb': [45, 212, 191]},           # Teal
+    {'name': 'Orange', 'hex': '#fb923c', 'rgb': [251, 146, 60]},         # Orange
+    {'name': 'Indigo', 'hex': '#818cf8', 'rgb': [129, 140, 248]},        # Indigo
+    {'name': 'Yellow', 'hex': '#facc15', 'rgb': [250, 204, 21]}          # Bright yellow
 ]
 
 def get_color_for_saving(index):
@@ -240,10 +243,13 @@ def generate_timeline_data(savings_list, *, rate_shock_pct: float = 0.0, inflati
 # Title
 st.title("🚀 Savings Forecast & Roadmap")
 
-st.markdown("""
-Visualize your savings growth over time with interactive 3D timeline.
-Add your fixed deposits, recurring deposits, retirement accounts, and other savings to see projected outcomes.
-""")
+# Add refresh button - compact
+col1, col2 = st.columns([1, 5])
+with col1:
+    if st.button("🔄 Refresh"):
+        st.rerun()
+with col2:
+    st.caption(f"Track your savings goals and projected returns | Last updated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
 
 # Sidebar for adding savings
 with st.sidebar:
@@ -317,28 +323,89 @@ with st.sidebar:
 
 # Main content
 if st.session_state.savings_list:
-    # Summary metrics
-    st.subheader("📊 Portfolio Summary")
+    st.markdown("---")
+
+    # Summary metrics - compact single row
+    st.markdown("### 📊 Portfolio Summary")
 
     total_principal = sum(s['principal'] for s in st.session_state.savings_list)
     total_maturity = sum(s['maturity_value'] for s in st.session_state.savings_list)
     total_interest = total_maturity - total_principal
+    total_contributions = sum(s.get('total_contributions', 0.0) for s in st.session_state.savings_list)
     avg_return = (total_interest / total_principal * 100) if total_principal > 0 else 0
 
     # Extra summary insights
     next_12m = datetime.now() + relativedelta(years=1)
     maturities_12m = sum(s['maturity_value'] for s in st.session_state.savings_list if s['maturity_date'] <= next_12m)
     monthly_contrib_sum = sum(s.get('monthly_contribution', 0.0) for s in st.session_state.savings_list)
+    num_savings = len(st.session_state.savings_list)
+    avg_years = sum((s['maturity_date'] - datetime.now()).days / 365.25 for s in st.session_state.savings_list) / num_savings if num_savings > 0 else 0
 
-    col1, col2, col3, col4, col5, col6 = st.columns(6)
-    col1.metric("Total Invested", f"€{total_principal:,.2f}")
-    col2.metric("Projected Value", f"€{total_maturity:,.2f}")
-    col3.metric("Total Interest", f"€{total_interest:,.2f}")
-    col4.metric("Avg. Return", f"{avg_return:.2f}%")
-    col5.metric("12-mo Maturities", f"€{maturities_12m:,.0f}")
-    col6.metric("Monthly Contrib.", f"€{monthly_contrib_sum:,.0f}")
+    col1, col2, col3, col4, col5, col6, col7, col8 = st.columns(8)
+    col1.metric("Total Invested", f"€{total_principal:,.0f}")
+    col2.metric("Monthly Contrib.", f"€{monthly_contrib_sum:,.0f}")
+    col3.metric("Total Contributions", f"€{total_contributions:,.0f}")
+    col4.metric("Projected Value", f"€{total_maturity:,.0f}")
+    col5.metric("Total Interest", f"€{total_interest:,.0f}")
+    col6.metric("Avg. Return", f"{avg_return:.1f}%")
+    col7.metric("12-mo Maturities", f"€{maturities_12m:,.0f}")
+    col8.metric("# Savings", f"{num_savings}")
 
-    st.divider()
+    st.markdown("---")
+
+    # Key dates section - compact
+    st.markdown("### 📅 Key Dates & Milestones")
+
+    # Sort savings by maturity date
+    sorted_savings = sorted(st.session_state.savings_list, key=lambda x: x['maturity_date'])
+
+    # Get next 3 upcoming maturities
+    upcoming_3 = sorted_savings[:3]
+
+    col1, col2, col3, col4 = st.columns(4)
+
+    with col1:
+        if upcoming_3:
+            next_maturity = upcoming_3[0]
+            days_until = (next_maturity['maturity_date'] - datetime.now()).days
+            col1.metric(
+                "Next Maturity",
+                f"{next_maturity['name'][:15]}...",
+                f"{days_until} days | €{next_maturity['maturity_value']:,.0f}"
+            )
+        else:
+            col1.metric("Next Maturity", "N/A")
+
+    with col2:
+        # Longest duration saving
+        longest = max(st.session_state.savings_list, key=lambda x: (x['maturity_date'] - x['start_date']).days)
+        duration_years = (longest['maturity_date'] - longest['start_date']).days / 365.25
+        col2.metric(
+            "Longest Term",
+            f"{longest['name'][:15]}...",
+            f"{duration_years:.1f}y | {longest['rate']*100:.1f}%"
+        )
+
+    with col3:
+        # Highest interest earning
+        highest_interest = max(st.session_state.savings_list, key=lambda x: x['interest_earned'])
+        col3.metric(
+            "Highest Interest",
+            f"{highest_interest['name'][:15]}...",
+            f"€{highest_interest['interest_earned']:,.0f}"
+        )
+
+    with col4:
+        # Weighted average rate
+        total_weighted = sum(s['principal'] * s['rate'] for s in st.session_state.savings_list)
+        weighted_avg_rate = (total_weighted / total_principal * 100) if total_principal > 0 else 0
+        col4.metric(
+            "Weighted Avg Rate",
+            f"{weighted_avg_rate:.2f}%",
+            f"Across {num_savings} accounts"
+        )
+
+    st.markdown("---")
 
     # What-if controls
     with st.expander("🎛️ What-if Settings", expanded=False):
@@ -370,11 +437,29 @@ if st.session_state.savings_list:
 
     df_timeline = pd.DataFrame(chart_data)
 
+    # Color legend for easy tracking across charts
+    st.markdown("**🎨 Savings Color Legend:**")
+    legend_cols = st.columns(min(len(st.session_state.savings_list), 6))
+    for idx, saving in enumerate(st.session_state.savings_list[:6]):  # Show first 6
+        color_obj = saving.get('color', get_color_for_saving(idx))
+        with legend_cols[idx]:
+            st.markdown(
+                f'<div style="display: inline-block; width: 12px; height: 12px; background-color: {color_obj["hex"]}; '
+                f'border-radius: 2px; margin-right: 4px;"></div>'
+                f'<span style="font-size: 0.75rem;">{saving["name"][:20]}</span>',
+                unsafe_allow_html=True
+            )
+
+    if len(st.session_state.savings_list) > 6:
+        st.caption(f"+ {len(st.session_state.savings_list) - 6} more (see chart legends)")
+
+    st.markdown("---")
+
     # Create two columns for side-by-side charts
     col1, col2 = st.columns([2, 1])
 
     with col1:
-        st.subheader("📈 Savings Growth Projection")
+        st.markdown("**📈 Savings Growth Projection**")
 
         # Create the main projection chart with Plotly
         fig = go.Figure()
@@ -383,27 +468,48 @@ if st.session_state.savings_list:
         for idx, saving in enumerate(st.session_state.savings_list):
             color_obj = saving.get('color', get_color_for_saving(idx))
 
+            # Convert hex to rgba with reduced opacity for softer appearance
+            rgb = color_obj['rgb']
+            fill_color = f'rgba({rgb[0]}, {rgb[1]}, {rgb[2]}, 0.6)'  # 60% opacity
+            line_color = f'rgba({rgb[0]}, {rgb[1]}, {rgb[2]}, 0.8)'  # 80% opacity
+
             fig.add_trace(go.Scatter(
                 x=df_timeline['Date'],
                 y=df_timeline[saving['name']],
                 name=saving['name'],
                 mode='lines',
-                line=dict(width=0.5, color=color_obj['hex']),
+                line=dict(width=0.5, color=line_color),
                 stackgroup='one',
-                fillcolor=color_obj['hex'],
+                fillcolor=fill_color,
                 hovertemplate='<b>%{fullData.name}</b><br>' +
                               'Date: %{x|%Y-%m-%d}<br>' +
                               'Value: €%{y:,.2f}<br>' +
                               '<extra></extra>'
             ))
 
-        # Add total portfolio line (bold, on top)
+        # Add total portfolio line (bold, on top) with data labels at key points
+        # Show labels only at start, end, and every few months to avoid clutter
+        label_indices = [0, len(df_timeline) - 1]  # Start and end
+        # Add some intermediate points (every ~3 months)
+        step = max(1, len(df_timeline) // 4)
+        label_indices.extend(range(step, len(df_timeline) - 1, step))
+
+        text_labels = []
+        for i in range(len(df_timeline)):
+            if i in label_indices:
+                text_labels.append(f'€{df_timeline["Total"].iloc[i]:,.0f}')
+            else:
+                text_labels.append('')
+
         fig.add_trace(go.Scatter(
             x=df_timeline['Date'],
             y=df_timeline['Total'],
             name='Total Portfolio',
-            mode='lines',
-            line=dict(width=3, color='#FFD700', dash='solid'),
+            mode='lines+text',
+            line=dict(width=3, color='#fbbf24', dash='solid'),  # Amber/gold color for visibility
+            text=text_labels,
+            textposition='top center',
+            textfont=dict(size=9, color='#fbbf24'),
             hovertemplate='<b>Total Portfolio</b><br>' +
                           'Date: %{x|%Y-%m-%d}<br>' +
                           'Value: €%{y:,.2f}<br>' +
@@ -430,7 +536,7 @@ if st.session_state.savings_list:
             mode='lines',
             name='Lower Bound (-5%)',
             line=dict(width=0),
-            fillcolor='rgba(255, 215, 0, 0.1)',
+            fillcolor='rgba(251, 191, 36, 0.1)',  # Amber with low opacity
             fill='tonexty',
             showlegend=False,
             hoverinfo='skip'
@@ -500,7 +606,7 @@ if st.session_state.savings_list:
         fig.update_layout(
             template='plotly_dark',
             hovermode='x unified',
-            height=600,
+            height=450,
             margin=dict(l=10, r=10, t=10, b=10),
             plot_bgcolor='rgba(10,10,30,0.9)',
             paper_bgcolor='rgba(10,10,30,0.9)',
@@ -538,7 +644,7 @@ if st.session_state.savings_list:
         st.plotly_chart(fig, use_container_width=True)
 
     with col2:
-        st.subheader("💎 Maturity Values")
+        st.markdown("**💎 Maturity Values**")
 
         fig_bars = go.Figure()
 
@@ -556,13 +662,22 @@ if st.session_state.savings_list:
                 monthly_contribution=s.get('monthly_contribution', 0.0)
             )
             interests.append(max(0.0, scenario_maturity - s['principal'] - s.get('total_contributions', 0.0)))
-        colors = [s.get('color', get_color_for_saving(i))['hex'] for i, s in enumerate(st.session_state.savings_list)]
+
+        # Create softer colors with opacity for the bars
+        colors_rgba = []
+        for i, s in enumerate(st.session_state.savings_list):
+            color_obj = s.get('color', get_color_for_saving(i))
+            rgb = color_obj['rgb']
+            colors_rgba.append(f'rgba({rgb[0]}, {rgb[1]}, {rgb[2]}, 0.7)')  # 70% opacity
 
         fig_bars.add_trace(go.Bar(
             name='Principal',
             x=savings_names,
             y=principals,
-            marker_color='rgba(100,100,100,0.6)',
+            marker_color='rgba(100,100,100,0.5)',  # Slightly more transparent
+            text=[f'€{p:,.0f}' for p in principals],
+            textposition='inside',
+            textfont=dict(size=9, color='white'),
             hovertemplate='<b>%{x}</b><br>Principal: €%{y:,.2f}<extra></extra>'
         ))
 
@@ -570,15 +685,31 @@ if st.session_state.savings_list:
             name='Interest Earned',
             x=savings_names,
             y=interests,
-            marker_color=colors,
+            marker_color=colors_rgba,  # Use rgba with opacity
+            text=[f'€{i:,.0f}' if i > 0 else '' for i in interests],
+            textposition='inside',
+            textfont=dict(size=9, color='white'),
             hovertemplate='<b>%{x}</b><br>Interest: €%{y:,.2f}<extra></extra>'
+        ))
+
+        # Add total value labels on top of stacked bars
+        totals = [p + i for p, i in zip(principals, interests)]
+        fig_bars.add_trace(go.Scatter(
+            x=savings_names,
+            y=totals,
+            mode='text',
+            text=[f'€{t:,.0f}' for t in totals],
+            textposition='top center',
+            textfont=dict(size=9, color='#fbbf24'),
+            showlegend=False,
+            hoverinfo='skip'
         ))
 
         fig_bars.update_layout(
             barmode='stack',
             template='plotly_dark',
-            height=600,
-            margin=dict(l=10, r=10, t=10, b=10),
+            height=450,
+            margin=dict(l=10, r=10, t=30, b=10),  # Increased top margin for labels
             plot_bgcolor='rgba(10,10,30,0.9)',
             paper_bgcolor='rgba(10,10,30,0.9)',
             xaxis=dict(
@@ -606,15 +737,17 @@ if st.session_state.savings_list:
 
         st.plotly_chart(fig_bars, use_container_width=True)
 
-    st.divider()
+    st.markdown("---")
 
-    # Additional insights row
+    # Additional insights row - more compact
+    st.markdown("### 📊 Breakdown & Allocation")
+
     c1, c2 = st.columns([2, 1])
     with c1:
-        st.subheader("🪜 Maturity Ladder")
-        # Build per-saving principal and interest at maturity (scenario-aware)
+        st.markdown("**🪜 Maturity Ladder**")
+        # Build per-saving principal and interest at maturity (scenario-aware) with individual colors
         ladder_rows = []
-        for s in st.session_state.savings_list:
+        for idx, s in enumerate(st.session_state.savings_list):
             scen_maturity = fv_with_monthly_contrib(
                 principal=s['principal'],
                 rate=max(0.0, s['rate'] * (1 + rate_shock / 100.0)),
@@ -633,43 +766,95 @@ if st.session_state.savings_list:
 
             principal_comp = (s['principal'] + s.get('total_contributions', 0.0)) / deflator
             interest_comp = max(0.0, scen_maturity / deflator - principal_comp)
+            color_obj = s.get('color', get_color_for_saving(idx))
 
             ladder_rows.append({
+                'Saving': s['name'],
                 'Maturity Month': s['maturity_date'].strftime('%Y-%m'),
+                'Maturity Date': s['maturity_date'],
                 'Principal': principal_comp,
                 'Interest': interest_comp,
+                'Color': color_obj
             })
 
         ladder_df = pd.DataFrame(ladder_rows)
         if not ladder_df.empty:
-            ladder_agg = ladder_df.groupby('Maturity Month')[['Principal', 'Interest']].sum().reset_index()
+            # Sort by maturity date
+            ladder_df = ladder_df.sort_values('Maturity Date')
+
+            # Create stacked bar chart
             ladder_fig = go.Figure()
-            ladder_fig.add_trace(go.Bar(
-                name='Principal',
-                x=ladder_agg['Maturity Month'],
-                y=ladder_agg['Principal'],
-                marker_color='rgba(100,100,100,0.6)',
-                hovertemplate='Month: %{x}<br>Principal: €%{y:,.2f}<extra></extra>'
-            ))
-            ladder_fig.add_trace(go.Bar(
-                name='Interest',
-                x=ladder_agg['Maturity Month'],
-                y=ladder_agg['Interest'],
-                marker_color='#00D4FF',
-                hovertemplate='Month: %{x}<br>Interest: €%{y:,.2f}<extra></extra>'
-            ))
+
+            # Get unique months in order
+            unique_months = ladder_df['Maturity Month'].unique()
+
+            # First, add all principal bars (gray) for each saving
+            for _, row in ladder_df.iterrows():
+                # Only show label if principal is significant enough
+                text_label = f'€{row["Principal"]:,.0f}' if row["Principal"] > 100 else ''
+
+                ladder_fig.add_trace(go.Bar(
+                    name=f"{row['Saving']} (Principal)",
+                    x=[row['Maturity Month']],
+                    y=[row['Principal']],
+                    marker_color='rgba(100,100,100,0.5)',
+                    text=[text_label],
+                    textposition='inside',
+                    textfont=dict(size=8, color='white'),
+                    hovertemplate=f'<b>{row["Saving"]}</b><br>' +
+                                  'Principal: €%{y:,.2f}<extra></extra>',
+                    showlegend=False,
+                    legendgroup=row['Saving']
+                ))
+
+            # Then, add all interest bars (individual colors) for each saving
+            for _, row in ladder_df.iterrows():
+                rgb = row['Color']['rgb']
+                color_rgba = f'rgba({rgb[0]}, {rgb[1]}, {rgb[2]}, 0.7)'
+                # Only show label if interest is significant enough
+                text_label = f'€{row["Interest"]:,.0f}' if row["Interest"] > 50 else ''
+
+                ladder_fig.add_trace(go.Bar(
+                    name=row['Saving'],
+                    x=[row['Maturity Month']],
+                    y=[row['Interest']],
+                    marker_color=color_rgba,
+                    text=[text_label],
+                    textposition='outside',  # Changed to outside
+                    textfont=dict(size=8, color=color_rgba),  # Use same color as bar
+                    hovertemplate=f'<b>{row["Saving"]}</b><br>' +
+                                  'Interest: €%{y:,.2f}<extra></extra>',
+                    showlegend=True,
+                    legendgroup=row['Saving']
+                ))
+
+            # Calculate max value for y-axis range with padding
+            max_value = ladder_df.apply(lambda row: row['Principal'] + row['Interest'], axis=1).max()
+            y_max = max_value * 1.15  # Add 15% padding at top for labels
+
             ladder_fig.update_layout(
                 barmode='stack',
-                template='plotly_dark', height=350, margin=dict(t=10, b=40, l=10, r=10),
-                xaxis_title='', yaxis_title='Maturing (€)', yaxis_tickprefix='€', yaxis_tickformat=',.0f',
-                legend=dict(orientation='h', yanchor='bottom', y=1.02, xanchor='right', x=1)
+                template='plotly_dark',
+                height=350,  # Further increased height
+                margin=dict(t=10, b=30, l=10, r=10),  # Reset top margin, use y-axis range instead
+                xaxis_title='',
+                yaxis=dict(
+                    title='Maturing (€)',
+                    tickprefix='€',
+                    tickformat=',.0f',
+                    range=[0, y_max]  # Set explicit range with padding
+                ),
+                legend=dict(orientation='h', yanchor='bottom', y=1.02, xanchor='right', x=1, font=dict(size=8)),
+                font=dict(size=10),
+                uniformtext_minsize=8,
+                uniformtext_mode='hide'
             )
-            st.plotly_chart(ladder_fig, use_container_width=True)
+            st.plotly_chart(ladder_fig, use_container_width=True, config={'displayModeBar': False})
         else:
             st.info("Add savings to see upcoming maturities")
 
     with c2:
-        st.subheader("📊 Allocation by Type")
+        st.markdown("**📊 Allocation by Type**")
         alloc_rows = []
         for s in st.session_state.savings_list:
             alloc_rows.append({'Type': s['type'], 'Amount': s['principal'] + s.get('total_contributions', 0.0)})
@@ -677,102 +862,135 @@ if st.session_state.savings_list:
         if not alloc_df.empty:
             alloc_agg = alloc_df.groupby('Type')['Amount'].sum().reset_index()
             pie_fig = create_pie_chart(alloc_agg, labels='Type', values='Amount', title='', hole=0.5)
-            pie_fig.update_layout(template='plotly_dark', height=350, margin=dict(t=10, b=10, l=10, r=10))
-            st.plotly_chart(pie_fig, use_container_width=True)
+            pie_fig.update_layout(template='plotly_dark', height=280, margin=dict(t=10, b=10, l=10, r=10), font=dict(size=10))
+            st.plotly_chart(pie_fig, use_container_width=True, config={'displayModeBar': False})
         else:
             st.info("No allocation to show yet")
 
-    # Savings list table
-    st.subheader("📋 Your Savings")
+    st.markdown("---")
 
-    # Prepare data for table
-    table_data = []
-    compounding_map = {1: 'Annually', 2: 'Semi-annually', 4: 'Quarterly', 12: 'Monthly'}
+    # Related dashboards navigation - compact
+    st.markdown('<div style="background-color: rgba(49, 51, 63, 0.2); padding: 0.3rem 0.5rem; border-radius: 0.3rem; font-size: 0.75rem;">💡 <b>Related:</b> <a href="/Net_Worth" style="color: #58a6ff;">📊 Net Worth</a> • <a href="/Cash_Flow" style="color: #58a6ff;">📈 Cash Flow</a> • <a href="/Budget" style="color: #58a6ff;">💰 Budget</a></div>', unsafe_allow_html=True)
 
-    for idx, saving in enumerate(st.session_state.savings_list):
-        color = saving.get('color', get_color_for_saving(idx))
-        years_from_now = (saving['maturity_date'] - datetime.now()).days / 365.25
+    st.markdown("---")
 
-        table_data.append({
-            'Color': color['name'],
-            'Name': saving['name'],
-            'Type': saving['type'],
-            'Principal': f"€{saving['principal']:,.2f}",
-            'Contrib (Total)': f"€{saving.get('total_contributions', 0.0):,.2f}",
-            'Rate': f"{saving['rate']*100:.2f}%",
-            'Compounding': compounding_map[saving['compounding_frequency']],
-            'Start Date': saving['start_date'].strftime('%Y-%m-%d'),
-            'Maturity Date': saving['maturity_date'].strftime('%Y-%m-%d'),
-            'Years': f"{years_from_now:.1f}y",
-            'Maturity Value': f"€{saving['maturity_value']:,.2f}",
-            'Interest': f"€{saving['interest_earned']:,.2f}",
-            'Delete': idx
-        })
+    # Savings list table - collapsible for density
+    with st.expander("📋 Your Savings Details", expanded=False):
+        # Prepare data for table
+        table_data = []
+        compounding_map = {1: 'Ann.', 2: 'Semi', 4: 'Qtr', 12: 'Mon.'}
 
-    # Display table with built-in row selection
-    if table_data:
-        df = pd.DataFrame(table_data)
+        for idx, saving in enumerate(st.session_state.savings_list):
+            color = saving.get('color', get_color_for_saving(idx))
+            years_from_now = (saving['maturity_date'] - datetime.now()).days / 365.25
 
-        # Display dataframe with row selection
-        event = st.dataframe(
-            df.drop(columns=['Delete']),
-            width="stretch",
-            height=min(400, (len(table_data) + 1) * 35 + 3),
-            on_select="rerun",
-            selection_mode="multi-row"
-        )
+            table_data.append({
+                'Color': color['name'],
+                'Name': saving['name'],
+                'Type': saving['type'],
+                'Principal': f"€{saving['principal']:,.0f}",
+                'Contrib.': f"€{saving.get('total_contributions', 0.0):,.0f}",
+                'Rate': f"{saving['rate']*100:.1f}%",
+                'Comp.': compounding_map[saving['compounding_frequency']],
+                'Start': saving['start_date'].strftime('%Y-%m-%d'),
+                'Maturity': saving['maturity_date'].strftime('%Y-%m-%d'),
+                'Years': f"{years_from_now:.1f}y",
+                'Final Value': f"€{saving['maturity_value']:,.0f}",
+                'Interest': f"€{saving['interest_earned']:,.0f}",
+                'Delete': idx
+            })
 
-        # Delete selected rows
-        if event.selection.rows:
-            col1, col2 = st.columns([4, 1])
-            with col1:
-                st.info(f"✓ Selected {len(event.selection.rows)} saving(s)")
-            with col2:
-                if st.button("🗑️ Delete Selected", type="secondary", width="stretch"):
-                    # Sort indices in reverse to delete from end to start
-                    for idx in sorted(event.selection.rows, reverse=True):
-                        st.session_state.savings_list.pop(idx)
-                    st.rerun()
+        # Display table with built-in row selection
+        if table_data:
+            df = pd.DataFrame(table_data)
 
-        st.divider()
-
-        # Downloads and clear all
-        col_dl1, col_dl2, col_clr = st.columns([1, 1, 1])
-        with col_dl1:
-            st.download_button(
-                "⬇️ Download Savings CSV",
-                data=pd.DataFrame(table_data).drop(columns=['Delete']).to_csv(index=False).encode('utf-8'),
-                file_name=f"savings_list_{datetime.now().strftime('%Y%m%d')}.csv",
-                mime='text/csv'
+            # Display dataframe with row selection
+            event = st.dataframe(
+                df.drop(columns=['Delete']),
+                use_container_width=True,
+                height=min(350, (len(table_data) + 1) * 35 + 3),
+                on_select="rerun",
+                selection_mode="multi-row"
             )
-        with col_dl2:
-            if 'df_timeline' in locals() and not df_timeline.empty:
+
+            # Delete selected rows
+            if event.selection.rows:
+                col1, col2 = st.columns([4, 1])
+                with col1:
+                    st.info(f"✓ Selected {len(event.selection.rows)} saving(s)")
+                with col2:
+                    if st.button("🗑️ Delete Selected", type="secondary", width="stretch"):
+                        # Sort indices in reverse to delete from end to start
+                        for idx in sorted(event.selection.rows, reverse=True):
+                            st.session_state.savings_list.pop(idx)
+                        st.rerun()
+
+            st.markdown("---")
+
+            # Downloads and clear all - more compact
+            col_dl1, col_dl2, col_dl3, col_clr = st.columns([1, 1, 1, 1])
+            with col_dl1:
                 st.download_button(
-                    "⬇️ Download Projection CSV",
-                    data=df_timeline.to_csv(index=False).encode('utf-8'),
-                    file_name=f"savings_projection_{datetime.now().strftime('%Y%m%d')}.csv",
+                    "⬇️ Savings CSV",
+                    data=pd.DataFrame(table_data).drop(columns=['Delete']).to_csv(index=False).encode('utf-8'),
+                    file_name=f"savings_{datetime.now().strftime('%Y%m%d')}.csv",
                     mime='text/csv'
                 )
-        with col_clr:
-            if st.button("🗑️ Clear All Savings", type="secondary"):
-                st.session_state.savings_list = []
-                st.rerun()
+            with col_dl2:
+                if 'df_timeline' in locals() and not df_timeline.empty:
+                    st.download_button(
+                        "⬇️ Projection CSV",
+                        data=df_timeline.to_csv(index=False).encode('utf-8'),
+                        file_name=f"projection_{datetime.now().strftime('%Y%m%d')}.csv",
+                        mime='text/csv'
+                    )
+            with col_dl3:
+                # Export as JSON
+                savings_json = json.dumps([{
+                    'name': s['name'],
+                    'type': s['type'],
+                    'principal': s['principal'],
+                    'rate': s['rate'],
+                    'start_date': s['start_date'].isoformat(),
+                    'maturity_date': s['maturity_date'].isoformat(),
+                    'compounding_frequency': s['compounding_frequency'],
+                    'monthly_contribution': s.get('monthly_contribution', 0.0)
+                } for s in st.session_state.savings_list], indent=2)
+
+                st.download_button(
+                    "⬇️ Export JSON",
+                    data=savings_json,
+                    file_name=f"savings_{datetime.now().strftime('%Y%m%d')}.json",
+                    mime='application/json'
+                )
+            with col_clr:
+                if st.button("🗑️ Clear All", type="secondary"):
+                    st.session_state.savings_list = []
+                    st.rerun()
 
 else:
-    # Empty state
-    st.info("👈 Add your first saving using the form in the sidebar to visualize your savings growth!")
+    # Empty state - compact
+    st.markdown("---")
+    st.info("👈 **Get Started:** Add your first saving using the form in the sidebar to visualize your savings growth!")
 
-    st.markdown("""
-    ### How to use:
+    col1, col2 = st.columns(2)
 
-    1. **Add Savings**: Use the sidebar form to add savings accounts (Fixed Deposits, Retirement, etc.)
-    2. **Visualize Growth**: See your savings grow over time in an interactive 3D timeline
-    3. **Track Maturity**: Golden markers show when each savings matures
-    4. **Hover for Details**: Mouse over points to see detailed information
+    with col1:
+        st.markdown("""
+        **📝 How to use:**
 
-    ### Example:
-    - **Principal**: €1,000
-    - **Interest Rate**: 3% annually
-    - **Duration**: 2 years
-    - **Expected Value**: €1,060.90
-    """)
+        1. **Add Savings**: Use sidebar form (Fixed Deposits, Retirement, etc.)
+        2. **Visualize Growth**: See projected growth over time
+        3. **Track Maturity**: View when each saving matures
+        4. **What-if Analysis**: Test different rate scenarios
+        """)
+
+    with col2:
+        st.markdown("""
+        **💡 Example:**
+        - Principal: €1,000
+        - Interest Rate: 3% annually
+        - Duration: 2 years
+        - Expected Value: €1,060.90
+        - Interest Earned: €60.90
+        """)
