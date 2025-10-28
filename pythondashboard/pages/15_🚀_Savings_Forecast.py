@@ -1423,6 +1423,7 @@ if st.session_state.savings_list:
                     mode='lines',
                     line=dict(color='rgba(180,180,180,0.8)', width=2, dash='solid'),
                     name=f'{row["Saving"]} (Principal)',
+                    legendgroup=row['Saving'],  # Group all traces for this saving
                     showlegend=False,
                     hovertemplate=f'<b>{row["Saving"]} Principal</b><br>₹{principal_height:,.0f}<extra></extra>',
                     fill='tozeroy',
@@ -1450,6 +1451,7 @@ if st.session_state.savings_list:
                     mode='lines',
                     line=dict(color=line_color, width=2, shape='linear'),
                     name=f'{row["Saving"]} (Interest)',
+                    legendgroup=row['Saving'],  # Group all traces for this saving
                     showlegend=False,
                     hovertemplate=f'<b>{row["Saving"]} Interest</b><br>₹{row["Interest"]:,.0f}<extra></extra>',
                     fill='tonexty',  # Fill to next y (fills the interest portion)
@@ -1468,6 +1470,7 @@ if st.session_state.savings_list:
                         symbol=['circle', 'circle', 'circle', 'diamond']
                     ),
                     name=row['Saving'],
+                    legendgroup=row['Saving'],  # Group all traces for this saving
                     showlegend=True,
                     hovertemplate=f'<b>{row["Saving"]}</b><br>' +
                                   f'Start: {row["Start Date"].strftime("%d-%b-%Y")}<br>' +
@@ -1489,7 +1492,8 @@ if st.session_state.savings_list:
                     'date': row['Maturity Date'],
                     'value': total_height,
                     'text': f'₹{total_height:,.0f}',
-                    'color': line_color
+                    'color': line_color,
+                    'saving': row['Saving']  # Store saving name for legend grouping
                 })
 
             # Sort by date
@@ -1523,7 +1527,8 @@ if st.session_state.savings_list:
                     'original_y': label['value'],
                     'adjusted_y': adjusted_y,
                     'text': label['text'],
-                    'color': label['color']
+                    'color': label['color'],
+                    'saving': label['saving']  # Preserve saving name
                 })
 
             # Add labels with adjusted positions
@@ -1535,6 +1540,7 @@ if st.session_state.savings_list:
                     text=[pos['text']],
                     textposition='top center',
                     textfont=dict(size=11, color=pos['color']),
+                    legendgroup=pos['saving'],  # Link to saving's legend group
                     showlegend=False,
                     hoverinfo='skip'
                 ))
@@ -1546,6 +1552,7 @@ if st.session_state.savings_list:
                         y=[pos['original_y'], pos['adjusted_y']],
                         mode='lines',
                         line=dict(color=pos['color'], width=1, dash='dot'),
+                        legendgroup=pos['saving'],  # Link to saving's legend group
                         showlegend=False,
                         hoverinfo='skip'
                     ))
