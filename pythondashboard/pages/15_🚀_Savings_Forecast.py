@@ -1104,15 +1104,24 @@ if st.session_state.savings_list:
         # Recompute interest if what-if scenario is active (approximate using maturity date)
         interests = []
         for s in st.session_state.savings_list:
-            scenario_maturity = fv_with_monthly_contrib(
-                principal=s['principal'],
-                rate=max(0.0, s['rate'] * (1 + rate_shock / 100.0)),
-                start_dt=s['start_date'],
-                end_dt=s['maturity_date'],
-                compounding_frequency=s['compounding_frequency'],
-                monthly_contribution=s.get('monthly_contribution', 0.0)
-            )
-            interests.append(max(0.0, scenario_maturity - s['principal'] - s.get('total_contributions', 0.0)))
+            # Check if this is a payout FD (non-cumulative)
+            has_payout = s.get('has_payout', False)
+
+            if has_payout:
+                # Non-cumulative FD - interest is paid out, not compounded
+                # Use stored interest_earned value
+                interests.append(s.get('interest_earned', 0.0))
+            else:
+                # Cumulative FD - interest compounds, apply scenario rate
+                scenario_maturity = fv_with_monthly_contrib(
+                    principal=s['principal'],
+                    rate=max(0.0, s['rate'] * (1 + rate_shock / 100.0)),
+                    start_dt=s['start_date'],
+                    end_dt=s['maturity_date'],
+                    compounding_frequency=s['compounding_frequency'],
+                    monthly_contribution=s.get('monthly_contribution', 0.0)
+                )
+                interests.append(max(0.0, scenario_maturity - s['principal'] - s.get('total_contributions', 0.0)))
 
         # Create softer colors with opacity for the bars
         colors_rgba = []
