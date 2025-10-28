@@ -249,15 +249,29 @@ def generate_timeline_data(savings_list, *, rate_shock_pct: float = 0.0, inflati
             mature_dt = saving['maturity_date']
             eval_dt = min(current_date, mature_dt)
 
-            # Current value with optional monthly contribution
-            current_value = fv_with_monthly_contrib(
-                principal=saving['principal'],
-                rate=adj_rate,
-                start_dt=start_dt,
-                end_dt=eval_dt,
-                compounding_frequency=saving['compounding_frequency'],
-                monthly_contribution=saving.get('monthly_contribution', 0.0)
-            ) if eval_dt >= start_dt else saving['principal']
+            # Check if this is a payout FD (non-cumulative)
+            has_payout = saving.get('has_payout', False)
+
+            if eval_dt >= start_dt:
+                if has_payout:
+                    # Non-cumulative FD - interest is paid out, not compounded
+                    # Value = Principal + Contributions (interest is paid separately)
+                    total_months = months_between(start_dt, eval_dt)
+                    monthly_contribution = saving.get('monthly_contribution', 0.0)
+                    total_contrib = monthly_contribution * total_months
+                    current_value = saving['principal'] + total_contrib
+                else:
+                    # Cumulative FD - interest compounds
+                    current_value = fv_with_monthly_contrib(
+                        principal=saving['principal'],
+                        rate=adj_rate,
+                        start_dt=start_dt,
+                        end_dt=eval_dt,
+                        compounding_frequency=saving['compounding_frequency'],
+                        monthly_contribution=saving.get('monthly_contribution', 0.0)
+                    )
+            else:
+                current_value = saving['principal']
 
             # Inflation adjustment to show real terms
             if real_terms and inflation_pct > 0:
@@ -1185,14 +1199,26 @@ if st.session_state.savings_list:
         # Build per-saving principal and interest at maturity (scenario-aware) with individual colors
         ladder_rows = []
         for idx, s in enumerate(st.session_state.savings_list):
-            scen_maturity = fv_with_monthly_contrib(
-                principal=s['principal'],
-                rate=max(0.0, s['rate'] * (1 + rate_shock / 100.0)),
-                start_dt=s['start_date'],
-                end_dt=s['maturity_date'],
-                compounding_frequency=s['compounding_frequency'],
-                monthly_contribution=s.get('monthly_contribution', 0.0)
-            )
+            # Check if this is a payout FD (non-cumulative)
+            has_payout = s.get('has_payout', False)
+
+            if has_payout:
+                # Non-cumulative FD - interest is paid out, not compounded
+                # Maturity value = Principal + Contributions
+                scen_maturity = s['principal'] + s.get('total_contributions', 0.0)
+                # Interest is paid separately, use stored interest_earned
+                interest_at_maturity = s.get('interest_earned', 0.0)
+            else:
+                # Cumulative FD - interest compounds
+                scen_maturity = fv_with_monthly_contrib(
+                    principal=s['principal'],
+                    rate=max(0.0, s['rate'] * (1 + rate_shock / 100.0)),
+                    start_dt=s['start_date'],
+                    end_dt=s['maturity_date'],
+                    compounding_frequency=s['compounding_frequency'],
+                    monthly_contribution=s.get('monthly_contribution', 0.0)
+                )
+                interest_at_maturity = scen_maturity - s['principal'] - s.get('total_contributions', 0.0)
 
             # Inflation adjustment for maturity value and components (to real terms)
             if show_real and inflation_rate > 0:
@@ -1202,7 +1228,11 @@ if st.session_state.savings_list:
                 deflator = 1.0
 
             principal_comp = (s['principal'] + s.get('total_contributions', 0.0)) / deflator
-            interest_comp = max(0.0, scen_maturity / deflator - principal_comp)
+            # For payout FDs, interest is separate; for cumulative, calculate from maturity value
+            if has_payout:
+                interest_comp = interest_at_maturity / deflator
+            else:
+                interest_comp = max(0.0, scen_maturity / deflator - principal_comp)
             color_obj = s.get('color', get_color_for_saving(idx))
 
             ladder_rows.append({
