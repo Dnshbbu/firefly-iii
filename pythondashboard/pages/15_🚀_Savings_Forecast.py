@@ -105,31 +105,16 @@ elif 'force_reload' in st.session_state and st.session_state.force_reload:
     st.session_state.savings_list = db.get_all_savings()
     st.session_state.force_reload = False
 
-# Currency configuration
-CURRENCIES = {
-    'EUR': {'symbol': '€', 'name': 'Euro', 'position': 'prefix'},
-    'INR': {'symbol': '₹', 'name': 'Indian Rupee', 'position': 'prefix'},
-    'USD': {'symbol': '$', 'name': 'US Dollar', 'position': 'prefix'},
-    'GBP': {'symbol': '£', 'name': 'British Pound', 'position': 'prefix'}
-}
+# Currency configuration - Using INR only
+CURRENCY_SYMBOL = '₹'
 
-def format_currency(amount, currency_code='EUR'):
-    """Format amount with appropriate currency symbol"""
-    curr = CURRENCIES.get(currency_code, CURRENCIES['EUR'])
-    symbol = curr['symbol']
-    if curr['position'] == 'prefix':
-        return f"{symbol}{amount:,.2f}"
-    else:
-        return f"{amount:,.2f}{symbol}"
+def format_currency(amount):
+    """Format amount with INR currency symbol"""
+    return f"{CURRENCY_SYMBOL}{amount:,.2f}"
 
-def format_currency_short(amount, currency_code='EUR'):
-    """Format amount with appropriate currency symbol (no decimals)"""
-    curr = CURRENCIES.get(currency_code, CURRENCIES['EUR'])
-    symbol = curr['symbol']
-    if curr['position'] == 'prefix':
-        return f"{symbol}{amount:,.0f}"
-    else:
-        return f"{amount:,.0f}{symbol}"
+def format_currency_short(amount):
+    """Format amount with INR currency symbol (no decimals)"""
+    return f"{CURRENCY_SYMBOL}{amount:,.0f}"
 
 # Color palette for different savings - optimized for dark mode
 # Uses colors that have good contrast on dark backgrounds and match the app's color scheme
@@ -285,153 +270,225 @@ with col1:
 with col2:
     st.caption(f"Track your savings goals and projected returns | Last updated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
 
-# Sidebar for adding savings
+# Sidebar for adding/editing savings
 with st.sidebar:
-    st.header("➕ Add New Saving")
+    # Check if we're in edit mode
+    if 'editing_index' in st.session_state and st.session_state.editing_index is not None:
+        # Edit mode
+        st.header("✏️ Edit Saving")
+        editing_saving = st.session_state.savings_list[st.session_state.editing_index]
 
-    with st.form("add_saving_form", clear_on_submit=True):
-        saving_name = st.text_input("Name", placeholder="e.g., Fixed Deposit 2025")
+        # Calculate current duration
+        duration_delta = relativedelta(editing_saving['maturity_date'], editing_saving['start_date'])
 
-        col_type, col_curr = st.columns(2)
-        with col_type:
+        with st.form("edit_saving_form"):
+            saving_name = st.text_input("Name", value=editing_saving['name'])
+            saving_type = st.selectbox(
+                "Type",
+                ["Fixed Deposit", "Recurring Deposit", "Retirement Account", "Other"],
+                index=["Fixed Deposit", "Recurring Deposit", "Retirement Account", "Other"].index(editing_saving['type'])
+            )
+
+            principal = st.number_input(f"Principal Amount ({CURRENCY_SYMBOL})", min_value=0.0, value=float(editing_saving['principal']), step=1000.0)
+            rate = st.number_input("Annual Interest Rate (%)", min_value=0.0, max_value=100.0, value=float(editing_saving['rate']*100), step=0.1)
+
+            start_date = st.date_input("Start Date", value=editing_saving['start_date'].date(), min_value=None, max_value=None)
+
+            st.markdown("**Duration:**")
+            col1, col2, col3 = st.columns(3)
+            with col1:
+                duration_years = st.number_input("Years", min_value=0, max_value=50, value=duration_delta.years, step=1)
+            with col2:
+                duration_months = st.number_input("Months", min_value=0, max_value=11, value=duration_delta.months, step=1)
+            with col3:
+                duration_days = st.number_input("Days", min_value=0, max_value=31, value=duration_delta.days, step=1)
+
+            compounding = st.selectbox(
+                "Compounding Frequency",
+                options=[1, 2, 4, 12],
+                format_func=lambda x: {1: "Annually", 2: "Semi-annually", 4: "Quarterly", 12: "Monthly"}[x],
+                index=[1, 2, 4, 12].index(editing_saving['compounding_frequency'])
+            )
+
+            monthly_contribution = 0.0
+            if saving_type == "Recurring Deposit":
+                monthly_contribution = st.number_input(
+                    f"Monthly Contribution ({CURRENCY_SYMBOL})",
+                    min_value=0.0,
+                    value=float(editing_saving.get('monthly_contribution', 0.0)),
+                    step=500.0,
+                    help="Additional amount you add every month"
+                )
+
+            col_submit, col_cancel = st.columns(2)
+            with col_submit:
+                submit = st.form_submit_button("💾 Update", width="stretch")
+            with col_cancel:
+                cancel = st.form_submit_button("❌ Cancel", width="stretch")
+
+            if cancel:
+                del st.session_state.editing_index
+                st.rerun()
+
+            if submit and saving_name:
+                start_dt = datetime.combine(start_date, datetime.min.time())
+                maturity_date = start_dt + relativedelta(years=duration_years, months=duration_months, days=duration_days)
+
+                # Compute maturity using monthly contribution-aware FV
+                maturity_value = fv_with_monthly_contrib(
+                    principal=principal,
+                    rate=rate/100,
+                    start_dt=start_dt,
+                    end_dt=maturity_date,
+                    compounding_frequency=compounding,
+                    monthly_contribution=monthly_contribution
+                )
+
+                # Total contributions over full months
+                total_months = months_between(start_dt, maturity_date)
+                total_contrib = monthly_contribution * total_months
+
+                # Update saving in database
+                saving_data = {
+                    'name': saving_name,
+                    'type': saving_type,
+                    'principal': principal,
+                    'rate': rate / 100,
+                    'start_date': start_dt,
+                    'maturity_date': maturity_date,
+                    'compounding_frequency': compounding,
+                    'monthly_contribution': monthly_contribution,
+                    'total_contributions': total_contrib,
+                    'maturity_value': maturity_value,
+                    'interest_earned': maturity_value - principal - total_contrib,
+                    'color': editing_saving['color'],  # Keep existing color
+                    'color_index': editing_saving['color_index'],
+                    'currency': 'INR'
+                }
+
+                # Update in database
+                if 'id' in editing_saving:
+                    db.update_saving(editing_saving['id'], saving_data)
+                    st.success(f"✅ Updated {saving_name}!")
+
+                    # Clear editing state and reload
+                    del st.session_state.editing_index
+                    st.session_state.force_reload = True
+                    st.rerun()
+    else:
+        # Add mode
+        st.header("➕ Add New Saving")
+
+        with st.form("add_saving_form", clear_on_submit=True):
+            saving_name = st.text_input("Name", placeholder="e.g., Fixed Deposit 2025")
+
             saving_type = st.selectbox("Type", ["Fixed Deposit", "Recurring Deposit", "Retirement Account", "Other"])
-        with col_curr:
-            currency = st.selectbox("Currency", options=list(CURRENCIES.keys()),
-                                   format_func=lambda x: f"{CURRENCIES[x]['symbol']} {CURRENCIES[x]['name']}")
 
-        principal = st.number_input(f"Principal Amount ({CURRENCIES[currency]['symbol']})", min_value=0.0, value=1000.0, step=100.0)
-        rate = st.number_input("Annual Interest Rate (%)", min_value=0.0, max_value=100.0, value=3.0, step=0.1)
+            principal = st.number_input(f"Principal Amount ({CURRENCY_SYMBOL})", min_value=0.0, value=10000.0, step=1000.0)
+            rate = st.number_input("Annual Interest Rate (%)", min_value=0.0, max_value=100.0, value=6.5, step=0.1)
 
-        col1, col2 = st.columns(2)
-        with col1:
-            start_date = st.date_input("Start Date", value=datetime.now())
-        with col2:
-            years = st.number_input("Duration (Years)", min_value=0.1, max_value=50.0, value=2.0, step=0.5)
+            start_date = st.date_input("Start Date", value=datetime.now(), min_value=None, max_value=None)
 
-        compounding = st.selectbox(
-            "Compounding Frequency",
-            options=[1, 2, 4, 12],
-            format_func=lambda x: {1: "Annually", 2: "Semi-annually", 4: "Quarterly", 12: "Monthly"}[x],
-            index=0
-        )
+            st.markdown("**Duration:**")
+            col1, col2, col3 = st.columns(3)
+            with col1:
+                duration_years = st.number_input("Years", min_value=0, max_value=50, value=2, step=1)
+            with col2:
+                duration_months = st.number_input("Months", min_value=0, max_value=11, value=0, step=1)
+            with col3:
+                duration_days = st.number_input("Days", min_value=0, max_value=31, value=0, step=1)
 
-        monthly_contribution = 0.0
-        if saving_type == "Recurring Deposit":
-            monthly_contribution = st.number_input(
-                f"Monthly Contribution ({CURRENCIES[currency]['symbol']})", min_value=0.0, value=0.0, step=50.0,
-                help="Additional amount you add every month"
+            compounding = st.selectbox(
+                "Compounding Frequency",
+                options=[1, 2, 4, 12],
+                format_func=lambda x: {1: "Annually", 2: "Semi-annually", 4: "Quarterly", 12: "Monthly"}[x],
+                index=0
             )
 
-        submit = st.form_submit_button("Add Saving", width="stretch")
+            monthly_contribution = 0.0
+            if saving_type == "Recurring Deposit":
+                monthly_contribution = st.number_input(
+                    f"Monthly Contribution ({CURRENCY_SYMBOL})", min_value=0.0, value=0.0, step=500.0,
+                    help="Additional amount you add every month"
+                )
 
-        if submit and saving_name:
-            start_dt = datetime.combine(start_date, datetime.min.time())
-            maturity_date = start_dt + relativedelta(years=int(years), months=int((years % 1) * 12))
-            # Compute maturity using monthly contribution-aware FV
-            maturity_value = fv_with_monthly_contrib(
-                principal=principal,
-                rate=rate/100,
-                start_dt=start_dt,
-                end_dt=maturity_date,
-                compounding_frequency=compounding,
-                monthly_contribution=monthly_contribution
-            )
+            submit = st.form_submit_button("Add Saving", width="stretch")
 
-            # Total contributions over full months
-            total_months = months_between(start_dt, maturity_date)
-            total_contrib = monthly_contribution * total_months
+            if submit and saving_name:
+                start_dt = datetime.combine(start_date, datetime.min.time())
+                maturity_date = start_dt + relativedelta(years=duration_years, months=duration_months, days=duration_days)
+                # Compute maturity using monthly contribution-aware FV
+                maturity_value = fv_with_monthly_contrib(
+                    principal=principal,
+                    rate=rate/100,
+                    start_dt=start_dt,
+                    end_dt=maturity_date,
+                    compounding_frequency=compounding,
+                    monthly_contribution=monthly_contribution
+                )
 
-            # Assign color based on current index
-            color_index = len(st.session_state.savings_list)
-            assigned_color = get_color_for_saving(color_index)
+                # Total contributions over full months
+                total_months = months_between(start_dt, maturity_date)
+                total_contrib = monthly_contribution * total_months
 
-            # Save to database
-            saving_data = {
-                'name': saving_name,
-                'type': saving_type,
-                'principal': principal,
-                'rate': rate / 100,  # Convert to decimal
-                'start_date': start_dt,
-                'maturity_date': maturity_date,
-                'compounding_frequency': compounding,
-                'monthly_contribution': monthly_contribution,
-                'total_contributions': total_contrib,
-                'maturity_value': maturity_value,
-                'interest_earned': maturity_value - principal - total_contrib,
-                'color': assigned_color,
-                'color_index': color_index,
-                'currency': currency
-            }
+                # Assign color based on current index
+                color_index = len(st.session_state.savings_list)
+                assigned_color = get_color_for_saving(color_index)
 
-            saving_id = db.add_saving(saving_data)
-            st.success(f"✅ Added {saving_name}!")
+                # Save to database
+                saving_data = {
+                    'name': saving_name,
+                    'type': saving_type,
+                    'principal': principal,
+                    'rate': rate / 100,  # Convert to decimal
+                    'start_date': start_dt,
+                    'maturity_date': maturity_date,
+                    'compounding_frequency': compounding,
+                    'monthly_contribution': monthly_contribution,
+                    'total_contributions': total_contrib,
+                    'maturity_value': maturity_value,
+                    'interest_earned': maturity_value - principal - total_contrib,
+                    'color': assigned_color,
+                    'color_index': color_index,
+                    'currency': 'INR'  # Always INR
+                }
 
-            # Reload from database
-            st.session_state.force_reload = True
-            st.rerun()
+                saving_id = db.add_saving(saving_data)
+                st.success(f"✅ Added {saving_name}!")
+
+                # Reload from database
+                st.session_state.force_reload = True
+                st.rerun()
 
 # Main content
 if st.session_state.savings_list:
     st.markdown("---")
 
-    # Summary metrics - grouped by currency
+    # Summary metrics
     st.markdown("### 📊 Portfolio Summary")
 
-    # Group savings by currency
-    from collections import defaultdict
-    currency_totals = defaultdict(lambda: {'principal': 0, 'maturity': 0, 'contributions': 0,
-                                            'monthly_contrib': 0, 'count': 0, 'maturities_12m': 0})
-
-    next_12m = datetime.now() + relativedelta(years=1)
-
-    for s in st.session_state.savings_list:
-        curr = s.get('currency', 'EUR')
-        currency_totals[curr]['principal'] += s['principal']
-        currency_totals[curr]['maturity'] += s['maturity_value']
-        currency_totals[curr]['contributions'] += s.get('total_contributions', 0.0)
-        currency_totals[curr]['monthly_contrib'] += s.get('monthly_contribution', 0.0)
-        currency_totals[curr]['count'] += 1
-        if s['maturity_date'] <= next_12m:
-            currency_totals[curr]['maturities_12m'] += s['maturity_value']
-
-    # Calculate overall metrics
+    # Calculate totals
+    total_principal = sum(s['principal'] for s in st.session_state.savings_list)
+    total_maturity = sum(s['maturity_value'] for s in st.session_state.savings_list)
+    total_contributions = sum(s.get('total_contributions', 0.0) for s in st.session_state.savings_list)
+    total_monthly_contrib = sum(s.get('monthly_contribution', 0.0) for s in st.session_state.savings_list)
+    total_interest = total_maturity - total_principal - total_contributions
+    avg_return = (total_interest / total_principal * 100) if total_principal > 0 else 0
     num_savings = len(st.session_state.savings_list)
-    num_currencies = len(currency_totals)
 
-    # Display per-currency metrics
-    if num_currencies == 1:
-        # Single currency - show as before
-        curr = list(currency_totals.keys())[0]
-        totals = currency_totals[curr]
-        total_interest = totals['maturity'] - totals['principal'] - totals['contributions']
-        avg_return = (total_interest / totals['principal'] * 100) if totals['principal'] > 0 else 0
+    # Maturities in next 12 months
+    next_12m = datetime.now() + relativedelta(years=1)
+    maturities_12m = sum(s['maturity_value'] for s in st.session_state.savings_list if s['maturity_date'] <= next_12m)
 
-        col1, col2, col3, col4, col5, col6, col7, col8 = st.columns(8)
-        col1.metric("Total Invested", format_currency_short(totals['principal'], curr))
-        col2.metric("Monthly Contrib.", format_currency_short(totals['monthly_contrib'], curr))
-        col3.metric("Total Contributions", format_currency_short(totals['contributions'], curr))
-        col4.metric("Projected Value", format_currency_short(totals['maturity'], curr))
-        col5.metric("Total Interest", format_currency_short(total_interest, curr))
-        col6.metric("Avg. Return", f"{avg_return:.1f}%")
-        col7.metric("12-mo Maturities", format_currency_short(totals['maturities_12m'], curr))
-        col8.metric("# Savings", f"{num_savings}")
-    else:
-        # Multiple currencies - show summary per currency
-        st.caption(f"**{num_savings} savings across {num_currencies} currencies**")
-
-        for curr, totals in sorted(currency_totals.items()):
-            st.markdown(f"**{CURRENCIES[curr]['symbol']} {CURRENCIES[curr]['name']}:**")
-            total_interest = totals['maturity'] - totals['principal'] - totals['contributions']
-            avg_return = (total_interest / totals['principal'] * 100) if totals['principal'] > 0 else 0
-
-            col1, col2, col3, col4, col5, col6 = st.columns(6)
-            col1.metric("Invested", format_currency_short(totals['principal'], curr))
-            col2.metric("Projected", format_currency_short(totals['maturity'], curr))
-            col3.metric("Interest", format_currency_short(total_interest, curr))
-            col4.metric("Return", f"{avg_return:.1f}%")
-            col5.metric("12-mo Mat.", format_currency_short(totals['maturities_12m'], curr))
-            col6.metric("Count", f"{totals['count']}")
-            st.markdown("")  # Spacing
+    col1, col2, col3, col4, col5, col6, col7, col8 = st.columns(8)
+    col1.metric("Total Invested", format_currency_short(total_principal))
+    col2.metric("Monthly Contrib.", format_currency_short(total_monthly_contrib))
+    col3.metric("Total Contributions", format_currency_short(total_contributions))
+    col4.metric("Projected Value", format_currency_short(total_maturity))
+    col5.metric("Total Interest", format_currency_short(total_interest))
+    col6.metric("Avg. Return", f"{avg_return:.1f}%")
+    col7.metric("12-mo Maturities", format_currency_short(maturities_12m))
+    col8.metric("# Savings", f"{num_savings}")
 
     st.markdown("---")
 
@@ -450,11 +507,10 @@ if st.session_state.savings_list:
         if upcoming_3:
             next_maturity = upcoming_3[0]
             days_until = (next_maturity['maturity_date'] - datetime.now()).days
-            curr = next_maturity.get('currency', 'EUR')
             col1.metric(
                 "Next Maturity",
                 f"{next_maturity['name'][:15]}...",
-                f"{days_until} days | {format_currency_short(next_maturity['maturity_value'], curr)}"
+                f"{days_until} days | {format_currency_short(next_maturity['maturity_value'])}"
             )
         else:
             col1.metric("Next Maturity", "N/A")
@@ -472,18 +528,16 @@ if st.session_state.savings_list:
     with col3:
         # Highest interest earning
         highest_interest = max(st.session_state.savings_list, key=lambda x: x['interest_earned'])
-        curr = highest_interest.get('currency', 'EUR')
         col3.metric(
             "Highest Interest",
             f"{highest_interest['name'][:15]}...",
-            format_currency_short(highest_interest['interest_earned'], curr)
+            format_currency_short(highest_interest['interest_earned'])
         )
 
     with col4:
-        # Weighted average rate (across all currencies)
-        total_principal_all = sum(s['principal'] for s in st.session_state.savings_list)
+        # Weighted average rate
         total_weighted = sum(s['principal'] * s['rate'] for s in st.session_state.savings_list)
-        weighted_avg_rate = (total_weighted / total_principal_all * 100) if total_principal_all > 0 else 0
+        weighted_avg_rate = (total_weighted / total_principal * 100) if total_principal > 0 else 0
         col4.metric(
             "Weighted Avg Rate",
             f"{weighted_avg_rate:.2f}%",
@@ -521,10 +575,6 @@ if st.session_state.savings_list:
         chart_data.append(row)
 
     df_timeline = pd.DataFrame(chart_data)
-
-    # Currency info and color legend
-    if num_currencies > 1:
-        st.info(f"💱 **Multi-Currency Portfolio:** Charts show all {num_currencies} currencies combined. Hover over charts to see individual currency values.")
 
     # Color legend for easy tracking across charts
     st.markdown("**🎨 Savings Color Legend:**")
@@ -572,7 +622,7 @@ if st.session_state.savings_list:
                 fillcolor=fill_color,
                 hovertemplate='<b>%{fullData.name}</b><br>' +
                               'Date: %{x|%Y-%m-%d}<br>' +
-                              'Value: €%{y:,.2f}<br>' +
+                              'Value: ₹%{y:,.2f}<br>' +
                               '<extra></extra>'
             ))
 
@@ -586,7 +636,7 @@ if st.session_state.savings_list:
         text_labels = []
         for i in range(len(df_timeline)):
             if i in label_indices:
-                text_labels.append(f'€{df_timeline["Total"].iloc[i]:,.0f}')
+                text_labels.append(f'₹{df_timeline["Total"].iloc[i]:,.0f}')
             else:
                 text_labels.append('')
 
@@ -601,7 +651,7 @@ if st.session_state.savings_list:
             textfont=dict(size=9, color='#fbbf24'),
             hovertemplate='<b>Total Portfolio</b><br>' +
                           'Date: %{x|%Y-%m-%d}<br>' +
-                          'Value: €%{y:,.2f}<br>' +
+                          'Value: ₹%{y:,.2f}<br>' +
                           '<extra></extra>'
         ))
 
@@ -655,8 +705,8 @@ if st.session_state.savings_list:
                     showlegend=False,
                     hovertemplate=f'<b>{saving["name"]} Matures</b><br>' +
                                   'Date: %{x|%Y-%m-%d}<br>' +
-                                  f'Final Value: €{saving["maturity_value"]:,.2f}<br>' +
-                                  f'Interest Earned: €{saving["interest_earned"]:,.2f}<br>' +
+                                  f'Final Value: ₹{saving["maturity_value"]:,.2f}<br>' +
+                                  f'Interest Earned: ₹{saving["interest_earned"]:,.2f}<br>' +
                                   '<extra></extra>'
                 ))
 
@@ -707,13 +757,13 @@ if st.session_state.savings_list:
                 zeroline=False
             ),
             yaxis=dict(
-                title='Value (€)',
+                title='Value (₹)',
                 showgrid=True,
                 gridwidth=1,
                 gridcolor='rgba(128,128,128,0.2)',
                 zeroline=False,
                 tickformat=',.0f',
-                tickprefix='€'
+                tickprefix='₹'
             ),
             legend=dict(
                 orientation='h',
@@ -764,10 +814,10 @@ if st.session_state.savings_list:
             x=savings_names,
             y=principals,
             marker_color='rgba(100,100,100,0.5)',  # Slightly more transparent
-            text=[f'€{p:,.0f}' for p in principals],
+            text=[f'₹{p:,.0f}' for p in principals],
             textposition='inside',
             textfont=dict(size=9, color='white'),
-            hovertemplate='<b>%{x}</b><br>Principal: €%{y:,.2f}<extra></extra>'
+            hovertemplate='<b>%{x}</b><br>Principal: ₹%{y:,.2f}<extra></extra>'
         ))
 
         fig_bars.add_trace(go.Bar(
@@ -775,10 +825,10 @@ if st.session_state.savings_list:
             x=savings_names,
             y=interests,
             marker_color=colors_rgba,  # Use rgba with opacity
-            text=[f'€{i:,.0f}' if i > 0 else '' for i in interests],
+            text=[f'₹{i:,.0f}' if i > 0 else '' for i in interests],
             textposition='inside',
             textfont=dict(size=9, color='white'),
-            hovertemplate='<b>%{x}</b><br>Interest: €%{y:,.2f}<extra></extra>'
+            hovertemplate='<b>%{x}</b><br>Interest: ₹%{y:,.2f}<extra></extra>'
         ))
 
         # Add total value labels on top of stacked bars
@@ -787,7 +837,7 @@ if st.session_state.savings_list:
             x=savings_names,
             y=totals,
             mode='text',
-            text=[f'€{t:,.0f}' for t in totals],
+            text=[f'₹{t:,.0f}' for t in totals],
             textposition='top center',
             textfont=dict(size=9, color='#fbbf24'),
             showlegend=False,
@@ -806,12 +856,12 @@ if st.session_state.savings_list:
                 showgrid=False
             ),
             yaxis=dict(
-                title='Amount (€)',
+                title='Amount (₹)',
                 showgrid=True,
                 gridwidth=1,
                 gridcolor='rgba(128,128,128,0.2)',
                 tickformat=',.0f',
-                tickprefix='€'
+                tickprefix='₹'
             ),
             legend=dict(
                 orientation='h',
@@ -879,19 +929,16 @@ if st.session_state.savings_list:
 
             # First, add all principal bars (gray) for each saving
             for _, row in ladder_df.iterrows():
-                # Only show label if principal is significant enough
-                text_label = f'€{row["Principal"]:,.0f}' if row["Principal"] > 100 else ''
-
                 ladder_fig.add_trace(go.Bar(
                     name=f"{row['Saving']} (Principal)",
                     x=[row['Maturity Month']],
                     y=[row['Principal']],
                     marker_color='rgba(100,100,100,0.5)',
-                    text=[text_label],
+                    text=[f'₹{row["Principal"]:,.0f}'],
                     textposition='inside',
                     textfont=dict(size=8, color='white'),
                     hovertemplate=f'<b>{row["Saving"]}</b><br>' +
-                                  'Principal: €%{y:,.2f}<extra></extra>',
+                                  'Principal: ₹%{y:,.2f}<extra></extra>',
                     showlegend=False,
                     legendgroup=row['Saving']
                 ))
@@ -900,26 +947,42 @@ if st.session_state.savings_list:
             for _, row in ladder_df.iterrows():
                 rgb = row['Color']['rgb']
                 color_rgba = f'rgba({rgb[0]}, {rgb[1]}, {rgb[2]}, 0.7)'
-                # Only show label if interest is significant enough
-                text_label = f'€{row["Interest"]:,.0f}' if row["Interest"] > 50 else ''
 
                 ladder_fig.add_trace(go.Bar(
                     name=row['Saving'],
                     x=[row['Maturity Month']],
                     y=[row['Interest']],
                     marker_color=color_rgba,
-                    text=[text_label],
-                    textposition='outside',  # Changed to outside
-                    textfont=dict(size=8, color=color_rgba),  # Use same color as bar
+                    text=[f'₹{row["Interest"]:,.0f}'],
+                    textposition='inside',
+                    textfont=dict(size=8, color='white'),
                     hovertemplate=f'<b>{row["Saving"]}</b><br>' +
-                                  'Interest: €%{y:,.2f}<extra></extra>',
+                                  'Interest: ₹%{y:,.2f}<extra></extra>',
                     showlegend=True,
                     legendgroup=row['Saving']
                 ))
 
+            # Add total value labels on top of each stacked bar
+            # Group by month and sum totals
+            month_totals = ladder_df.groupby('Maturity Month').apply(
+                lambda x: (x['Principal'] + x['Interest']).sum()
+            ).reset_index()
+            month_totals.columns = ['Month', 'Total']
+
+            ladder_fig.add_trace(go.Scatter(
+                x=month_totals['Month'],
+                y=month_totals['Total'],
+                mode='text',
+                text=[f'₹{total:,.0f}' for total in month_totals['Total']],
+                textposition='top center',
+                textfont=dict(size=10, color='#fbbf24'),
+                showlegend=False,
+                hoverinfo='skip'
+            ))
+
             # Calculate max value for y-axis range with padding
-            max_value = ladder_df.apply(lambda row: row['Principal'] + row['Interest'], axis=1).max()
-            y_max = max_value * 1.15  # Add 15% padding at top for labels
+            max_value = month_totals['Total'].max()
+            y_max = max_value * 1.2  # Add 20% padding at top for labels
 
             ladder_fig.update_layout(
                 barmode='stack',
@@ -928,8 +991,8 @@ if st.session_state.savings_list:
                 margin=dict(t=10, b=30, l=10, r=10),  # Reset top margin, use y-axis range instead
                 xaxis_title='',
                 yaxis=dict(
-                    title='Maturing (€)',
-                    tickprefix='€',
+                    title='Maturing (₹)',
+                    tickprefix='₹',
                     tickformat=',.0f',
                     range=[0, y_max]  # Set explicit range with padding
                 ),
@@ -971,23 +1034,31 @@ if st.session_state.savings_list:
 
         for idx, saving in enumerate(st.session_state.savings_list):
             color = saving.get('color', get_color_for_saving(idx))
-            curr = saving.get('currency', 'EUR')
-            years_from_now = (saving['maturity_date'] - datetime.now()).days / 365.25
+
+            # Calculate actual duration of the saving (from start to maturity)
+            duration_delta = relativedelta(saving['maturity_date'], saving['start_date'])
+            duration_str = []
+            if duration_delta.years > 0:
+                duration_str.append(f"{duration_delta.years}y")
+            if duration_delta.months > 0:
+                duration_str.append(f"{duration_delta.months}m")
+            if duration_delta.days > 0:
+                duration_str.append(f"{duration_delta.days}d")
+            duration_display = " ".join(duration_str) if duration_str else "0d"
 
             table_data.append({
                 'Color': color['name'],
                 'Name': saving['name'],
-                'Currency': CURRENCIES[curr]['symbol'],
                 'Type': saving['type'],
-                'Principal': format_currency_short(saving['principal'], curr),
-                'Contrib.': format_currency_short(saving.get('total_contributions', 0.0), curr),
-                'Rate': f"{saving['rate']*100:.1f}%",
+                'Principal': format_currency_short(saving['principal']),
+                'Contrib.': format_currency_short(saving.get('total_contributions', 0.0)),
+                'Rate': f"{saving['rate']*100:.2f}%",
                 'Comp.': compounding_map[saving['compounding_frequency']],
                 'Start': saving['start_date'].strftime('%Y-%m-%d'),
                 'Maturity': saving['maturity_date'].strftime('%Y-%m-%d'),
-                'Years': f"{years_from_now:.1f}y",
-                'Final Value': format_currency_short(saving['maturity_value'], curr),
-                'Interest': format_currency_short(saving['interest_earned'], curr),
+                'Duration': duration_display,
+                'Final Value': format_currency_short(saving['maturity_value']),
+                'Interest': format_currency_short(saving['interest_earned']),
                 'Delete': idx
             })
 
@@ -1004,23 +1075,45 @@ if st.session_state.savings_list:
                 selection_mode="multi-row"
             )
 
-            # Delete selected rows
+            # Edit or Delete selected rows
             if event.selection.rows:
-                col1, col2 = st.columns([4, 1])
-                with col1:
-                    st.info(f"✓ Selected {len(event.selection.rows)} saving(s)")
-                with col2:
-                    if st.button("🗑️ Delete Selected", type="secondary", width="stretch"):
-                        # Delete from database
-                        for idx in sorted(event.selection.rows, reverse=True):
-                            saving_to_delete = st.session_state.savings_list[idx]
+                if len(event.selection.rows) == 1:
+                    # Single selection - allow edit or delete
+                    col1, col2, col3 = st.columns([3, 1, 1])
+                    with col1:
+                        st.info(f"✓ Selected 1 saving")
+                    with col2:
+                        if st.button("✏️ Edit", type="primary", width="stretch"):
+                            st.session_state.editing_index = event.selection.rows[0]
+                            st.rerun()
+                    with col3:
+                        if st.button("🗑️ Delete", type="secondary", width="stretch"):
+                            # Delete from database
+                            saving_to_delete = st.session_state.savings_list[event.selection.rows[0]]
                             if 'id' in saving_to_delete:
                                 db.delete_saving(saving_to_delete['id'])
 
-                        # Reload from database
-                        st.session_state.force_reload = True
-                        st.success(f"✅ Deleted {len(event.selection.rows)} saving(s)")
-                        st.rerun()
+                            # Reload from database
+                            st.session_state.force_reload = True
+                            st.success(f"✅ Deleted saving")
+                            st.rerun()
+                else:
+                    # Multiple selection - only allow delete
+                    col1, col2 = st.columns([4, 1])
+                    with col1:
+                        st.info(f"✓ Selected {len(event.selection.rows)} savings")
+                    with col2:
+                        if st.button("🗑️ Delete Selected", type="secondary", width="stretch"):
+                            # Delete from database
+                            for idx in sorted(event.selection.rows, reverse=True):
+                                saving_to_delete = st.session_state.savings_list[idx]
+                                if 'id' in saving_to_delete:
+                                    db.delete_saving(saving_to_delete['id'])
+
+                            # Reload from database
+                            st.session_state.force_reload = True
+                            st.success(f"✅ Deleted {len(event.selection.rows)} savings")
+                            st.rerun()
 
             st.markdown("---")
 
@@ -1090,9 +1183,9 @@ else:
     with col2:
         st.markdown("""
         **💡 Example:**
-        - Principal: €1,000
-        - Interest Rate: 3% annually
+        - Principal: ₹1,00,000
+        - Interest Rate: 6.5% annually
         - Duration: 2 years
-        - Expected Value: €1,060.90
-        - Interest Earned: €60.90
+        - Expected Value: ₹1,13,422
+        - Interest Earned: ₹13,422
         """)
