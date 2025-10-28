@@ -1320,21 +1320,83 @@ if st.session_state.savings_list:
                                   '<extra></extra>'
                 ))
 
-                # Add separate text annotations for total value labels at maturity
+            # Smart label positioning to avoid overlaps
+            # Collect all labels with their maturity dates and values
+            labels_data = []
+            for _, row in ladder_df.iterrows():
+                total_height = row['Principal'] + row['Interest']
+                rgb = row['Color']['rgb']
+                line_color = f'rgba({rgb[0]}, {rgb[1]}, {rgb[2]}, 0.8)'
+                labels_data.append({
+                    'date': row['Maturity Date'],
+                    'value': total_height,
+                    'text': f'₹{total_height:,.0f}',
+                    'color': line_color
+                })
+
+            # Sort by date
+            labels_data.sort(key=lambda x: x['date'])
+
+            # Detect overlaps and adjust positions
+            # Two labels overlap if they are close in time and close in value
+            time_threshold_days = 30  # Consider overlapping if within 30 days
+            value_threshold_pct = 0.15  # Consider overlapping if within 15% of value range
+
+            max_value = ladder_df.apply(lambda row: row['Principal'] + row['Interest'], axis=1).max()
+            value_threshold = max_value * value_threshold_pct
+
+            adjusted_positions = []
+            for i, label in enumerate(labels_data):
+                adjusted_y = label['value']
+
+                # Check for overlaps with previously positioned labels
+                for j in range(len(adjusted_positions)):
+                    prev_label = adjusted_positions[j]
+                    time_diff = abs((label['date'] - prev_label['date']).days)
+                    value_diff = abs(adjusted_y - prev_label['adjusted_y'])
+
+                    # If overlapping, adjust position
+                    if time_diff < time_threshold_days and value_diff < value_threshold:
+                        # Stack labels vertically with some offset
+                        adjusted_y = prev_label['adjusted_y'] + value_threshold * 0.8
+
+                adjusted_positions.append({
+                    'date': label['date'],
+                    'original_y': label['value'],
+                    'adjusted_y': adjusted_y,
+                    'text': label['text'],
+                    'color': label['color']
+                })
+
+            # Add labels with adjusted positions
+            for pos in adjusted_positions:
                 ladder_fig.add_trace(go.Scatter(
-                    x=[row['Maturity Date']],
-                    y=[total_height],
+                    x=[pos['date']],
+                    y=[pos['adjusted_y']],
                     mode='text',
-                    text=[f'₹{total_height:,.0f}'],
-                    textposition='top left',  # Position text above and to the left (ends at maturity point)
-                    textfont=dict(size=11, color=line_color),
+                    text=[pos['text']],
+                    textposition='top center',
+                    textfont=dict(size=11, color=pos['color']),
                     showlegend=False,
                     hoverinfo='skip'
                 ))
 
+                # Add a small connecting line if label was moved significantly
+                if abs(pos['adjusted_y'] - pos['original_y']) > value_threshold * 0.3:
+                    ladder_fig.add_trace(go.Scatter(
+                        x=[pos['date'], pos['date']],
+                        y=[pos['original_y'], pos['adjusted_y']],
+                        mode='lines',
+                        line=dict(color=pos['color'], width=1, dash='dot'),
+                        showlegend=False,
+                        hoverinfo='skip'
+                    ))
+
             # Calculate max value for y-axis range with padding
-            max_value = ladder_df.apply(lambda row: row['Principal'] + row['Interest'], axis=1).max()
-            y_max = max_value * 1.3  # Add 30% padding at top for labels
+            # Consider both data values and adjusted label positions
+            max_data_value = ladder_df.apply(lambda row: row['Principal'] + row['Interest'], axis=1).max()
+            max_label_y = max(pos['adjusted_y'] for pos in adjusted_positions) if adjusted_positions else max_data_value
+            y_max = max(max_data_value * 1.2, max_label_y * 1.1)  # Add padding above the highest point
 
             # Add yellow dotted line for today's date
             today = datetime.now()

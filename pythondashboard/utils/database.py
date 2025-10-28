@@ -62,6 +62,22 @@ class Database:
             )
         """)
 
+        # Add new columns if they don't exist (migration)
+        try:
+            cursor.execute("ALTER TABLE savings ADD COLUMN has_payout INTEGER DEFAULT 0")
+        except sqlite3.OperationalError:
+            pass  # Column already exists
+
+        try:
+            cursor.execute("ALTER TABLE savings ADD COLUMN payout_frequency INTEGER DEFAULT 4")
+        except sqlite3.OperationalError:
+            pass  # Column already exists
+
+        try:
+            cursor.execute("ALTER TABLE savings ADD COLUMN notes TEXT DEFAULT ''")
+        except sqlite3.OperationalError:
+            pass  # Column already exists
+
         conn.commit()
         conn.close()
 
@@ -87,8 +103,9 @@ class Database:
                 start_date, maturity_date, compounding_frequency,
                 monthly_contribution, total_contributions,
                 maturity_value, interest_earned,
-                color_index, color_data, created_at, updated_at
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                color_index, color_data, has_payout, payout_frequency, notes,
+                created_at, updated_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """, (
             saving_data['name'],
             saving_data['type'],
@@ -104,6 +121,9 @@ class Database:
             saving_data['interest_earned'],
             saving_data.get('color_index', 0),
             json.dumps(saving_data['color']),
+            1 if saving_data.get('has_payout', False) else 0,
+            saving_data.get('payout_frequency', 4),
+            saving_data.get('notes', ''),
             now,
             now
         ))
@@ -148,6 +168,9 @@ class Database:
                 'interest_earned': row['interest_earned'],
                 'color_index': row['color_index'],
                 'color': json.loads(row['color_data']),
+                'has_payout': bool(row['has_payout']) if 'has_payout' in row.keys() else False,
+                'payout_frequency': row['payout_frequency'] if 'payout_frequency' in row.keys() else 4,
+                'notes': row['notes'] if 'notes' in row.keys() else '',
                 'created_at': row['created_at'],
                 'updated_at': row['updated_at']
             }
@@ -190,6 +213,9 @@ class Database:
             'interest_earned': row['interest_earned'],
             'color_index': row['color_index'],
             'color': json.loads(row['color_data']),
+            'has_payout': bool(row['has_payout']) if 'has_payout' in row.keys() else False,
+            'payout_frequency': row['payout_frequency'] if 'payout_frequency' in row.keys() else 4,
+            'notes': row['notes'] if 'notes' in row.keys() else '',
             'created_at': row['created_at'],
             'updated_at': row['updated_at']
         }
@@ -215,7 +241,8 @@ class Database:
                 start_date = ?, maturity_date = ?, compounding_frequency = ?,
                 monthly_contribution = ?, total_contributions = ?,
                 maturity_value = ?, interest_earned = ?,
-                color_index = ?, color_data = ?, updated_at = ?
+                color_index = ?, color_data = ?, has_payout = ?, payout_frequency = ?, notes = ?,
+                updated_at = ?
             WHERE id = ?
         """, (
             saving_data['name'],
@@ -232,6 +259,9 @@ class Database:
             saving_data['interest_earned'],
             saving_data.get('color_index', 0),
             json.dumps(saving_data['color']),
+            1 if saving_data.get('has_payout', False) else 0,
+            saving_data.get('payout_frequency', 4),
+            saving_data.get('notes', ''),
             now,
             saving_id
         ))
