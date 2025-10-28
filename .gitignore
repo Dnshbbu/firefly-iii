@@ -40,3 +40,5 @@ pythondashboard/__pycache__/**
 
 nul
 pythondashboard/dashboard.db
+pythondashboard/savings.db
+pythondashboard/utils/database.py
