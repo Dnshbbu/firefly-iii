@@ -909,6 +909,8 @@ if st.session_state.savings_list:
 
             ladder_rows.append({
                 'Saving': s['name'],
+                'Start Month': s['start_date'].strftime('%Y-%m'),
+                'Start Date': s['start_date'],
                 'Maturity Month': s['maturity_date'].strftime('%Y-%m'),
                 'Maturity Date': s['maturity_date'],
                 'Principal': principal_comp,
@@ -927,65 +929,120 @@ if st.session_state.savings_list:
             # Get unique months in order
             unique_months = ladder_df['Maturity Month'].unique()
 
-            # First, add all principal bars (gray) for each saving
-            for _, row in ladder_df.iterrows():
-                ladder_fig.add_trace(go.Bar(
-                    name=f"{row['Saving']} (Principal)",
-                    x=[row['Maturity Month']],
-                    y=[row['Principal']],
-                    marker_color='rgba(100,100,100,0.5)',
-                    text=[f'₹{row["Principal"]:,.0f}'],
-                    textposition='inside',
-                    textfont=dict(size=8, color='white'),
-                    hovertemplate=f'<b>{row["Saving"]}</b><br>' +
-                                  'Principal: ₹%{y:,.2f}<extra></extra>',
-                    showlegend=False,
-                    legendgroup=row['Saving']
-                ))
-
-            # Then, add all interest bars (individual colors) for each saving
+            # Add timeline lines from start to maturity for each saving
+            # These lines rise from 0, plateau at total value height, then drop back to 0
             for _, row in ladder_df.iterrows():
                 rgb = row['Color']['rgb']
-                color_rgba = f'rgba({rgb[0]}, {rgb[1]}, {rgb[2]}, 0.7)'
+                line_color = f'rgba({rgb[0]}, {rgb[1]}, {rgb[2]}, 0.8)'
+                principal_height = row['Principal']
+                total_height = row['Principal'] + row['Interest']
 
-                ladder_fig.add_trace(go.Bar(
-                    name=row['Saving'],
-                    x=[row['Maturity Month']],
-                    y=[row['Interest']],
-                    marker_color=color_rgba,
-                    text=[f'₹{row["Interest"]:,.0f}'],
-                    textposition='inside',
-                    textfont=dict(size=8, color='white'),
-                    hovertemplate=f'<b>{row["Saving"]}</b><br>' +
-                                  'Interest: ₹%{y:,.2f}<extra></extra>',
-                    showlegend=True,
-                    legendgroup=row['Saving']
+                # Create a path: start at 0, rise to total height, maintain, then drop to 0
+                x_points = [
+                    row['Start Month'],      # Start point
+                    row['Start Month'],      # Rise point (same x, creates vertical rise)
+                    row['Maturity Month'],   # Plateau end (same x as maturity)
+                    row['Maturity Month']    # Drop point (same x, creates vertical drop)
+                ]
+                y_points = [
+                    0,                       # Start at baseline
+                    total_height,            # Rise to total value (principal + interest)
+                    total_height,            # Maintain height
+                    0                        # Drop back to baseline
+                ]
+
+                # First, add principal layer (gray fill) - drawn first so it's at the bottom
+                principal_x_points = [
+                    row['Start Month'],
+                    row['Start Month'],
+                    row['Maturity Month'],
+                    row['Maturity Month']
+                ]
+                principal_y_points = [
+                    0,
+                    principal_height,
+                    principal_height,
+                    0
+                ]
+
+                ladder_fig.add_trace(go.Scatter(
+                    x=principal_x_points,
+                    y=principal_y_points,
+                    mode='lines',
+                    line=dict(color='rgba(180,180,180,0.8)', width=2, dash='solid'),
+                    name=f'{row["Saving"]} (Principal)',
+                    showlegend=False,
+                    hovertemplate=f'<b>{row["Saving"]} Principal</b><br>₹{principal_height:,.0f}<extra></extra>',
+                    fill='tozeroy',
+                    fillcolor='rgba(120,120,120,0.5)'  # Darker gray fill with 50% opacity for principal
                 ))
 
-            # Add total value labels on top of each stacked bar
-            # Group by month and sum totals
-            month_totals = ladder_df.groupby('Maturity Month').apply(
-                lambda x: (x['Principal'] + x['Interest']).sum()
-            ).reset_index()
-            month_totals.columns = ['Month', 'Total']
+                # Then, add the interest layer (colored fill) - on top of principal
+                # This only fills the area ABOVE the principal
+                interest_x_points = [
+                    row['Start Month'],
+                    row['Start Month'],
+                    row['Maturity Month'],
+                    row['Maturity Month']
+                ]
+                interest_y_points = [
+                    principal_height,        # Start from principal height
+                    total_height,            # Rise to total value
+                    total_height,            # Maintain height
+                    principal_height         # Drop back to principal height
+                ]
 
-            ladder_fig.add_trace(go.Scatter(
-                x=month_totals['Month'],
-                y=month_totals['Total'],
-                mode='text',
-                text=[f'₹{total:,.0f}' for total in month_totals['Total']],
-                textposition='top center',
-                textfont=dict(size=10, color='#fbbf24'),
-                showlegend=False,
-                hoverinfo='skip'
-            ))
+                ladder_fig.add_trace(go.Scatter(
+                    x=interest_x_points,
+                    y=interest_y_points,
+                    mode='lines',
+                    line=dict(color=line_color, width=2, shape='linear'),
+                    name=f'{row["Saving"]} (Interest)',
+                    showlegend=False,
+                    hovertemplate=f'<b>{row["Saving"]} Interest</b><br>₹{row["Interest"]:,.0f}<extra></extra>',
+                    fill='tonexty',  # Fill to next y (fills the interest portion)
+                    fillcolor=f'rgba({rgb[0]}, {rgb[1]}, {rgb[2]}, 0.4)'  # Colored fill for interest
+                ))
+
+                # Add the main outline with markers
+                ladder_fig.add_trace(go.Scatter(
+                    x=x_points,
+                    y=y_points,
+                    mode='lines+markers',
+                    line=dict(color=line_color, width=3, shape='linear'),
+                    marker=dict(
+                        size=[10, 0, 0, 14],  # Show markers only at start and end
+                        color=line_color,
+                        symbol=['circle', 'circle', 'circle', 'diamond']
+                    ),
+                    name=row['Saving'],
+                    showlegend=True,
+                    hovertemplate=f'<b>{row["Saving"]}</b><br>' +
+                                  f'Start: {row["Start Date"].strftime("%d-%b-%Y")}<br>' +
+                                  f'Maturity: {row["Maturity Date"].strftime("%d-%b-%Y")}<br>' +
+                                  f'Principal: ₹{row["Principal"]:,.0f}<br>' +
+                                  f'Interest: ₹{row["Interest"]:,.0f}<br>' +
+                                  f'Total: ₹{total_height:,.0f}<br>' +
+                                  '<extra></extra>'
+                ))
+
+                # Add separate text annotations for total value labels at maturity
+                ladder_fig.add_trace(go.Scatter(
+                    x=[row['Maturity Month']],
+                    y=[total_height],
+                    mode='text',
+                    text=[f'₹{total_height:,.0f}'],
+                    textposition='top left',  # Position text above and to the left (ends at maturity point)
+                    textfont=dict(size=11, color=line_color),
+                    showlegend=False,
+                    hoverinfo='skip'
+                ))
 
             # Calculate max value for y-axis range with padding
-            max_value = month_totals['Total'].max()
-            y_max = max_value * 1.2  # Add 20% padding at top for labels
+            max_value = ladder_df.apply(lambda row: row['Principal'] + row['Interest'], axis=1).max()
+            y_max = max_value * 1.3  # Add 30% padding at top for labels
 
             ladder_fig.update_layout(
-                barmode='stack',
                 template='plotly_dark',
                 height=350,  # Further increased height
                 margin=dict(t=10, b=30, l=10, r=10),  # Reset top margin, use y-axis range instead
