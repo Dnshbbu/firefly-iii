@@ -214,12 +214,29 @@ def generate_timeline_data(savings_list, *, rate_shock_pct: float = 0.0, inflati
         'breakdown': [{'name': s['name'], 'value': s['principal']} for s in savings_list]
     })
 
-    # Generate monthly points until the furthest maturity date
+    # Generate data points at key dates (start dates, maturity dates, and weekly intervals)
     max_date = max(s['maturity_date'] for s in savings_list)
-    current_date = today
 
+    # Collect all key dates (start and maturity dates for all savings)
+    key_dates = set()
+    for s in savings_list:
+        key_dates.add(s['start_date'])
+        key_dates.add(s['maturity_date'])
+
+    # Add weekly points between today and max_date for smoother curves
+    current_date = today
     while current_date <= max_date:
-        current_date += relativedelta(months=1)
+        key_dates.add(current_date)
+        current_date += relativedelta(weeks=1)
+
+    # Sort all dates
+    sorted_dates = sorted(key_dates)
+
+    # Generate data points for each date
+    for current_date in sorted_dates:
+        if current_date < today:
+            continue  # Skip dates before today
+
         total = 0
         breakdown = []
 
@@ -1190,9 +1207,7 @@ if st.session_state.savings_list:
 
             ladder_rows.append({
                 'Saving': s['name'],
-                'Start Month': s['start_date'].strftime('%Y-%m'),
                 'Start Date': s['start_date'],
-                'Maturity Month': s['maturity_date'].strftime('%Y-%m'),
                 'Maturity Date': s['maturity_date'],
                 'Principal': principal_comp,
                 'Interest': interest_comp,
@@ -1207,9 +1222,6 @@ if st.session_state.savings_list:
             # Create stacked bar chart
             ladder_fig = go.Figure()
 
-            # Get unique months in order
-            unique_months = ladder_df['Maturity Month'].unique()
-
             # Add timeline lines from start to maturity for each saving
             # These lines rise from 0, plateau at total value height, then drop back to 0
             for _, row in ladder_df.iterrows():
@@ -1219,11 +1231,12 @@ if st.session_state.savings_list:
                 total_height = row['Principal'] + row['Interest']
 
                 # Create a path: start at 0, rise to total height, maintain, then drop to 0
+                # Use actual dates instead of month strings
                 x_points = [
-                    row['Start Month'],      # Start point
-                    row['Start Month'],      # Rise point (same x, creates vertical rise)
-                    row['Maturity Month'],   # Plateau end (same x as maturity)
-                    row['Maturity Month']    # Drop point (same x, creates vertical drop)
+                    row['Start Date'],       # Start point
+                    row['Start Date'],       # Rise point (same x, creates vertical rise)
+                    row['Maturity Date'],    # Plateau end (same x as maturity)
+                    row['Maturity Date']     # Drop point (same x, creates vertical drop)
                 ]
                 y_points = [
                     0,                       # Start at baseline
@@ -1234,10 +1247,10 @@ if st.session_state.savings_list:
 
                 # First, add principal layer (gray fill) - drawn first so it's at the bottom
                 principal_x_points = [
-                    row['Start Month'],
-                    row['Start Month'],
-                    row['Maturity Month'],
-                    row['Maturity Month']
+                    row['Start Date'],
+                    row['Start Date'],
+                    row['Maturity Date'],
+                    row['Maturity Date']
                 ]
                 principal_y_points = [
                     0,
@@ -1261,10 +1274,10 @@ if st.session_state.savings_list:
                 # Then, add the interest layer (colored fill) - on top of principal
                 # This only fills the area ABOVE the principal
                 interest_x_points = [
-                    row['Start Month'],
-                    row['Start Month'],
-                    row['Maturity Month'],
-                    row['Maturity Month']
+                    row['Start Date'],
+                    row['Start Date'],
+                    row['Maturity Date'],
+                    row['Maturity Date']
                 ]
                 interest_y_points = [
                     principal_height,        # Start from principal height
@@ -1309,7 +1322,7 @@ if st.session_state.savings_list:
 
                 # Add separate text annotations for total value labels at maturity
                 ladder_fig.add_trace(go.Scatter(
-                    x=[row['Maturity Month']],
+                    x=[row['Maturity Date']],
                     y=[total_height],
                     mode='text',
                     text=[f'₹{total_height:,.0f}'],
@@ -1324,11 +1337,11 @@ if st.session_state.savings_list:
             y_max = max_value * 1.3  # Add 30% padding at top for labels
 
             # Add yellow dotted line for today's date
-            today_month = datetime.now().strftime('%Y-%m')
+            today = datetime.now()
             ladder_fig.add_shape(
                 type='line',
-                x0=today_month,
-                x1=today_month,
+                x0=today,
+                x1=today,
                 y0=0,
                 y1=y_max,
                 line=dict(
@@ -1340,7 +1353,7 @@ if st.session_state.savings_list:
             )
 
             ladder_fig.add_annotation(
-                x=today_month,
+                x=today,
                 y=y_max,
                 text="Today",
                 showarrow=False,
