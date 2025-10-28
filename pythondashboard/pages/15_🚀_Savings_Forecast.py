@@ -991,6 +991,37 @@ if st.session_state.savings_list:
                     borderpad=4
                 ))
 
+        # Add yellow dotted line for today's date
+        today = datetime.now()
+        shapes.append(dict(
+            type='line',
+            x0=today,
+            x1=today,
+            y0=0,
+            y1=1,
+            yref='paper',
+            line=dict(
+                color='#fbbf24',  # Yellow/amber color
+                width=2,
+                dash='dot'
+            ),
+            opacity=0.8
+        ))
+
+        annotations.append(dict(
+            x=today,
+            y=1.05,
+            yref='paper',
+            text="Today",
+            showarrow=False,
+            yanchor='bottom',
+            font=dict(size=10, color='#fbbf24'),
+            bgcolor='rgba(251, 191, 36, 0.2)',
+            bordercolor='#fbbf24',
+            borderwidth=1,
+            borderpad=4
+        ))
+
         # Update layout with shapes and annotations
         fig.update_layout(
             template='plotly_dark',
@@ -1291,6 +1322,35 @@ if st.session_state.savings_list:
             # Calculate max value for y-axis range with padding
             max_value = ladder_df.apply(lambda row: row['Principal'] + row['Interest'], axis=1).max()
             y_max = max_value * 1.3  # Add 30% padding at top for labels
+
+            # Add yellow dotted line for today's date
+            today_month = datetime.now().strftime('%Y-%m')
+            ladder_fig.add_shape(
+                type='line',
+                x0=today_month,
+                x1=today_month,
+                y0=0,
+                y1=y_max,
+                line=dict(
+                    color='#fbbf24',  # Yellow/amber color
+                    width=2,
+                    dash='dot'
+                ),
+                opacity=0.8
+            )
+
+            ladder_fig.add_annotation(
+                x=today_month,
+                y=y_max,
+                text="Today",
+                showarrow=False,
+                yanchor='bottom',
+                font=dict(size=10, color='#fbbf24'),
+                bgcolor='rgba(251, 191, 36, 0.2)',
+                bordercolor='#fbbf24',
+                borderwidth=1,
+                borderpad=4
+            )
 
             ladder_fig.update_layout(
                 template='plotly_dark',
