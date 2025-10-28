@@ -272,6 +272,17 @@ with col2:
 
 # Sidebar for adding/editing savings
 with st.sidebar:
+    # Add mode selector at the top
+    if 'editing_index' not in st.session_state or st.session_state.editing_index is None:
+        st.markdown("### Entry Mode")
+        entry_mode = st.radio(
+            "Choose entry mode:",
+            ["Calculator", "Manual"],
+            help="Calculator: Auto-calculates interest | Manual: Enter all values directly",
+            horizontal=True
+        )
+        st.markdown("---")
+
     # Check if we're in edit mode
     if 'editing_index' in st.session_state and st.session_state.editing_index is not None:
         # Edit mode
@@ -376,43 +387,45 @@ with st.sidebar:
                     st.session_state.force_reload = True
                     st.rerun()
     else:
-        # Add mode
-        st.header("➕ Add New Saving")
+        # Add mode - check which mode is selected
+        if entry_mode == "Calculator":
+            # Calculator mode - existing functionality
+            st.header("➕ Add New Saving (Calculator)")
 
-        with st.form("add_saving_form", clear_on_submit=True):
-            saving_name = st.text_input("Name", placeholder="e.g., Fixed Deposit 2025")
+            with st.form("add_saving_form", clear_on_submit=True):
+                saving_name = st.text_input("Name", placeholder="e.g., Fixed Deposit 2025")
 
-            saving_type = st.selectbox("Type", ["Fixed Deposit", "Recurring Deposit", "Retirement Account", "Other"])
+                saving_type = st.selectbox("Type", ["Fixed Deposit", "Recurring Deposit", "Retirement Account", "Other"])
 
-            principal = st.number_input(f"Principal Amount ({CURRENCY_SYMBOL})", min_value=0.0, value=10000.0, step=1000.0)
-            rate = st.number_input("Annual Interest Rate (%)", min_value=0.0, max_value=100.0, value=6.5, step=0.1)
+                principal = st.number_input(f"Principal Amount ({CURRENCY_SYMBOL})", min_value=0.0, value=10000.0, step=1000.0)
+                rate = st.number_input("Annual Interest Rate (%)", min_value=0.0, max_value=100.0, value=6.5, step=0.1)
 
-            start_date = st.date_input("Start Date", value=datetime.now(), min_value=None, max_value=None)
+                start_date = st.date_input("Start Date", value=datetime.now(), min_value=None, max_value=None)
 
-            st.markdown("**Duration:**")
-            col1, col2, col3 = st.columns(3)
-            with col1:
-                duration_years = st.number_input("Years", min_value=0, max_value=50, value=2, step=1)
-            with col2:
-                duration_months = st.number_input("Months", min_value=0, max_value=11, value=0, step=1)
-            with col3:
-                duration_days = st.number_input("Days", min_value=0, max_value=31, value=0, step=1)
+                st.markdown("**Duration:**")
+                col1, col2, col3 = st.columns(3)
+                with col1:
+                    duration_years = st.number_input("Years", min_value=0, max_value=50, value=2, step=1)
+                with col2:
+                    duration_months = st.number_input("Months", min_value=0, max_value=11, value=0, step=1)
+                with col3:
+                    duration_days = st.number_input("Days", min_value=0, max_value=31, value=0, step=1)
 
-            compounding = st.selectbox(
-                "Compounding Frequency",
-                options=[1, 2, 4, 12],
-                format_func=lambda x: {1: "Annually", 2: "Semi-annually", 4: "Quarterly", 12: "Monthly"}[x],
-                index=0
-            )
-
-            monthly_contribution = 0.0
-            if saving_type == "Recurring Deposit":
-                monthly_contribution = st.number_input(
-                    f"Monthly Contribution ({CURRENCY_SYMBOL})", min_value=0.0, value=0.0, step=500.0,
-                    help="Additional amount you add every month"
+                compounding = st.selectbox(
+                    "Compounding Frequency",
+                    options=[1, 2, 4, 12],
+                    format_func=lambda x: {1: "Annually", 2: "Semi-annually", 4: "Quarterly", 12: "Monthly"}[x],
+                    index=0
                 )
 
-            submit = st.form_submit_button("Add Saving", width="stretch")
+                monthly_contribution = 0.0
+                if saving_type == "Recurring Deposit":
+                    monthly_contribution = st.number_input(
+                        f"Monthly Contribution ({CURRENCY_SYMBOL})", min_value=0.0, value=0.0, step=500.0,
+                        help="Additional amount you add every month"
+                    )
+
+                submit = st.form_submit_button("Add Saving", width="stretch")
 
             if submit and saving_name:
                 start_dt = datetime.combine(start_date, datetime.min.time())
@@ -459,6 +472,99 @@ with st.sidebar:
                 # Reload from database
                 st.session_state.force_reload = True
                 st.rerun()
+
+        else:
+            # Manual mode - direct input of all values
+            st.header("➕ Add New Saving (Manual)")
+
+            with st.form("add_manual_saving_form", clear_on_submit=True):
+                saving_name = st.text_input("Name", placeholder="e.g., Fixed Deposit 2025")
+
+                saving_type = st.selectbox("Type", ["Fixed Deposit", "Recurring Deposit", "Retirement Account", "Other"])
+
+                # Manual inputs
+                principal = st.number_input(f"Principal Amount ({CURRENCY_SYMBOL})", min_value=0.0, value=10000.0, step=1000.0)
+
+                start_date = st.date_input("Start Date", value=datetime.now(), min_value=None, max_value=None)
+                maturity_date_input = st.date_input("Maturity Date", value=datetime.now() + relativedelta(years=2), min_value=None, max_value=None)
+
+                maturity_value = st.number_input(
+                    f"Maturity Value ({CURRENCY_SYMBOL})",
+                    min_value=0.0,
+                    value=12000.0,
+                    step=1000.0,
+                    help="Total amount you'll receive at maturity"
+                )
+
+                # Optional fields
+                with st.expander("📝 Optional Details", expanded=False):
+                    rate = st.number_input(
+                        "Interest Rate (%) - Optional",
+                        min_value=0.0,
+                        max_value=100.0,
+                        value=0.0,
+                        step=0.1,
+                        help="For display purposes only"
+                    )
+
+                    compounding = st.selectbox(
+                        "Compounding Frequency - Optional",
+                        options=[1, 2, 4, 12],
+                        format_func=lambda x: {1: "Annually", 2: "Semi-annually", 4: "Quarterly", 12: "Monthly"}[x],
+                        index=0
+                    )
+
+                    monthly_contribution = st.number_input(
+                        f"Monthly Contribution ({CURRENCY_SYMBOL}) - Optional",
+                        min_value=0.0,
+                        value=0.0,
+                        step=500.0,
+                        help="For display purposes only"
+                    )
+
+                submit = st.form_submit_button("Add Saving", width="stretch")
+
+                if submit and saving_name:
+                    start_dt = datetime.combine(start_date, datetime.min.time())
+                    maturity_dt = datetime.combine(maturity_date_input, datetime.min.time())
+
+                    # Validate that maturity is after start
+                    if maturity_dt <= start_dt:
+                        st.error("❌ Maturity date must be after start date!")
+                    else:
+                        # Calculate interest earned and total contributions
+                        total_months = months_between(start_dt, maturity_dt)
+                        total_contrib = monthly_contribution * total_months
+                        interest_earned = maturity_value - principal - total_contrib
+
+                        # Assign color based on current index
+                        color_index = len(st.session_state.savings_list)
+                        assigned_color = get_color_for_saving(color_index)
+
+                        # Save to database with manual values
+                        saving_data = {
+                            'name': saving_name,
+                            'type': saving_type,
+                            'principal': principal,
+                            'rate': rate / 100 if rate > 0 else 0.0,  # Convert to decimal
+                            'start_date': start_dt,
+                            'maturity_date': maturity_dt,
+                            'compounding_frequency': compounding,
+                            'monthly_contribution': monthly_contribution,
+                            'total_contributions': total_contrib,
+                            'maturity_value': maturity_value,
+                            'interest_earned': interest_earned,
+                            'color': assigned_color,
+                            'color_index': color_index,
+                            'currency': 'INR'
+                        }
+
+                        saving_id = db.add_saving(saving_data)
+                        st.success(f"✅ Added {saving_name}!")
+
+                        # Reload from database
+                        st.session_state.force_reload = True
+                        st.rerun()
 
 # Main content
 if st.session_state.savings_list:
