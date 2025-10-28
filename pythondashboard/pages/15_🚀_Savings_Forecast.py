@@ -563,7 +563,8 @@ with st.sidebar:
                 'notes': notes,
                 'color': editing_saving['color'],  # Keep existing color
                 'color_index': editing_saving['color_index'],
-                'currency': 'INR'
+                'currency': 'INR',
+                'entry_mode': edit_mode  # Update to current mode (Calculator or Manual)
             }
 
             # Update in database
@@ -699,7 +700,8 @@ with st.sidebar:
                     'notes': notes,
                     'color': assigned_color,
                     'color_index': color_index,
-                    'currency': 'INR'  # Always INR
+                    'currency': 'INR',  # Always INR
+                    'entry_mode': 'Calculator'  # Track how it was added
                 }
 
                 saving_id = db.add_saving(saving_data)
@@ -846,7 +848,8 @@ with st.sidebar:
                         'notes': notes,
                         'color': assigned_color,
                         'color_index': color_index,
-                        'currency': 'INR'
+                        'currency': 'INR',
+                        'entry_mode': 'Manual'  # Track how it was added
                     }
 
                     saving_id = db.add_saving(saving_data)
@@ -1658,9 +1661,13 @@ if st.session_state.savings_list:
             notes = saving.get('notes', '')
             notes_display = notes[:50] + '...' if len(notes) > 50 else notes
 
+            # Get entry mode with fallback for old entries
+            entry_mode = saving.get('entry_mode', 'Manual')  # Default to Manual for old entries
+
             table_data.append({
                 'Name': saving['name'],
                 'Type': saving['type'],
+                'Entry Mode': entry_mode,
                 'Payout Type': payout_type,
                 'Principal': format_currency_short(saving['principal']),
                 'Contrib.': format_currency_short(saving.get('total_contributions', 0.0)),
@@ -1725,7 +1732,8 @@ if st.session_state.savings_list:
                                 'notes': saving_to_copy.get('notes', ''),
                                 'color': new_color,
                                 'color_index': new_color_index,
-                                'currency': saving_to_copy.get('currency', 'INR')
+                                'currency': saving_to_copy.get('currency', 'INR'),
+                                'entry_mode': saving_to_copy.get('entry_mode', 'Manual')  # Preserve entry mode
                             }
                             
                             # Add to database
