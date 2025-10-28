@@ -320,6 +320,21 @@ with st.sidebar:
         st.header("✏️ Edit Saving")
         editing_saving = st.session_state.savings_list[st.session_state.editing_index]
 
+        # Detect original mode based on rate (if rate is 0 or very small, likely manual mode)
+        detected_mode = "Manual" if editing_saving['rate'] < 0.0001 else "Calculator"
+
+        # Add mode selector for edit mode
+        st.markdown("### Entry Mode")
+        edit_mode = st.radio(
+            "Choose entry mode:",
+            ["Calculator", "Manual"],
+            index=0 if detected_mode == "Calculator" else 1,
+            help="Calculator: Auto-calculates interest | Manual: Enter all values directly",
+            horizontal=True,
+            key="edit_mode_selector"
+        )
+        st.markdown("---")
+
         # Calculate current duration
         duration_delta = relativedelta(editing_saving['maturity_date'], editing_saving['start_date'])
 
@@ -332,18 +347,36 @@ with st.sidebar:
             )
 
             principal = st.number_input(f"Principal Amount ({CURRENCY_SYMBOL})", min_value=0.0, value=float(editing_saving['principal']), step=1000.0)
-            rate = st.number_input("Annual Interest Rate (%)", min_value=0.0, max_value=100.0, value=float(editing_saving['rate']*100), step=0.1)
+
+            # For calculator mode, show rate field here
+            if edit_mode == "Calculator":
+                rate = st.number_input("Annual Interest Rate (%)", min_value=0.0, max_value=100.0, value=float(editing_saving['rate']*100), step=0.1)
 
             start_date = st.date_input("Start Date", value=editing_saving['start_date'].date(), min_value=None, max_value=None)
 
-            st.markdown("**Duration:**")
-            col1, col2, col3 = st.columns(3)
-            with col1:
-                duration_years = st.number_input("Years", min_value=0, max_value=50, value=duration_delta.years, step=1)
-            with col2:
-                duration_months = st.number_input("Months", min_value=0, max_value=11, value=duration_delta.months, step=1)
-            with col3:
-                duration_days = st.number_input("Days", min_value=0, max_value=31, value=duration_delta.days, step=1)
+            # Show different fields based on mode
+            if edit_mode == "Calculator":
+                # Calculator mode: show duration inputs
+                st.markdown("**Duration:**")
+                col1, col2, col3 = st.columns(3)
+                with col1:
+                    duration_years = st.number_input("Years", min_value=0, max_value=50, value=duration_delta.years, step=1)
+                with col2:
+                    duration_months = st.number_input("Months", min_value=0, max_value=11, value=duration_delta.months, step=1)
+                with col3:
+                    duration_days = st.number_input("Days", min_value=0, max_value=31, value=duration_delta.days, step=1)
+            else:
+                # Manual mode: show maturity date and value inputs
+                maturity_date_input = st.date_input("Maturity Date", value=editing_saving['maturity_date'].date(), min_value=None, max_value=None, key="edit_manual_maturity_date")
+
+                maturity_value = st.number_input(
+                    f"Maturity Value ({CURRENCY_SYMBOL})",
+                    min_value=0.0,
+                    value=float(editing_saving['maturity_value']),
+                    step=1000.0,
+                    help="Total amount you'll receive at maturity (principal only for payout FDs)",
+                    key="edit_manual_maturity_value"
+                )
 
             # Interest payout option
             has_payout = st.checkbox(
@@ -355,8 +388,21 @@ with st.sidebar:
             # Show compounding frequency only for cumulative FDs
             compounding = 1
             payout_frequency = 1
+            total_interest_payout = 0.0
             if has_payout:
-                st.info("ℹ️ For payout FDs, maturity value = Principal + Contributions (interest paid separately)")
+                if edit_mode == "Manual":
+                    st.info("ℹ️ For payout FDs, maturity value = Principal + Contributions (interest paid separately)")
+                    total_interest_payout = st.number_input(
+                        f"Total Interest Paid Out ({CURRENCY_SYMBOL})",
+                        min_value=0.0,
+                        value=float(editing_saving.get('interest_earned', 0.0)),
+                        step=100.0,
+                        help="Total interest you received as payouts during the period",
+                        key="edit_manual_interest_payout"
+                    )
+                else:
+                    st.info("ℹ️ For payout FDs, maturity value = Principal + Contributions (interest paid separately)")
+
                 current_payout_freq = editing_saving.get('payout_frequency', 4)
                 payout_frequency = st.selectbox(
                     "Payout Frequency",
@@ -374,15 +420,51 @@ with st.sidebar:
                     help="How often interest is compounded"
                 )
 
-            monthly_contribution = 0.0
-            if saving_type == "Recurring Deposit":
-                monthly_contribution = st.number_input(
-                    f"Monthly Contribution ({CURRENCY_SYMBOL})",
-                    min_value=0.0,
-                    value=float(editing_saving.get('monthly_contribution', 0.0)),
-                    step=500.0,
-                    help="Additional amount you add every month"
-                )
+            # Initialize default values based on mode
+            if edit_mode == "Manual":
+                # Manual mode: rate and monthly_contribution are optional, use existing values as defaults
+                rate = float(editing_saving['rate']*100)
+                monthly_contribution = float(editing_saving.get('monthly_contribution', 0.0))
+            else:
+                # Calculator mode: rate is already set above, monthly_contribution depends on type
+                monthly_contribution = float(editing_saving.get('monthly_contribution', 0.0))
+
+            # Optional fields
+            with st.expander("📝 Optional Details", expanded=False):
+                # Show rate only in manual mode (already shown above in calculator mode)
+                if edit_mode == "Manual":
+                    rate = st.number_input(
+                        "Interest Rate (%) - Optional",
+                        min_value=0.0,
+                        max_value=100.0,
+                        value=float(editing_saving['rate']*100),
+                        step=0.1,
+                        help="For display purposes only",
+                        key="edit_rate"
+                    )
+
+                    monthly_contribution = st.number_input(
+                        f"Monthly Contribution ({CURRENCY_SYMBOL}) - Optional",
+                        min_value=0.0,
+                        value=float(editing_saving.get('monthly_contribution', 0.0)),
+                        step=500.0,
+                        help="For display purposes only",
+                        key="edit_monthly"
+                    )
+                else:
+                    # Calculator mode: show monthly contribution based on saving type
+                    if saving_type == "Recurring Deposit":
+                        monthly_contribution = st.number_input(
+                            f"Monthly Contribution ({CURRENCY_SYMBOL})",
+                            min_value=0.0,
+                            value=float(editing_saving.get('monthly_contribution', 0.0)),
+                            step=500.0,
+                            help="Additional amount you add every month",
+                            key="edit_monthly"
+                        )
+                    else:
+                        # Set default value from existing saving
+                        monthly_contribution = editing_saving.get('monthly_contribution', 0.0)
 
             # Notes field
             notes = st.text_area(
@@ -405,29 +487,53 @@ with st.sidebar:
 
             if submit and saving_name:
                 start_dt = datetime.combine(start_date, datetime.min.time())
-                maturity_date = start_dt + relativedelta(years=duration_years, months=duration_months, days=duration_days)
 
-                # Total contributions over full months
-                total_months = months_between(start_dt, maturity_date)
-                total_contrib = monthly_contribution * total_months
+                # Process based on mode
+                if edit_mode == "Calculator":
+                    # Calculator mode: calculate maturity value from rate and duration
+                    maturity_date = start_dt + relativedelta(years=duration_years, months=duration_months, days=duration_days)
 
-                # Calculate maturity value based on payout type
-                if has_payout:
-                    # Non-cumulative FD - interest is paid out periodically
-                    years = (maturity_date - start_dt).days / 365.25
-                    total_interest = principal * (rate / 100) * years
-                    maturity_value = principal + total_contrib  # Principal + contributions returned at maturity
+                    # Total contributions over full months
+                    total_months = months_between(start_dt, maturity_date)
+                    total_contrib = monthly_contribution * total_months
+
+                    # Calculate maturity value based on payout type
+                    if has_payout:
+                        # Non-cumulative FD - interest is paid out periodically
+                        years = (maturity_date - start_dt).days / 365.25
+                        total_interest = principal * (rate / 100) * years
+                        maturity_value = principal + total_contrib  # Principal + contributions returned at maturity
+                    else:
+                        # Cumulative FD - interest compounds
+                        maturity_value = fv_with_monthly_contrib(
+                            principal=principal,
+                            rate=rate/100,
+                            start_dt=start_dt,
+                            end_dt=maturity_date,
+                            compounding_frequency=compounding,
+                            monthly_contribution=monthly_contribution
+                        )
+                        total_interest = maturity_value - principal - total_contrib
                 else:
-                    # Cumulative FD - interest compounds
-                    maturity_value = fv_with_monthly_contrib(
-                        principal=principal,
-                        rate=rate/100,
-                        start_dt=start_dt,
-                        end_dt=maturity_date,
-                        compounding_frequency=compounding,
-                        monthly_contribution=monthly_contribution
-                    )
-                    total_interest = maturity_value - principal - total_contrib
+                    # Manual mode: use entered maturity date and value
+                    maturity_date = datetime.combine(maturity_date_input, datetime.min.time())
+
+                    # Validate that maturity is after start
+                    if maturity_date <= start_dt:
+                        st.error("❌ Maturity date must be after start date!")
+                        st.stop()
+
+                    # Calculate interest earned and total contributions
+                    total_months = months_between(start_dt, maturity_date)
+                    total_contrib = monthly_contribution * total_months
+
+                    # Calculate interest based on payout type
+                    if has_payout:
+                        # For payout FDs, interest_earned is the total interest paid out
+                        total_interest = total_interest_payout
+                    else:
+                        # For cumulative FDs, calculate from maturity value
+                        total_interest = maturity_value - principal - total_contrib
 
                 # Update saving in database
                 saving_data = {
