@@ -196,12 +196,30 @@ def create_waterfall_chart(
         textfont=dict(size=9)
     ))
 
+    # Calculate y-axis range to accommodate outside text labels
+    # Add 15% padding on both top and bottom for labels
+    if values:
+        max_value = max(values)
+        min_value = min(values)
+        value_range = max_value - min_value
+        padding = value_range * 0.15 if value_range > 0 else abs(max(max_value, abs(min_value))) * 0.15
+        y_min = min_value - padding
+        y_max = max_value + padding
+    else:
+        y_min = None
+        y_max = None
+
     fig.update_layout(
         title=title,
         height=height,
         margin=dict(t=50, b=50, l=50, r=20),
-        showlegend=False
+        showlegend=False,
+        yaxis=dict(range=[y_min, y_max]) if y_min is not None else {}
     )
+
+    # Enable automargin to prevent cutoff
+    fig.update_xaxes(automargin=True)
+    fig.update_yaxes(automargin=True)
 
     return fig
 
