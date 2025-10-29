@@ -381,11 +381,7 @@ try:
                 if aggregation == "Monthly" and not cash_flow_df.empty:
                     # Create waterfall data
                     waterfall_categories = ['Starting'] + cash_flow_df['period_display'].tolist() + ['Ending']
-                    waterfall_values = [0] + cash_flow_df['net_flow'].tolist() + [0]
-
-                    # Set first value to 0 and last to total
-                    waterfall_values[0] = 0
-                    waterfall_values[-1] = net_flow
+                    waterfall_values = [0] + cash_flow_df['net_flow'].tolist() + [net_flow]
 
                     fig_waterfall = create_waterfall_chart(
                         waterfall_categories,

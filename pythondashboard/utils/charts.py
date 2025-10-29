@@ -184,9 +184,13 @@ def create_waterfall_chart(
     Returns:
         Plotly Figure object
     """
+    # Create measure list: 'relative' for intermediate values, 'total' for first and last
+    measure = ['total'] + ['relative'] * (len(values) - 2) + ['total'] if len(values) > 2 else ['total'] * len(values)
+
     fig = go.Figure(go.Waterfall(
         x=categories,
         y=values,
+        measure=measure,
         connector={"line": {"color": "rgb(63, 63, 63)"}},
         increasing={"marker": {"color": "#4ade80"}},
         decreasing={"marker": {"color": "#f87171"}},
@@ -197,12 +201,12 @@ def create_waterfall_chart(
     ))
 
     # Calculate y-axis range to accommodate outside text labels
-    # Add 15% padding on both top and bottom for labels
+    # Add 20% padding on both top and bottom for labels
     if values:
         max_value = max(values)
         min_value = min(values)
         value_range = max_value - min_value
-        padding = value_range * 0.15 if value_range > 0 else abs(max(max_value, abs(min_value))) * 0.15
+        padding = value_range * 0.20 if value_range > 0 else abs(max(max_value, abs(min_value))) * 0.20
         y_min = min_value - padding
         y_max = max_value + padding
     else:
