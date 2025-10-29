@@ -201,13 +201,21 @@ def get_monthly_budget_data(
                         total_budgeted += prorated_amount
 
             # Calculate spent amount for this budget in this month
-            if not transactions_df.empty:
+            if not transactions_df.empty and 'date' in transactions_df.columns:
                 # Make start_date and end_date timezone-aware if transactions have timezone info
                 compare_start = start_date
                 compare_end = end_date
-                if transactions_df['date'].dt.tz is not None:
-                    compare_start = pd.Timestamp(start_date).tz_localize(transactions_df['date'].dt.tz)
-                    compare_end = pd.Timestamp(end_date).tz_localize(transactions_df['date'].dt.tz)
+                # Check if date column is datetime and has timezone info
+                if pd.api.types.is_datetime64_any_dtype(transactions_df['date']):
+                    if hasattr(transactions_df['date'].dt, 'tz') and transactions_df['date'].dt.tz is not None:
+                        compare_start = pd.Timestamp(start_date).tz_localize(transactions_df['date'].dt.tz)
+                        compare_end = pd.Timestamp(end_date).tz_localize(transactions_df['date'].dt.tz)
+                else:
+                    # Convert date column to datetime if it's not already
+                    # Use utc=True to handle timezone-aware datetime objects
+                    transactions_df['date'] = pd.to_datetime(transactions_df['date'], utc=True)
+                    # Remove timezone to make comparisons work
+                    transactions_df['date'] = transactions_df['date'].dt.tz_localize(None)
 
                 budget_transactions = transactions_df[
                     (transactions_df['budget_name'] == budget_name) &
@@ -560,13 +568,21 @@ def get_per_budget_monthly_data(
                         budgeted_amount += prorated_amount
 
             # Calculate spent amount for this budget in this month
-            if not transactions_df.empty:
+            if not transactions_df.empty and 'date' in transactions_df.columns:
                 # Make start_date and end_date timezone-aware if transactions have timezone info
                 compare_start = start_date
                 compare_end = end_date
-                if transactions_df['date'].dt.tz is not None:
-                    compare_start = pd.Timestamp(start_date).tz_localize(transactions_df['date'].dt.tz)
-                    compare_end = pd.Timestamp(end_date).tz_localize(transactions_df['date'].dt.tz)
+                # Check if date column is datetime and has timezone info
+                if pd.api.types.is_datetime64_any_dtype(transactions_df['date']):
+                    if hasattr(transactions_df['date'].dt, 'tz') and transactions_df['date'].dt.tz is not None:
+                        compare_start = pd.Timestamp(start_date).tz_localize(transactions_df['date'].dt.tz)
+                        compare_end = pd.Timestamp(end_date).tz_localize(transactions_df['date'].dt.tz)
+                else:
+                    # Convert date column to datetime if it's not already
+                    # Use utc=True to handle timezone-aware datetime objects
+                    transactions_df['date'] = pd.to_datetime(transactions_df['date'], utc=True)
+                    # Remove timezone to make comparisons work
+                    transactions_df['date'] = transactions_df['date'].dt.tz_localize(None)
 
                 budget_transactions = transactions_df[
                     (transactions_df['budget_name'] == budget_name) &

@@ -47,7 +47,17 @@ def calculate_cash_flow(
     df = transactions_df.copy()
 
     # Ensure date is datetime
-    df['date'] = pd.to_datetime(df['date'])
+    # Check if date column is datetime and has timezone info
+    if pd.api.types.is_datetime64_any_dtype(df['date']):
+        if hasattr(df['date'].dt, 'tz') and df['date'].dt.tz is not None:
+            # Already datetime with timezone - just remove timezone
+            df['date'] = df['date'].dt.tz_localize(None)
+    else:
+        # Convert date column to datetime if it's not already
+        # Use utc=True to handle timezone-aware datetime objects
+        df['date'] = pd.to_datetime(df['date'], utc=True)
+        # Remove timezone to make resampling work
+        df['date'] = df['date'].dt.tz_localize(None)
 
     # Set date as index for resampling
     df = df.set_index('date')
@@ -97,18 +107,24 @@ def calculate_category_spending(
 
     df = transactions_df.copy()
 
+    # Ensure date is datetime and handle timezone
+    if pd.api.types.is_datetime64_any_dtype(df['date']):
+        if hasattr(df['date'].dt, 'tz') and df['date'].dt.tz is not None:
+            # Already datetime with timezone - just remove timezone
+            df['date'] = df['date'].dt.tz_localize(None)
+    else:
+        # Convert date column to datetime if it's not already
+        # Use utc=True to handle timezone-aware datetime objects
+        df['date'] = pd.to_datetime(df['date'], utc=True)
+        # Remove timezone to make comparisons work
+        df['date'] = df['date'].dt.tz_localize(None)
+
     # Filter by date range if provided
     if start_date:
         start_dt = pd.to_datetime(start_date)
-        # If the date column has timezone info, make start_dt timezone-aware
-        if df['date'].dt.tz is not None:
-            start_dt = start_dt.tz_localize(df['date'].dt.tz)
         df = df[df['date'] >= start_dt]
     if end_date:
         end_dt = pd.to_datetime(end_date)
-        # If the date column has timezone info, make end_dt timezone-aware
-        if df['date'].dt.tz is not None:
-            end_dt = end_dt.tz_localize(df['date'].dt.tz)
         df = df[df['date'] <= end_dt]
 
     # Filter for expenses only (withdrawals)
@@ -152,18 +168,24 @@ def calculate_income_sources(
 
     df = transactions_df.copy()
 
+    # Ensure date is datetime and handle timezone
+    if pd.api.types.is_datetime64_any_dtype(df['date']):
+        if hasattr(df['date'].dt, 'tz') and df['date'].dt.tz is not None:
+            # Already datetime with timezone - just remove timezone
+            df['date'] = df['date'].dt.tz_localize(None)
+    else:
+        # Convert date column to datetime if it's not already
+        # Use utc=True to handle timezone-aware datetime objects
+        df['date'] = pd.to_datetime(df['date'], utc=True)
+        # Remove timezone to make comparisons work
+        df['date'] = df['date'].dt.tz_localize(None)
+
     # Filter by date range if provided
     if start_date:
         start_dt = pd.to_datetime(start_date)
-        # If the date column has timezone info, make start_dt timezone-aware
-        if df['date'].dt.tz is not None:
-            start_dt = start_dt.tz_localize(df['date'].dt.tz)
         df = df[df['date'] >= start_dt]
     if end_date:
         end_dt = pd.to_datetime(end_date)
-        # If the date column has timezone info, make end_dt timezone-aware
-        if df['date'].dt.tz is not None:
-            end_dt = end_dt.tz_localize(df['date'].dt.tz)
         df = df[df['date'] <= end_dt]
 
     # Filter for income only (deposits)
@@ -233,20 +255,23 @@ def calculate_period_comparison(
         }
 
     df = transactions_df.copy()
-    df['date'] = pd.to_datetime(df['date'])
+    # Check if date column is datetime and has timezone info
+    if pd.api.types.is_datetime64_any_dtype(df['date']):
+        if hasattr(df['date'].dt, 'tz') and df['date'].dt.tz is not None:
+            # Already datetime with timezone - just remove timezone
+            df['date'] = df['date'].dt.tz_localize(None)
+    else:
+        # Convert date column to datetime if it's not already
+        # Use utc=True to handle timezone-aware datetime objects
+        df['date'] = pd.to_datetime(df['date'], utc=True)
+        # Remove timezone to make comparisons work
+        df['date'] = df['date'].dt.tz_localize(None)
 
-    # Prepare date filters with timezone awareness
+    # Prepare date filters (no timezone needed since we removed it from df['date'])
     current_start_dt = pd.to_datetime(current_start)
     current_end_dt = pd.to_datetime(current_end)
     previous_start_dt = pd.to_datetime(previous_start)
     previous_end_dt = pd.to_datetime(previous_end)
-
-    # If the date column has timezone info, make comparison dates timezone-aware
-    if df['date'].dt.tz is not None:
-        current_start_dt = current_start_dt.tz_localize(df['date'].dt.tz)
-        current_end_dt = current_end_dt.tz_localize(df['date'].dt.tz)
-        previous_start_dt = previous_start_dt.tz_localize(df['date'].dt.tz)
-        previous_end_dt = previous_end_dt.tz_localize(df['date'].dt.tz)
 
     # Current period
     current_df = df[(df['date'] >= current_start_dt) &
@@ -577,7 +602,17 @@ def calculate_category_trends(
     df['category_name'] = df['category_name'].replace('', 'Uncategorized')
 
     # Ensure date is datetime
-    df['date'] = pd.to_datetime(df['date'])
+    # Check if date column is datetime and has timezone info
+    if pd.api.types.is_datetime64_any_dtype(df['date']):
+        if hasattr(df['date'].dt, 'tz') and df['date'].dt.tz is not None:
+            # Already datetime with timezone - just remove timezone
+            df['date'] = df['date'].dt.tz_localize(None)
+    else:
+        # Convert date column to datetime if it's not already
+        # Use utc=True to handle timezone-aware datetime objects
+        df['date'] = pd.to_datetime(df['date'], utc=True)
+        # Remove timezone to make grouping work
+        df['date'] = df['date'].dt.tz_localize(None)
 
     # Group by period and category
     df_grouped = df.groupby([pd.Grouper(key='date', freq=period), 'category_name'])['amount'].sum().reset_index()
@@ -612,7 +647,17 @@ def calculate_category_monthly_comparison(
         return pd.DataFrame(columns=['month', 'amount', 'change', 'change_pct'])
 
     # Ensure date is datetime
-    df['date'] = pd.to_datetime(df['date'])
+    # Check if date column is datetime and has timezone info
+    if pd.api.types.is_datetime64_any_dtype(df['date']):
+        if hasattr(df['date'].dt, 'tz') and df['date'].dt.tz is not None:
+            # Already datetime with timezone - just remove timezone
+            df['date'] = df['date'].dt.tz_localize(None)
+    else:
+        # Convert date column to datetime if it's not already
+        # Use utc=True to handle timezone-aware datetime objects
+        df['date'] = pd.to_datetime(df['date'], utc=True)
+        # Remove timezone to make grouping work
+        df['date'] = df['date'].dt.tz_localize(None)
 
     # Group by month
     monthly = df.groupby(pd.Grouper(key='date', freq='ME'))['amount'].sum().reset_index()
@@ -646,16 +691,24 @@ def calculate_category_percentage(
 
     df = transactions_df.copy()
 
+    # Ensure date is datetime and handle timezone
+    if pd.api.types.is_datetime64_any_dtype(df['date']):
+        if hasattr(df['date'].dt, 'tz') and df['date'].dt.tz is not None:
+            # Already datetime with timezone - just remove timezone
+            df['date'] = df['date'].dt.tz_localize(None)
+    else:
+        # Convert date column to datetime if it's not already
+        # Use utc=True to handle timezone-aware datetime objects
+        df['date'] = pd.to_datetime(df['date'], utc=True)
+        # Remove timezone to make comparisons work
+        df['date'] = df['date'].dt.tz_localize(None)
+
     # Filter by date range if provided
     if start_date:
         start_dt = pd.to_datetime(start_date)
-        if df['date'].dt.tz is not None:
-            start_dt = start_dt.tz_localize(df['date'].dt.tz)
         df = df[df['date'] >= start_dt]
     if end_date:
         end_dt = pd.to_datetime(end_date)
-        if df['date'].dt.tz is not None:
-            end_dt = end_dt.tz_localize(df['date'].dt.tz)
         df = df[df['date'] <= end_dt]
 
     # Filter for expenses only

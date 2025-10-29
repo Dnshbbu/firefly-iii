@@ -476,6 +476,12 @@ try:
                                 # Show all transactions sorted by date
                                 category_txns_sorted = category_txns.sort_values('date', ascending=False)
                                 display_df = category_txns_sorted[['date', 'description', 'destination_name', 'amount']].copy()
+                                # Ensure date is datetime before formatting
+                                if not pd.api.types.is_datetime64_any_dtype(display_df['date']):
+                                    display_df['date'] = pd.to_datetime(display_df['date'], utc=True)
+                                # Remove timezone if present
+                                if hasattr(display_df['date'].dt, 'tz') and display_df['date'].dt.tz is not None:
+                                    display_df['date'] = display_df['date'].dt.tz_localize(None)
                                 display_df['date'] = display_df['date'].dt.strftime('%Y-%m-%d')
                                 display_df['amount'] = display_df['amount'].apply(lambda x: f"€{x:,.2f}")
 
@@ -596,6 +602,12 @@ try:
 
                     # Format for display
                     df_display_formatted = df_display[['date', 'description', 'type', 'category_name', 'amount', 'currency_code']].copy()
+                    # Ensure date is datetime before formatting
+                    if not pd.api.types.is_datetime64_any_dtype(df_display_formatted['date']):
+                        df_display_formatted['date'] = pd.to_datetime(df_display_formatted['date'], utc=True)
+                    # Remove timezone if present
+                    if hasattr(df_display_formatted['date'].dt, 'tz') and df_display_formatted['date'].dt.tz is not None:
+                        df_display_formatted['date'] = df_display_formatted['date'].dt.tz_localize(None)
                     df_display_formatted['date'] = df_display_formatted['date'].dt.strftime('%Y-%m-%d')
                     df_display_formatted['amount'] = df_display_formatted['amount'].apply(lambda x: f"{x:,.2f}")
 
@@ -639,6 +651,12 @@ try:
 
                         # Format for display
                         df_transfers_formatted = df_transfers_display[display_cols].copy()
+                        # Ensure date is datetime before formatting
+                        if not pd.api.types.is_datetime64_any_dtype(df_transfers_formatted['date']):
+                            df_transfers_formatted['date'] = pd.to_datetime(df_transfers_formatted['date'], utc=True)
+                        # Remove timezone if present
+                        if hasattr(df_transfers_formatted['date'].dt, 'tz') and df_transfers_formatted['date'].dt.tz is not None:
+                            df_transfers_formatted['date'] = df_transfers_formatted['date'].dt.tz_localize(None)
                         df_transfers_formatted['date'] = df_transfers_formatted['date'].dt.strftime('%Y-%m-%d')
                         df_transfers_formatted['amount'] = df_transfers_formatted['amount'].apply(lambda x: f"{x:,.2f}")
 
