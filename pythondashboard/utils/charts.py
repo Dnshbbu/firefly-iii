@@ -726,7 +726,7 @@ def create_category_trend_chart(
         xaxis_title='Date',
         yaxis_title='Amount (€)',
         height=height,
-        margin=dict(t=50, b=50, l=50, r=20),
+        margin=dict(t=100, b=50, l=50, r=20),  # Increased top margin for buttons
         hovermode='x unified',
         legend=dict(
             orientation="h",
@@ -734,7 +734,31 @@ def create_category_trend_chart(
             y=1.02,
             xanchor="right",
             x=1
-        )
+        ),
+        updatemenus=[
+            dict(
+                type="buttons",
+                direction="left",
+                buttons=[
+                    dict(
+                        label="Show All",
+                        method="restyle",
+                        args=["visible", True]
+                    ),
+                    dict(
+                        label="Hide All",
+                        method="restyle",
+                        args=["visible", "legendonly"]
+                    )
+                ],
+                pad={"r": 10, "t": 10},
+                showactive=False,
+                x=0.0,
+                xanchor="left",
+                y=1.15,
+                yanchor="top"
+            )
+        ]
     )
 
     return fig

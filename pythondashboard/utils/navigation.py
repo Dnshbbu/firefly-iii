@@ -15,7 +15,8 @@ PAGE_SECTIONS = {
         {"label": "💰 Budget", "file": "4_💰_Budget.py"},
         {"label": "📅 Budget Timeline", "file": "14_📅_Budget_Timeline.py"},
         {"label": "🏷️ Categories", "file": "5_🏷️_Categories.py"},
-        {"label": "🚀 Savings Forecast", "file": "15_🚀_Savings_Forecast.py"},
+        {"label": "🔍 Category Details", "file": "15_🔍_Category_Details.py"},
+        {"label": "🚀 Savings Forecast", "file": "16_🚀_Savings_Forecast.py"},
     ],
     "🔧 Management": [
         {"label": "🏦 Asset Accounts", "file": "10_🏦_Asset_Accounts.py"},

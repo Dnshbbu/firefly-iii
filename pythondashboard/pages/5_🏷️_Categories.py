@@ -320,143 +320,138 @@ try:
             cols[5].metric("Top Spending", f"€{top_category['total_amount']:,.0f}")
 
         # Related dashboards navigation - compact
-        st.markdown('<div style="background-color: rgba(49, 51, 63, 0.2); padding: 0.3rem 0.5rem; border-radius: 0.3rem; font-size: 0.75rem;">💡 <b>Related:</b> <a href="/Budget" style="color: #58a6ff;">💰 Budget</a> • <a href="/Budget_Timeline" style="color: #58a6ff;">📅 Timeline</a> • <a href="/Cash_Flow" style="color: #58a6ff;">📈 Cash Flow</a> • <a href="/Net_Worth" style="color: #58a6ff;">📊 Net Worth</a></div>', unsafe_allow_html=True)
+        st.markdown('<div style="background-color: rgba(49, 51, 63, 0.2); padding: 0.3rem 0.5rem; border-radius: 0.3rem; font-size: 0.75rem;">💡 <b>Related:</b> <a href="/Category_Details" style="color: #58a6ff;">🔍 Category Details & Trends</a> • <a href="/Budget" style="color: #58a6ff;">💰 Budget</a> • <a href="/Budget_Timeline" style="color: #58a6ff;">📅 Timeline</a> • <a href="/Cash_Flow" style="color: #58a6ff;">📈 Cash Flow</a></div>', unsafe_allow_html=True)
 
         st.markdown("---")
 
-        # Visualization tabs
-        tab1, tab2, tab3 = st.tabs(["📊 Overview", "📈 Trends", "🔍 Deep Dive"])
+        # Main visualization section
+        col1, col2 = st.columns(2)
 
-        with tab1:
-            st.markdown("**Category Distribution**")
+        with col1:
+            # Pie chart - compact with click interactivity
+            fig_pie = create_pie_chart(
+                category_spending.head(10),
+                labels='category_name',
+                values='total_amount',
+                title="Top 10 Categories by Spending (Click to drill down)",
+                height=300
+            )
 
-            col1, col2 = st.columns(2)
+            # Display chart with click events
+            from streamlit_plotly_events import plotly_events
 
-            with col1:
-                # Pie chart - compact with click interactivity
-                fig_pie = create_pie_chart(
-                    category_spending.head(10),
-                    labels='category_name',
-                    values='total_amount',
-                    title="Top 10 Categories by Spending (Click to drill down)",
-                    height=300
-                )
+            selected_points_pie = plotly_events(
+                fig_pie,
+                click_event=True,
+                hover_event=False,
+                select_event=False,
+                override_height=300,
+                override_width="100%",
+                key="category_overview_pie"
+            )
 
-                # Display chart with click events
-                from streamlit_plotly_events import plotly_events
+            # Show category details when clicked
+            if selected_points_pie and len(selected_points_pie) > 0:
+                # Get the clicked point data
+                point_data = selected_points_pie[0]
 
-                selected_points_pie = plotly_events(
-                    fig_pie,
-                    click_event=True,
-                    hover_event=False,
-                    select_event=False,
-                    override_height=300,
-                    override_width="100%",
-                    key="category_overview_pie"
-                )
+                # Try to get category name from different possible keys
+                selected_category_name = None
+                if 'pointNumber' in point_data:
+                    point_index = point_data['pointNumber']
+                    selected_category_name = category_spending.head(10).iloc[point_index]['category_name']
+                elif 'pointIndex' in point_data:
+                    point_index = point_data['pointIndex']
+                    selected_category_name = category_spending.head(10).iloc[point_index]['category_name']
+                elif 'label' in point_data:
+                    selected_category_name = point_data['label']
+                elif 'x' in point_data:
+                    selected_category_name = point_data['x']
 
-                # Show category details when clicked
-                if selected_points_pie and len(selected_points_pie) > 0:
-                    # Get the clicked point data
-                    point_data = selected_points_pie[0]
+                if selected_category_name and selected_category_name in category_spending['category_name'].values:
+                    st.markdown(f"#### 🔍 Quick View: {selected_category_name}")
 
-                    # Try to get category name from different possible keys
-                    selected_category_name = None
-                    if 'pointNumber' in point_data:
-                        point_index = point_data['pointNumber']
-                        selected_category_name = category_spending.head(10).iloc[point_index]['category_name']
-                    elif 'pointIndex' in point_data:
-                        point_index = point_data['pointIndex']
-                        selected_category_name = category_spending.head(10).iloc[point_index]['category_name']
-                    elif 'label' in point_data:
-                        selected_category_name = point_data['label']
-                    elif 'x' in point_data:
-                        selected_category_name = point_data['x']
+                    # Get transactions for this category
+                    cat_txns = df_expenses[df_expenses['category_name'] == selected_category_name].copy()
 
-                    if selected_category_name and selected_category_name in category_spending['category_name'].values:
-                        st.markdown(f"#### 🔍 Quick View: {selected_category_name}")
+                    if not cat_txns.empty:
+                        # Statistics
+                        cols_stats = st.columns(5)
+                        cols_stats[0].metric("Count", len(cat_txns))
+                        cols_stats[1].metric("Total", f"€{cat_txns['amount'].sum():,.0f}")
+                        cols_stats[2].metric("Avg", f"€{cat_txns['amount'].mean():,.0f}")
+                        cols_stats[3].metric("Min", f"€{cat_txns['amount'].min():,.0f}")
+                        cols_stats[4].metric("Max", f"€{cat_txns['amount'].max():,.0f}")
 
-                        # Get transactions for this category
-                        cat_txns = df_expenses[df_expenses['category_name'] == selected_category_name].copy()
+                        # Transaction table
+                        st.caption("📋 All Transactions:")
 
-                        if not cat_txns.empty:
-                            # Statistics
-                            cols_stats = st.columns(5)
-                            cols_stats[0].metric("Count", len(cat_txns))
-                            cols_stats[1].metric("Total", f"€{cat_txns['amount'].sum():,.0f}")
-                            cols_stats[2].metric("Avg", f"€{cat_txns['amount'].mean():,.0f}")
-                            cols_stats[3].metric("Min", f"€{cat_txns['amount'].min():,.0f}")
-                            cols_stats[4].metric("Max", f"€{cat_txns['amount'].max():,.0f}")
+                        # Show all transactions sorted by date
+                        all_txns = cat_txns.sort_values('date', ascending=False)[['date', 'description', 'destination_name', 'amount']].copy()
+                        # Ensure date is datetime before formatting
+                        if not pd.api.types.is_datetime64_any_dtype(all_txns['date']):
+                            all_txns['date'] = pd.to_datetime(all_txns['date'], utc=True)
+                        # Remove timezone if present
+                        if hasattr(all_txns['date'].dt, 'tz') and all_txns['date'].dt.tz is not None:
+                            all_txns['date'] = all_txns['date'].dt.tz_localize(None)
+                        all_txns['date'] = all_txns['date'].dt.strftime('%Y-%m-%d')
+                        all_txns['amount'] = all_txns['amount'].apply(lambda x: f"€{x:,.2f}")
 
-                            # Transaction table
-                            st.caption("📋 All Transactions:")
+                        st.dataframe(
+                            all_txns,
+                            use_container_width=True,
+                            hide_index=True,
+                            column_config={
+                                'date': 'Date',
+                                'description': 'Description',
+                                'destination_name': 'Merchant',
+                                'amount': 'Amount'
+                            },
+                            height=400
+                        )
 
-                            # Show all transactions sorted by date
-                            all_txns = cat_txns.sort_values('date', ascending=False)[['date', 'description', 'destination_name', 'amount']].copy()
-                            # Ensure date is datetime before formatting
-                            if not pd.api.types.is_datetime64_any_dtype(all_txns['date']):
-                                all_txns['date'] = pd.to_datetime(all_txns['date'], utc=True)
-                            # Remove timezone if present
-                            if hasattr(all_txns['date'].dt, 'tz') and all_txns['date'].dt.tz is not None:
-                                all_txns['date'] = all_txns['date'].dt.tz_localize(None)
-                            all_txns['date'] = all_txns['date'].dt.strftime('%Y-%m-%d')
-                            all_txns['amount'] = all_txns['amount'].apply(lambda x: f"€{x:,.2f}")
+        with col2:
+            # Vertical Timeline of Transactions
+            if selected_points_pie and len(selected_points_pie) > 0:
+                # Use the same category from pie chart click
+                point_data = selected_points_pie[0]
+                timeline_category = None
+                if 'pointNumber' in point_data:
+                    point_index = point_data['pointNumber']
+                    timeline_category = category_spending.head(10).iloc[point_index]['category_name']
 
-                            st.dataframe(
-                                all_txns,
-                                use_container_width=True,
-                                hide_index=True,
-                                column_config={
-                                    'date': 'Date',
-                                    'description': 'Description',
-                                    'destination_name': 'Merchant',
-                                    'amount': 'Amount'
-                                },
-                                height=400
-                            )
+                if timeline_category and timeline_category in category_spending['category_name'].values:
+                    st.markdown(f"**📅 Transaction Timeline - {timeline_category}**")
 
-            with col2:
-                # Vertical Timeline of Transactions
-                if selected_points_pie and len(selected_points_pie) > 0:
-                    # Use the same category from pie chart click
-                    point_data = selected_points_pie[0]
-                    timeline_category = None
-                    if 'pointNumber' in point_data:
-                        point_index = point_data['pointNumber']
-                        timeline_category = category_spending.head(10).iloc[point_index]['category_name']
+                    # Get transactions and group by month
+                    timeline_txns = df_expenses[df_expenses['category_name'] == timeline_category].copy()
+                    # Remove timezone before converting to period to avoid warning
+                    # Note: to_period() still uses 'M' (not 'ME' like resample)
+                    # Ensure date is datetime with utc=True to handle timezone-aware dates
+                    if not pd.api.types.is_datetime64_any_dtype(timeline_txns['date']):
+                        timeline_txns['date'] = pd.to_datetime(timeline_txns['date'], utc=True)
+                    timeline_txns['month'] = timeline_txns['date'].dt.tz_localize(None).dt.to_period('M')
 
-                    if timeline_category and timeline_category in category_spending['category_name'].values:
-                        st.markdown(f"**📅 Transaction Timeline - {timeline_category}**")
+                    # Group by month and calculate statistics
+                    monthly_data = timeline_txns.groupby('month').agg({
+                        'amount': ['sum', 'count', 'mean'],
+                        'date': 'max'
+                    }).reset_index()
 
-                        # Get transactions and group by month
-                        timeline_txns = df_expenses[df_expenses['category_name'] == timeline_category].copy()
-                        # Remove timezone before converting to period to avoid warning
-                        # Note: to_period() still uses 'M' (not 'ME' like resample)
-                        # Ensure date is datetime with utc=True to handle timezone-aware dates
-                        if not pd.api.types.is_datetime64_any_dtype(timeline_txns['date']):
-                            timeline_txns['date'] = pd.to_datetime(timeline_txns['date'], utc=True)
-                        timeline_txns['month'] = timeline_txns['date'].dt.tz_localize(None).dt.to_period('M')
+                    # Flatten column names
+                    monthly_data.columns = ['month', 'total_amount', 'transaction_count', 'avg_amount', 'last_date']
 
-                        # Group by month and calculate statistics
-                        monthly_data = timeline_txns.groupby('month').agg({
-                            'amount': ['sum', 'count', 'mean'],
-                            'date': 'max'
-                        }).reset_index()
+                    # Sort by month for timeline (descending - newest first)
+                    monthly_data_timeline = monthly_data.sort_values('month', ascending=False)
 
-                        # Flatten column names
-                        monthly_data.columns = ['month', 'total_amount', 'transaction_count', 'avg_amount', 'last_date']
+                    # Sort by month for bar chart (ascending - oldest first)
+                    monthly_data_chart = monthly_data.sort_values('month', ascending=True)
 
-                        # Sort by month for timeline (descending - newest first)
-                        monthly_data_timeline = monthly_data.sort_values('month', ascending=False)
+                    # Create vertical timeline using components
+                    import streamlit.components.v1 as components
 
-                        # Sort by month for bar chart (ascending - oldest first)
-                        monthly_data_chart = monthly_data.sort_values('month', ascending=True)
-
-                        # Create vertical timeline using components
-                        import streamlit.components.v1 as components
-
-                        # Create simple vertical timeline with proper styling
-                        timeline_html = """
+                    # Create simple vertical timeline with proper styling
+                    timeline_html = """
 <!DOCTYPE html>
 <html>
 <head>
@@ -569,14 +564,14 @@ body {
     <div class="timeline">
 """
 
-                        for _, row in monthly_data_timeline.iterrows():
-                            year_str = row['month'].strftime('%Y')
-                            month_name = row['month'].strftime('%B').upper()
-                            total_str = f"€{row['total_amount']:,.2f}"
-                            count = int(row['transaction_count'])
-                            avg_str = f"€{row['avg_amount']:,.2f}"
+                    for _, row in monthly_data_timeline.iterrows():
+                        year_str = row['month'].strftime('%Y')
+                        month_name = row['month'].strftime('%B').upper()
+                        total_str = f"€{row['total_amount']:,.2f}"
+                        count = int(row['transaction_count'])
+                        avg_str = f"€{row['avg_amount']:,.2f}"
 
-                            timeline_html += f"""
+                        timeline_html += f"""
 <div class="timeline-item">
     <div class="timeline-date">{year_str}</div>
     <div class="timeline-month">{month_name}</div>
@@ -585,207 +580,116 @@ body {
 </div>
 """
 
-                        timeline_html += """
+                    timeline_html += """
     </div>
 </div>
 </body>
 </html>
 """
 
-                        # Display timeline using iframe component
-                        components.html(timeline_html, height=470, scrolling=False)
+                    # Display timeline using iframe component
+                    components.html(timeline_html, height=470, scrolling=False)
 
-                        # Add monthly bar chart below timeline
-                        st.markdown("**📊 Monthly Spending Trend**")
+                    # Add monthly bar chart below timeline
+                    st.markdown("**📊 Monthly Spending Trend**")
 
-                        # Create monthly bar chart
-                        import plotly.graph_objects as go
+                    # Create monthly bar chart
+                    import plotly.graph_objects as go
 
-                        # Calculate y-axis range to accommodate labels
-                        max_value = monthly_data_chart['total_amount'].max()
-                        y_max = max_value * 1.2  # Add 20% padding for outside labels
+                    # Calculate y-axis range to accommodate labels
+                    max_value = monthly_data_chart['total_amount'].max()
+                    y_max = max_value * 1.2  # Add 20% padding for outside labels
 
-                        fig_monthly_bar = go.Figure()
+                    fig_monthly_bar = go.Figure()
 
-                        fig_monthly_bar.add_trace(go.Bar(
-                            x=monthly_data_chart['month'].dt.strftime('%b %Y'),
-                            y=monthly_data_chart['total_amount'],
-                            marker=dict(color='#f87171'),
-                            text=monthly_data_chart['total_amount'].apply(lambda x: f'€{x:,.0f}'),
-                            textposition='outside',
-                            textfont=dict(size=9),
-                            hovertemplate='<b>%{x}</b><br>Amount: €%{y:,.2f}<br><extra></extra>'
-                        ))
+                    fig_monthly_bar.add_trace(go.Bar(
+                        x=monthly_data_chart['month'].dt.strftime('%b %Y'),
+                        y=monthly_data_chart['total_amount'],
+                        marker=dict(color='#f87171'),
+                        text=monthly_data_chart['total_amount'].apply(lambda x: f'€{x:,.0f}'),
+                        textposition='outside',
+                        textfont=dict(size=9),
+                        hovertemplate='<b>%{x}</b><br>Amount: €%{y:,.2f}<br><extra></extra>'
+                    ))
 
-                        fig_monthly_bar.update_layout(
-                            title=f"Monthly Spending - {timeline_category}",
-                            xaxis_title='Month',
-                            yaxis=dict(
-                                title='Amount (€)',
-                                range=[0, y_max]
-                            ),
-                            height=280,
-                            margin=dict(t=40, b=40, l=50, r=20),
-                            showlegend=False,
-                            plot_bgcolor='rgba(0,0,0,0)',
-                            paper_bgcolor='rgba(0,0,0,0)',
-                            font=dict(color='#e2e8f0')
-                        )
-
-                        st.plotly_chart(fig_monthly_bar, use_container_width=True, config={'displayModeBar': False})
-                else:
-                    # Show placeholder when nothing is selected
-                    st.info("👈 Click on a category in the pie chart to view transaction timeline")
-
-            # Pareto chart - compact with category filter
-            st.markdown("**Pareto Analysis (80/20 Rule)**")
-
-            # Category multiselect for filtering
-            all_categories = category_percentage.head(15)['category_name'].tolist()
-
-            # Initialize session state for selected categories if not exists
-            if 'pareto_selected_categories' not in st.session_state:
-                st.session_state.pareto_selected_categories = all_categories
-
-            # Filter session state to only include categories that exist in current options
-            valid_defaults = [cat for cat in st.session_state.pareto_selected_categories if cat in all_categories]
-            if not valid_defaults:
-                valid_defaults = all_categories
-
-            col_filter, col_reset = st.columns([4, 1])
-            with col_filter:
-                selected_for_pareto = st.multiselect(
-                    "Select categories to include:",
-                    options=all_categories,
-                    default=valid_defaults,
-                    key='pareto_category_filter'
-                )
-            with col_reset:
-                st.write("")  # Spacing
-                if st.button("Reset All", key='pareto_reset'):
-                    st.session_state.pareto_selected_categories = all_categories
-                    st.rerun()
-
-            # Update session state
-            st.session_state.pareto_selected_categories = selected_for_pareto
-
-            if selected_for_pareto:
-                # Filter data based on selection
-                filtered_data = category_percentage[category_percentage['category_name'].isin(selected_for_pareto)].copy()
-
-                # Recalculate cumulative percentage for filtered data
-                filtered_data = filtered_data.sort_values('amount', ascending=False)
-                filtered_data['percentage'] = (filtered_data['amount'] / filtered_data['amount'].sum()) * 100
-                filtered_data['cumulative_pct'] = filtered_data['percentage'].cumsum()
-
-                # Create Pareto chart with recalculated data
-                fig_pareto = create_pareto_chart(
-                    filtered_data,
-                    title=f"Pareto Analysis - {len(selected_for_pareto)} Categories",
-                    height=350
-                )
-                st.plotly_chart(fig_pareto, use_container_width=True, config={'displayModeBar': False})
-
-                # Find 80% threshold
-                categories_80 = filtered_data[filtered_data['cumulative_pct'] <= 80]
-                if len(categories_80) > 0:
-                    st.markdown(f"📌 **Insight:** {len(categories_80)} out of {len(selected_for_pareto)} selected categories account for 80% of spending")
-                else:
-                    st.markdown(f"📌 **Insight:** Analyzing {len(selected_for_pareto)} categories")
-            else:
-                st.info("Please select at least one category to display the Pareto analysis")
-
-        with tab2:
-            st.markdown("**Category Spending Trends**")
-
-            # Calculate trends
-            category_trends = calculate_category_trends(df_expenses, period='ME')
-
-            # Select categories to display
-            top_5_categories = category_spending.head(5)['category_name'].tolist()
-
-            selected_categories = st.multiselect(
-                "Select categories to display (max 10)",
-                options=category_spending['category_name'].tolist(),
-                default=top_5_categories
-            )
-
-            if selected_categories:
-                if len(selected_categories) > 10:
-                    st.caption("Showing first 10 selected categories")
-                    selected_categories = selected_categories[:10]
-
-                fig_trends = create_category_trend_chart(
-                    category_trends,
-                    categories=selected_categories,
-                    title="Monthly Spending Trends by Category",
-                    height=400
-                )
-                st.plotly_chart(fig_trends, use_container_width=True, config={'displayModeBar': False})
-            else:
-                st.info("Please select at least one category to display trends")
-
-        with tab3:
-            st.markdown("**Detailed Category Analysis**")
-
-            # Category selector
-            selected_category = st.selectbox(
-                "Select a category to analyze",
-                options=category_spending['category_name'].tolist()
-            )
-
-            if selected_category:
-                # Calculate statistics
-                stats = calculate_category_statistics(df_expenses, selected_category)
-                monthly_data = calculate_category_monthly_comparison(df_expenses, selected_category)
-                top_transactions = get_top_transactions_by_category(df_expenses, selected_category, limit=10)
-
-                # Display statistics - compact row
-                cols = st.columns(5)
-                cols[0].metric("Transactions", f"{int(stats['count'])}")
-                cols[1].metric("Average", f"€{stats['mean']:,.0f}")
-                cols[2].metric("Median", f"€{stats['median']:,.0f}")
-                cols[3].metric("Min", f"€{stats['min']:,.0f}")
-                cols[4].metric("Max", f"€{stats['max']:,.0f}")
-
-                # Monthly comparison chart - compact
-                if not monthly_data.empty:
-                    st.markdown("**Monthly Trend**")
-
-                    fig_comparison = create_category_comparison_chart(
-                        monthly_data,
-                        selected_category,
-                        height=300
+                    fig_monthly_bar.update_layout(
+                        title=f"Monthly Spending - {timeline_category}",
+                        xaxis_title='Month',
+                        yaxis=dict(
+                            title='Amount (€)',
+                            range=[0, y_max]
+                        ),
+                        height=280,
+                        margin=dict(t=40, b=40, l=50, r=20),
+                        showlegend=False,
+                        plot_bgcolor='rgba(0,0,0,0)',
+                        paper_bgcolor='rgba(0,0,0,0)',
+                        font=dict(color='#e2e8f0')
                     )
-                    st.plotly_chart(fig_comparison, use_container_width=True, config={'displayModeBar': False})
 
-                # Top transactions - collapsible
-                with st.expander("📋 Top 10 Transactions", expanded=False):
-                    if not top_transactions.empty:
-                        top_transactions_display = top_transactions.copy()
-                        # Ensure date is datetime before formatting
-                        if not pd.api.types.is_datetime64_any_dtype(top_transactions_display['date']):
-                            top_transactions_display['date'] = pd.to_datetime(top_transactions_display['date'], utc=True)
-                        # Remove timezone if present
-                        if hasattr(top_transactions_display['date'].dt, 'tz') and top_transactions_display['date'].dt.tz is not None:
-                            top_transactions_display['date'] = top_transactions_display['date'].dt.tz_localize(None)
-                        top_transactions_display['date'] = top_transactions_display['date'].dt.strftime('%Y-%m-%d')
-                        top_transactions_display['amount'] = top_transactions_display['amount'].apply(lambda x: f"€{x:,.2f}")
+                    st.plotly_chart(fig_monthly_bar, use_container_width=True, config={'displayModeBar': False})
+            else:
+                # Show placeholder when nothing is selected
+                st.info("👈 Click on a category in the pie chart to view transaction timeline")
 
-                        st.dataframe(
-                            top_transactions_display,
-                            use_container_width=True,
-                            hide_index=True,
-                            column_config={
-                                'date': 'Date',
-                                'description': 'Description',
-                                'amount': 'Amount',
-                                'destination_name': 'Merchant'
-                            },
-                            height=300
-                        )
-                    else:
-                        st.info("No transactions found for this category")
+        # Pareto chart - compact with category filter
+        st.markdown("---")
+        st.markdown("### 📊 Pareto Analysis (80/20 Rule)")
+
+        # Category multiselect for filtering
+        all_categories = category_percentage.head(15)['category_name'].tolist()
+
+        # Initialize session state for selected categories if not exists
+        if 'pareto_selected_categories' not in st.session_state:
+            st.session_state.pareto_selected_categories = all_categories
+
+        # Filter session state to only include categories that exist in current options
+        valid_defaults = [cat for cat in st.session_state.pareto_selected_categories if cat in all_categories]
+        if not valid_defaults:
+            valid_defaults = all_categories
+
+        col_filter, col_reset = st.columns([4, 1])
+        with col_filter:
+            selected_for_pareto = st.multiselect(
+                "Select categories to include:",
+                options=all_categories,
+                default=valid_defaults,
+                key='pareto_category_filter'
+            )
+        with col_reset:
+            st.write("")  # Spacing
+            if st.button("Reset All", key='pareto_reset'):
+                st.session_state.pareto_selected_categories = all_categories
+                st.rerun()
+
+        # Update session state
+        st.session_state.pareto_selected_categories = selected_for_pareto
+
+        if selected_for_pareto:
+            # Filter data based on selection
+            filtered_data = category_percentage[category_percentage['category_name'].isin(selected_for_pareto)].copy()
+
+            # Recalculate cumulative percentage for filtered data
+            filtered_data = filtered_data.sort_values('amount', ascending=False)
+            filtered_data['percentage'] = (filtered_data['amount'] / filtered_data['amount'].sum()) * 100
+            filtered_data['cumulative_pct'] = filtered_data['percentage'].cumsum()
+
+            # Create Pareto chart with recalculated data
+            fig_pareto = create_pareto_chart(
+                filtered_data,
+                title=f"Pareto Analysis - {len(selected_for_pareto)} Categories",
+                height=350
+            )
+            st.plotly_chart(fig_pareto, use_container_width=True, config={'displayModeBar': False})
+
+            # Find 80% threshold
+            categories_80 = filtered_data[filtered_data['cumulative_pct'] <= 80]
+            if len(categories_80) > 0:
+                st.markdown(f"📌 **Insight:** {len(categories_80)} out of {len(selected_for_pareto)} selected categories account for 80% of spending")
+            else:
+                st.markdown(f"📌 **Insight:** Analyzing {len(selected_for_pareto)} categories")
+        else:
+            st.info("Please select at least one category to display the Pareto analysis")
 
         st.markdown("---")
 

@@ -76,11 +76,17 @@ Track and manage your budgets effectively:
 - End-of-period spending forecasts
 
 ### 🏷️ Category Spending Analysis
-Deep dive into your spending patterns by category:
-- Category distribution visualization (pie, treemap)
+Overview of your spending patterns by category:
+- Category distribution visualization (interactive pie chart)
 - Pareto analysis (80/20 rule)
-- Category spending trends over time
+- Transaction timeline by category
+- Quick category statistics and insights
+
+### 🔍 Category Details & Trends
+Deep dive into detailed category analysis:
+- Multi-category spending trends over time
 - Month-over-month category comparison
+- Individual category deep dive with statistics
 - Top transactions per category
 - Statistical analysis (mean, median, min, max)
 
