@@ -360,7 +360,9 @@ try:
                 # Calculate statistics
                 stats = calculate_category_statistics(df_expenses, selected_category)
                 monthly_data = calculate_category_monthly_comparison(df_expenses, selected_category)
-                top_transactions = get_top_transactions_by_category(df_expenses, selected_category, limit=10)
+
+                # Get all transactions for this category
+                category_transactions = df_expenses[df_expenses['category_name'] == selected_category].copy()
 
                 # Display statistics - compact row
                 cols = st.columns(5)
@@ -381,30 +383,32 @@ try:
                     )
                     st.plotly_chart(fig_comparison, use_container_width=True, config={'displayModeBar': False})
 
-                # Top transactions - collapsible
-                with st.expander("📋 Top 10 Transactions", expanded=False):
-                    if not top_transactions.empty:
-                        top_transactions_display = top_transactions.copy()
+                # All transactions - collapsible
+                with st.expander(f"📋 All Transactions ({len(category_transactions)})", expanded=False):
+                    if not category_transactions.empty:
+                        # Sort by date descending and prepare display
+                        transactions_display = category_transactions.sort_values('date', ascending=False)[['date', 'description', 'destination_name', 'amount']].copy()
+
                         # Ensure date is datetime before formatting
-                        if not pd.api.types.is_datetime64_any_dtype(top_transactions_display['date']):
-                            top_transactions_display['date'] = pd.to_datetime(top_transactions_display['date'], utc=True)
+                        if not pd.api.types.is_datetime64_any_dtype(transactions_display['date']):
+                            transactions_display['date'] = pd.to_datetime(transactions_display['date'], utc=True)
                         # Remove timezone if present
-                        if hasattr(top_transactions_display['date'].dt, 'tz') and top_transactions_display['date'].dt.tz is not None:
-                            top_transactions_display['date'] = top_transactions_display['date'].dt.tz_localize(None)
-                        top_transactions_display['date'] = top_transactions_display['date'].dt.strftime('%Y-%m-%d')
-                        top_transactions_display['amount'] = top_transactions_display['amount'].apply(lambda x: f"€{x:,.2f}")
+                        if hasattr(transactions_display['date'].dt, 'tz') and transactions_display['date'].dt.tz is not None:
+                            transactions_display['date'] = transactions_display['date'].dt.tz_localize(None)
+                        transactions_display['date'] = transactions_display['date'].dt.strftime('%Y-%m-%d')
+                        transactions_display['amount'] = transactions_display['amount'].apply(lambda x: f"€{x:,.2f}")
 
                         st.dataframe(
-                            top_transactions_display,
+                            transactions_display,
                             use_container_width=True,
                             hide_index=True,
                             column_config={
                                 'date': 'Date',
                                 'description': 'Description',
-                                'amount': 'Amount',
-                                'destination_name': 'Merchant'
+                                'destination_name': 'Merchant',
+                                'amount': 'Amount'
                             },
-                            height=300
+                            height=400
                         )
                     else:
                         st.info("No transactions found for this category")
