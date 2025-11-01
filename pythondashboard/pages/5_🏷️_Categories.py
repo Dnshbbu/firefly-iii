@@ -393,7 +393,13 @@ try:
 
                             # Show all transactions sorted by date
                             all_txns = cat_txns.sort_values('date', ascending=False)[['date', 'description', 'destination_name', 'amount']].copy()
-                            all_txns['date'] = pd.to_datetime(all_txns['date']).dt.strftime('%Y-%m-%d')
+                            # Ensure date is datetime before formatting
+                            if not pd.api.types.is_datetime64_any_dtype(all_txns['date']):
+                                all_txns['date'] = pd.to_datetime(all_txns['date'], utc=True)
+                            # Remove timezone if present
+                            if hasattr(all_txns['date'].dt, 'tz') and all_txns['date'].dt.tz is not None:
+                                all_txns['date'] = all_txns['date'].dt.tz_localize(None)
+                            all_txns['date'] = all_txns['date'].dt.strftime('%Y-%m-%d')
                             all_txns['amount'] = all_txns['amount'].apply(lambda x: f"€{x:,.2f}")
 
                             st.dataframe(
@@ -426,7 +432,10 @@ try:
                         timeline_txns = df_expenses[df_expenses['category_name'] == timeline_category].copy()
                         # Remove timezone before converting to period to avoid warning
                         # Note: to_period() still uses 'M' (not 'ME' like resample)
-                        timeline_txns['month'] = pd.to_datetime(timeline_txns['date']).dt.tz_localize(None).dt.to_period('M')
+                        # Ensure date is datetime with utc=True to handle timezone-aware dates
+                        if not pd.api.types.is_datetime64_any_dtype(timeline_txns['date']):
+                            timeline_txns['date'] = pd.to_datetime(timeline_txns['date'], utc=True)
+                        timeline_txns['month'] = timeline_txns['date'].dt.tz_localize(None).dt.to_period('M')
 
                         # Group by month and calculate statistics
                         monthly_data = timeline_txns.groupby('month').agg({
@@ -638,12 +647,17 @@ body {
             if 'pareto_selected_categories' not in st.session_state:
                 st.session_state.pareto_selected_categories = all_categories
 
+            # Filter session state to only include categories that exist in current options
+            valid_defaults = [cat for cat in st.session_state.pareto_selected_categories if cat in all_categories]
+            if not valid_defaults:
+                valid_defaults = all_categories
+
             col_filter, col_reset = st.columns([4, 1])
             with col_filter:
                 selected_for_pareto = st.multiselect(
                     "Select categories to include:",
                     options=all_categories,
-                    default=st.session_state.pareto_selected_categories,
+                    default=valid_defaults,
                     key='pareto_category_filter'
                 )
             with col_reset:
@@ -749,7 +763,13 @@ body {
                 with st.expander("📋 Top 10 Transactions", expanded=False):
                     if not top_transactions.empty:
                         top_transactions_display = top_transactions.copy()
-                        top_transactions_display['date'] = pd.to_datetime(top_transactions_display['date']).dt.strftime('%Y-%m-%d')
+                        # Ensure date is datetime before formatting
+                        if not pd.api.types.is_datetime64_any_dtype(top_transactions_display['date']):
+                            top_transactions_display['date'] = pd.to_datetime(top_transactions_display['date'], utc=True)
+                        # Remove timezone if present
+                        if hasattr(top_transactions_display['date'].dt, 'tz') and top_transactions_display['date'].dt.tz is not None:
+                            top_transactions_display['date'] = top_transactions_display['date'].dt.tz_localize(None)
+                        top_transactions_display['date'] = top_transactions_display['date'].dt.strftime('%Y-%m-%d')
                         top_transactions_display['amount'] = top_transactions_display['amount'].apply(lambda x: f"€{x:,.2f}")
 
                         st.dataframe(
