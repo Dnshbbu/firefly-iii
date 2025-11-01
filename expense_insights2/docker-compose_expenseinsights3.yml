@@ -30,7 +30,8 @@ services:
     env_file: .db.env
     volumes:
       # reuse existing database volume from expense-insights2
-      - expense-insights2_expense-insights2_firefly_iii_db:/var/lib/postgresql/data
+      # PostgreSQL 18+ uses /var/lib/postgresql (not /data subdirectory)
+      - expense-insights2_expense-insights2_firefly_iii_db:/var/lib/postgresql
 
   cron:
     # image: alpine:latest

@@ -617,6 +617,10 @@ def calculate_category_trends(
     # Group by period and category
     df_grouped = df.groupby([pd.Grouper(key='date', freq=period), 'category_name'])['amount'].sum().reset_index()
 
+    # If grouping by month end, convert to month start for clearer display
+    if period == 'ME':
+        df_grouped['date'] = df_grouped['date'].dt.to_period('M').dt.to_timestamp()
+
     return df_grouped
 
 

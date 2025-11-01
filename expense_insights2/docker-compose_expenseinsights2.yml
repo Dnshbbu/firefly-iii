@@ -25,7 +25,8 @@ services:
     restart: always
     env_file: .db.env
     volumes:
-      - expense-insights2_firefly_iii_db:/var/lib/postgresql/data
+      # PostgreSQL 18+ uses /var/lib/postgresql (not /data subdirectory)
+      - expense-insights2_firefly_iii_db:/var/lib/postgresql
 
   importer:
     image: fireflyiii/data-importer:latest
@@ -58,7 +59,11 @@ services:
 
 volumes:
   expense-insights2_firefly_iii_upload:
+    external: true
+    name: expense-insights2_expense-insights2_firefly_iii_upload
   expense-insights2_firefly_iii_db:
+    external: true
+    name: expense-insights2_expense-insights2_firefly_iii_db
 
 networks:
   firefly_iii:
