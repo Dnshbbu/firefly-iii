@@ -75,3 +75,111 @@ If you're contributing €100/month to a savings goal from May 1 to September 30
 Budget_Timeline.py doesn't have this issue because it builds a dataframe with one row per calendar month, then uses `len(monthly_df)` to count months. This approach is naturally correct as long as the dataframe is built properly.
 
 ---
+
+## Streamlit DataFrames & Tables
+
+### Numeric Column Sorting: String Formatting vs NumberColumn
+
+**Issue:** When displaying numeric columns in Streamlit dataframes, converting numbers to formatted strings causes incorrect sorting behavior (alphabetical instead of numerical).
+
+**Example Problem:**
+- Amount column with values: 9.00, 80.00, 750.00
+- When sorted descending, order shows: 9.00, 80.00, 750.00 ❌
+- **Expected order:** 750.00, 80.00, 9.00 ✅
+
+**Root Cause:**
+
+❌ **INCORRECT: Pre-formatting numbers as strings**
+```python
+# Converting to formatted string before display
+df_display['amount'] = df_display['amount'].apply(lambda x: f"€{x:,.2f}")
+
+st.dataframe(
+    df_display,
+    column_config={
+        'amount': 'Amount'  # This is now a string column!
+    }
+)
+```
+
+This converts numeric values to strings like "€9.00", "€80.00", "€750.00", which sort alphabetically:
+- "€750.00" comes before "€80.00" (because '7' < '8')
+- "€80.00" comes before "€9.00" (because '8' < '9')
+- Result: Descending sort gives 9, 80, 750 ❌
+
+✅ **CORRECT: Use Streamlit's NumberColumn for formatting**
+```python
+# Keep amount as numeric, use column_config for formatting
+st.dataframe(
+    df_display,  # amount column stays as float/int
+    column_config={
+        'amount': st.column_config.NumberColumn('Amount', format="€%.2f")
+    }
+)
+```
+
+This preserves the numeric data type while applying visual formatting:
+- Data remains as numbers: 9.00, 80.00, 750.00
+- Sorting works numerically: 750.00 > 80.00 > 9.00 ✅
+- Display shows formatted: €9.00, €80.00, €750.00
+
+**Benefits of NumberColumn:**
+
+1. **Correct sorting** - Numeric sorting instead of alphabetical
+2. **Alignment** - Right-aligned by default (better for numbers)
+3. **Flexibility** - Easy to change format without modifying dataframe
+4. **Performance** - No need to copy dataframe just for formatting
+
+**Format String Options:**
+
+```python
+# Currency with 2 decimals and comma separators
+format="€%.2f"  # €1,234.56
+
+# Plain number with commas (Streamlit adds them automatically)
+format="%.2f"   # 1,234.56
+
+# No decimals
+format="%.0f"   # 1,235
+
+# Percentage
+format="%.1f%%"  # 45.5%
+```
+
+**Code Pattern to Remember:**
+
+```python
+# ❌ DON'T format before display
+df_display['amount'] = df_display['amount'].apply(lambda x: f"€{x:,.2f}")
+
+# ✅ DO use NumberColumn config
+st.dataframe(
+    df,  # Keep numeric columns as-is
+    column_config={
+        'amount': st.column_config.NumberColumn('Amount', format="€%.2f"),
+        'price': st.column_config.NumberColumn('Price', format="%.2f"),
+        'count': st.column_config.NumberColumn('Count', format="%.0f")
+    }
+)
+```
+
+**Related Files:**
+- `/pythondashboard/pages/3_📈_Cash_Flow.py` - Fixed in all tables:
+  - Line ~420-442: Category transaction details table
+  - Line ~497-508: Category spending table
+  - Line ~530-541: Income sources table
+  - Line ~590-616: Main transaction details table
+  - Line ~640-667: Transfers table
+
+**Similar Issues in Other Streamlit Components:**
+
+This pattern applies to all Streamlit data display components:
+- `st.dataframe()` - Interactive table with sorting
+- `st.data_editor()` - Editable table
+- `st.table()` - Static table (no sorting, but still better UX)
+
+**Date Column Similar Issue:**
+
+Note: Dates should be kept as datetime objects (not strings) for proper sorting, but can be formatted for display using strftime only when displaying, not when storing in the dataframe for sorting purposes. However, Streamlit's dataframe automatically handles datetime sorting even when displayed as strings via strftime.
+
+---

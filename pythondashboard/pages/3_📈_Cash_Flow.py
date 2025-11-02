@@ -479,7 +479,6 @@ try:
                                 if hasattr(display_df['date'].dt, 'tz') and display_df['date'].dt.tz is not None:
                                     display_df['date'] = display_df['date'].dt.tz_localize(None)
                                 display_df['date'] = display_df['date'].dt.strftime('%Y-%m-%d')
-                                display_df['amount'] = display_df['amount'].apply(lambda x: f"€{x:,.2f}")
 
                                 st.dataframe(
                                     display_df,
@@ -489,23 +488,21 @@ try:
                                         'date': 'Date',
                                         'description': 'Description',
                                         'destination_name': 'Merchant',
-                                        'amount': 'Amount'
+                                        'amount': st.column_config.NumberColumn('Amount', format="€%.2f")
                                     },
                                     height=350
                                 )
 
                     # Show table in expander
                     with st.expander("View All Categories", expanded=False):
-                        category_spending_display = category_spending.copy()
-                        category_spending_display['total_amount'] = category_spending_display['total_amount'].apply(lambda x: f"€{x:,.2f}")
                         st.dataframe(
-                            category_spending_display,
+                            category_spending,
                             use_container_width=True,
                             hide_index=True,
                             height=250,
                             column_config={
                                 'category_name': 'Category',
-                                'total_amount': 'Total Spent',
+                                'total_amount': st.column_config.NumberColumn('Total Spent', format="€%.2f"),
                                 'transaction_count': 'Count'
                             }
                         )
@@ -531,16 +528,14 @@ try:
 
                     # Show table in expander
                     with st.expander("View All Sources", expanded=False):
-                        income_sources_display = income_sources.copy()
-                        income_sources_display['total_amount'] = income_sources_display['total_amount'].apply(lambda x: f"€{x:,.2f}")
                         st.dataframe(
-                            income_sources_display,
+                            income_sources,
                             use_container_width=True,
                             hide_index=True,
                             height=250,
                             column_config={
                                 'source_name': 'Source',
-                                'total_amount': 'Total Income',
+                                'total_amount': st.column_config.NumberColumn('Total Income', format="€%.2f"),
                                 'transaction_count': 'Count'
                             }
                         )
@@ -605,7 +600,6 @@ try:
                     if hasattr(df_display_formatted['date'].dt, 'tz') and df_display_formatted['date'].dt.tz is not None:
                         df_display_formatted['date'] = df_display_formatted['date'].dt.tz_localize(None)
                     df_display_formatted['date'] = df_display_formatted['date'].dt.strftime('%Y-%m-%d')
-                    df_display_formatted['amount'] = df_display_formatted['amount'].apply(lambda x: f"{x:,.2f}")
 
                     st.dataframe(
                         df_display_formatted,
@@ -616,7 +610,7 @@ try:
                             'description': 'Description',
                             'type': 'Type',
                             'category_name': 'Category',
-                            'amount': 'Amount',
+                            'amount': st.column_config.NumberColumn('Amount', format="%.2f"),
                             'currency_code': 'Currency'
                         },
                         height=400
@@ -654,12 +648,11 @@ try:
                         if hasattr(df_transfers_formatted['date'].dt, 'tz') and df_transfers_formatted['date'].dt.tz is not None:
                             df_transfers_formatted['date'] = df_transfers_formatted['date'].dt.tz_localize(None)
                         df_transfers_formatted['date'] = df_transfers_formatted['date'].dt.strftime('%Y-%m-%d')
-                        df_transfers_formatted['amount'] = df_transfers_formatted['amount'].apply(lambda x: f"{x:,.2f}")
 
                         column_config = {
                             'date': 'Date',
                             'description': 'Description',
-                            'amount': 'Amount',
+                            'amount': st.column_config.NumberColumn('Amount', format="%.2f"),
                             'currency_code': 'Currency'
                         }
                         if 'source_name' in display_cols:
