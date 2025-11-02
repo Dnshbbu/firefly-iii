@@ -299,10 +299,29 @@ try:
 
         st.markdown("---")
 
-        # Visualization tabs
-        tab1, tab2 = st.tabs(["📈 Trends", "🔍 Deep Dive"])
+        # Initialize active tab in session state
+        if 'category_details_active_tab' not in st.session_state:
+            st.session_state.category_details_active_tab = "Trends"
 
-        with tab1:
+        # Tab selection using radio buttons (more reliable state management)
+        selected_tab = st.radio(
+            "View",
+            ["📈 Trends", "🔍 Deep Dive"],
+            index=0 if st.session_state.category_details_active_tab == "Trends" else 1,
+            horizontal=True,
+            key="tab_selector",
+            label_visibility="collapsed"
+        )
+
+        # Update session state based on selection
+        if "📈 Trends" in selected_tab:
+            st.session_state.category_details_active_tab = "Trends"
+        else:
+            st.session_state.category_details_active_tab = "Deep Dive"
+
+        st.markdown("---")
+
+        if st.session_state.category_details_active_tab == "Trends":
             st.markdown("**Category Spending Trends**")
 
             # Calculate trends
@@ -347,7 +366,7 @@ try:
             else:
                 st.info("Please select at least one category to display trends")
 
-        with tab2:
+        else:  # Deep Dive tab
             st.markdown("**Detailed Category Analysis**")
 
             # Category selector
