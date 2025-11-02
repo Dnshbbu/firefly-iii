@@ -359,7 +359,7 @@ try:
                 fig_trends = create_category_trend_chart(
                     category_trends,
                     categories=selected_categories,
-                    title=f"Monthly Spending Trends by Category ({len(selected_categories)} categories)",
+                    title="",  # Title moved to markdown above for compactness
                     height=400
                 )
                 st.plotly_chart(fig_trends, use_container_width=True, config={'displayModeBar': False})
