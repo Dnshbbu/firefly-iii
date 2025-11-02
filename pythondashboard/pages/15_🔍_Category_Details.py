@@ -396,7 +396,6 @@ try:
                         if hasattr(transactions_display['date'].dt, 'tz') and transactions_display['date'].dt.tz is not None:
                             transactions_display['date'] = transactions_display['date'].dt.tz_localize(None)
                         transactions_display['date'] = transactions_display['date'].dt.strftime('%Y-%m-%d')
-                        transactions_display['amount'] = transactions_display['amount'].apply(lambda x: f"€{x:,.2f}")
 
                         st.dataframe(
                             transactions_display,
@@ -406,7 +405,7 @@ try:
                                 'date': 'Date',
                                 'description': 'Description',
                                 'destination_name': 'Merchant',
-                                'amount': 'Amount'
+                                'amount': st.column_config.NumberColumn('Amount', format="€%.2f")
                             },
                             height=400
                         )

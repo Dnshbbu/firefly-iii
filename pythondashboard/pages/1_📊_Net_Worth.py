@@ -628,7 +628,6 @@ try:
 
                 # Format for display
                 df_display_formatted = df_display[['name', 'type', 'account_role', 'current_balance', 'currency_code', 'iban', 'active', 'include_net_worth', 'raw_include_net_worth']].copy()
-                df_display_formatted['current_balance'] = df_display_formatted['current_balance'].apply(lambda x: f"{x:,.2f}")
                 df_display_formatted = df_display_formatted.sort_values('name')
 
                 st.dataframe(
@@ -640,7 +639,7 @@ try:
                         'name': 'Account Name',
                         'type': 'Type',
                         'account_role': 'Role',
-                        'current_balance': 'Balance',
+                        'current_balance': st.column_config.NumberColumn('Balance', format="%.2f"),
                         'currency_code': 'Currency',
                         'iban': 'IBAN',
                         'active': st.column_config.CheckboxColumn('Active'),

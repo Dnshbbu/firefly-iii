@@ -461,23 +461,16 @@ try:
             if status_filter:
                 budget_display = budget_display[budget_display['status'].isin(status_filter)]
 
-            # Format for display
-            budget_display_formatted = budget_display.copy()
-            budget_display_formatted['budgeted'] = budget_display_formatted['budgeted'].apply(lambda x: f"€{x:,.2f}")
-            budget_display_formatted['spent'] = budget_display_formatted['spent'].apply(lambda x: f"€{x:,.2f}")
-            budget_display_formatted['remaining'] = budget_display_formatted['remaining'].apply(lambda x: f"€{x:,.2f}")
-            budget_display_formatted['utilization_pct'] = budget_display_formatted['utilization_pct'].apply(lambda x: f"{x:.1f}%")
-
             st.dataframe(
-                budget_display_formatted[['budget_name', 'budgeted', 'spent', 'remaining', 'utilization_pct', 'status']],
+                budget_display[['budget_name', 'budgeted', 'spent', 'remaining', 'utilization_pct', 'status']],
                 use_container_width=True,
                 hide_index=True,
                 column_config={
                     'budget_name': 'Budget',
-                    'budgeted': 'Budgeted',
-                    'spent': 'Spent',
-                    'remaining': 'Remaining',
-                    'utilization_pct': 'Utilization',
+                    'budgeted': st.column_config.NumberColumn('Budgeted', format="€%.2f"),
+                    'spent': st.column_config.NumberColumn('Spent', format="€%.2f"),
+                    'remaining': st.column_config.NumberColumn('Remaining', format="€%.2f"),
+                    'utilization_pct': st.column_config.NumberColumn('Utilization', format="%.1f%%"),
                     'status': 'Status'
                 },
                 height=400

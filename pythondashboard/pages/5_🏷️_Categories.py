@@ -395,7 +395,6 @@ try:
                         if hasattr(all_txns['date'].dt, 'tz') and all_txns['date'].dt.tz is not None:
                             all_txns['date'] = all_txns['date'].dt.tz_localize(None)
                         all_txns['date'] = all_txns['date'].dt.strftime('%Y-%m-%d')
-                        all_txns['amount'] = all_txns['amount'].apply(lambda x: f"€{x:,.2f}")
 
                         st.dataframe(
                             all_txns,
@@ -405,7 +404,7 @@ try:
                                 'date': 'Date',
                                 'description': 'Description',
                                 'destination_name': 'Merchant',
-                                'amount': 'Amount'
+                                'amount': st.column_config.NumberColumn('Amount', format="€%.2f")
                             },
                             height=400
                         )
@@ -705,10 +704,6 @@ body {
             category_display = category_percentage.copy()
             # Calculate monthly average before formatting
             category_display['monthly_average'] = category_display['amount'] / total_months
-            category_display['amount'] = category_display['amount'].apply(lambda x: f"€{x:,.2f}")
-            category_display['monthly_average'] = category_display['monthly_average'].apply(lambda x: f"€{x:,.2f}")
-            category_display['percentage'] = category_display['percentage'].apply(lambda x: f"{x:.1f}%")
-            category_display['cumulative_pct'] = category_display['cumulative_pct'].apply(lambda x: f"{x:.1f}%")
 
             st.dataframe(
                 category_display,
@@ -716,10 +711,10 @@ body {
                 hide_index=True,
                 column_config={
                     'category_name': 'Category',
-                    'amount': 'Total Spent',
-                    'monthly_average': 'Monthly Avg',
-                    'percentage': '% of Total',
-                    'cumulative_pct': 'Cumulative %'
+                    'amount': st.column_config.NumberColumn('Total Spent', format="€%.2f"),
+                    'monthly_average': st.column_config.NumberColumn('Monthly Avg', format="€%.2f"),
+                    'percentage': st.column_config.NumberColumn('% of Total', format="%.1f%%"),
+                    'cumulative_pct': st.column_config.NumberColumn('Cumulative %', format="%.1f%%")
                 },
                 height=400
             )

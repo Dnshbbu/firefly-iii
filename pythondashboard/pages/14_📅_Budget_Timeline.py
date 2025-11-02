@@ -481,12 +481,7 @@ def create_monthly_breakdown_table(monthly_df: pd.DataFrame) -> pd.DataFrame:
     """Format monthly data for display"""
     df = monthly_df.copy()
 
-    # Format currency columns
-    for col in ['budgeted', 'spent', 'remaining', 'deviation']:
-        df[col] = df[col].apply(lambda x: f'€{x:,.2f}')
-
-    df['deviation_pct'] = df['deviation_pct'].apply(lambda x: f'{x:.1f}%')
-
+    # Return data as-is, formatting will be handled by st.dataframe column_config
     return df[['month_full', 'budgeted', 'spent', 'remaining', 'deviation', 'deviation_pct', 'status']]
 
 
@@ -1235,11 +1230,11 @@ try:
             hide_index=True,
             column_config={
                 'month_full': 'Month',
-                'budgeted': 'Budgeted',
-                'spent': 'Spent',
-                'remaining': 'Remaining',
-                'deviation': 'Deviation',
-                'deviation_pct': 'Deviation %',
+                'budgeted': st.column_config.NumberColumn('Budgeted', format="€%.2f"),
+                'spent': st.column_config.NumberColumn('Spent', format="€%.2f"),
+                'remaining': st.column_config.NumberColumn('Remaining', format="€%.2f"),
+                'deviation': st.column_config.NumberColumn('Deviation', format="€%.2f"),
+                'deviation_pct': st.column_config.NumberColumn('Deviation %', format="%.1f%%"),
                 'status': 'Status'
             },
             height=450
