@@ -695,9 +695,18 @@ body {
 
         # Category breakdown table - collapsible
         with st.expander("📋 All Categories", expanded=False):
+            # Calculate number of calendar months spanned (inclusive)
+            # Example: May 1 to September 30 = 5 months (May, June, July, August, September)
+            total_months = (end_date.year - start_date.year) * 12 + (end_date.month - start_date.month) + 1
+            # Ensure at least 1 month to avoid division by zero
+            total_months = max(total_months, 1)
+            
             # Format for display
             category_display = category_percentage.copy()
+            # Calculate monthly average before formatting
+            category_display['monthly_average'] = category_display['amount'] / total_months
             category_display['amount'] = category_display['amount'].apply(lambda x: f"€{x:,.2f}")
+            category_display['monthly_average'] = category_display['monthly_average'].apply(lambda x: f"€{x:,.2f}")
             category_display['percentage'] = category_display['percentage'].apply(lambda x: f"{x:.1f}%")
             category_display['cumulative_pct'] = category_display['cumulative_pct'].apply(lambda x: f"{x:.1f}%")
 
@@ -708,6 +717,7 @@ body {
                 column_config={
                     'category_name': 'Category',
                     'amount': 'Total Spent',
+                    'monthly_average': 'Monthly Avg',
                     'percentage': '% of Total',
                     'cumulative_pct': 'Cumulative %'
                 },
