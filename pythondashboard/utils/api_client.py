@@ -322,6 +322,8 @@ class FireflyAPIClient:
                 transactions.append({
                     'id': transaction.get('id'),
                     'date': split.get('date'),
+                    'created_at': attributes.get('created_at'),
+                    'updated_at': attributes.get('updated_at'),
                     'description': split.get('description', ''),
                     'amount': float(split.get('amount', 0)),
                     'currency_code': split.get('currency_code', 'EUR'),
@@ -331,12 +333,18 @@ class FireflyAPIClient:
                     'source_name': split.get('source_name', ''),
                     'destination_name': split.get('destination_name', ''),
                     'notes': split.get('notes', ''),
+                    'tags': split.get('tags', []),
                 })
 
         df = pd.DataFrame(transactions)
 
-        # Convert date to datetime
-        if not df.empty and 'date' in df.columns:
-            df['date'] = pd.to_datetime(df['date'])
+        # Convert date columns to datetime
+        if not df.empty:
+            if 'date' in df.columns:
+                df['date'] = pd.to_datetime(df['date'])
+            if 'created_at' in df.columns:
+                df['created_at'] = pd.to_datetime(df['created_at'])
+            if 'updated_at' in df.columns:
+                df['updated_at'] = pd.to_datetime(df['updated_at'])
 
         return df

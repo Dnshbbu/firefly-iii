@@ -956,3 +956,189 @@ def create_category_comparison_chart(
     )
 
     return fig
+
+
+def create_tag_distribution_chart(
+    df: pd.DataFrame,
+    title: str = 'Tag Distribution',
+    height: int = 400
+) -> go.Figure:
+    """
+    Create a pie chart showing transaction distribution by tags.
+
+    Args:
+        df: DataFrame with columns: tag_name, transaction_count
+        title: Chart title
+        height: Chart height in pixels
+
+    Returns:
+        Plotly Figure object
+    """
+    fig = go.Figure()
+
+    fig.add_trace(go.Pie(
+        labels=df['tag_name'],
+        values=df['transaction_count'],
+        hole=0.3,
+        textinfo='label+percent',
+        textposition='auto'
+    ))
+
+    fig.update_layout(
+        title=title,
+        height=height,
+        margin=dict(t=50, b=20, l=20, r=20),
+        showlegend=True,
+        legend=dict(
+            orientation="v",
+            yanchor="middle",
+            y=0.5,
+            xanchor="left",
+            x=1.02
+        )
+    )
+
+    return fig
+
+
+def create_tag_timeline_chart(
+    df: pd.DataFrame,
+    title: str = 'Tag Usage Timeline',
+    height: int = 500
+) -> go.Figure:
+    """
+    Create a timeline chart showing tag usage over time.
+
+    Args:
+        df: DataFrame with date, tag_name, and transaction_count columns
+        title: Chart title
+        height: Chart height in pixels
+
+    Returns:
+        Plotly Figure object
+    """
+    fig = go.Figure()
+
+    # Get unique tags
+    unique_tags = df['tag_name'].unique()
+
+    for tag in unique_tags:
+        tag_data = df[df['tag_name'] == tag]
+
+        fig.add_trace(go.Scatter(
+            x=tag_data['date'],
+            y=tag_data['transaction_count'],
+            name=tag,
+            mode='lines+markers',
+            line=dict(width=2),
+            marker=dict(size=6)
+        ))
+
+    fig.update_layout(
+        title=title,
+        xaxis_title='Date',
+        yaxis_title='Transaction Count',
+        height=height,
+        margin=dict(t=50, b=50, l=50, r=20),
+        hovermode='x unified',
+        legend=dict(
+            orientation="h",
+            yanchor="bottom",
+            y=1.02,
+            xanchor="right",
+            x=1
+        )
+    )
+
+    return fig
+
+
+def create_import_batch_chart(
+    df: pd.DataFrame,
+    title: str = 'Import Batches',
+    height: int = 400
+) -> go.Figure:
+    """
+    Create a bar chart showing import batches by date.
+
+    Args:
+        df: DataFrame with import_date and transaction_count columns
+        title: Chart title
+        height: Chart height in pixels
+
+    Returns:
+        Plotly Figure object
+    """
+    fig = go.Figure()
+
+    fig.add_trace(go.Bar(
+        x=df['import_date'].astype(str),
+        y=df['transaction_count'],
+        marker=dict(color='#60a5fa'),
+        text=df['transaction_count'],
+        textposition='outside',
+        hovertemplate='<b>%{x}</b><br>Transactions: %{y}<br><extra></extra>'
+    ))
+
+    # Calculate y-axis range to accommodate outside text labels
+    max_value = df['transaction_count'].max()
+    y_max = max_value * 1.15  # Add 15% padding for labels
+
+    fig.update_layout(
+        title=title,
+        xaxis_title='Import Date',
+        yaxis=dict(
+            title='Transaction Count',
+            range=[0, y_max]
+        ),
+        height=height,
+        margin=dict(t=50, b=80, l=50, r=20),
+        showlegend=False
+    )
+
+    return fig
+
+
+def create_gap_analysis_chart(
+    df: pd.DataFrame,
+    title: str = 'Import Gap Analysis by Tag',
+    height: int = 400
+) -> go.Figure:
+    """
+    Create a bar chart showing average gap between transaction date and import date.
+
+    Args:
+        df: DataFrame with tag_name and avg_gap_days columns
+        title: Chart title
+        height: Chart height in pixels
+
+    Returns:
+        Plotly Figure object
+    """
+    fig = go.Figure()
+
+    # Create color scale based on gap (negative = imported before transaction date)
+    colors = ['#f87171' if x < 0 else '#60a5fa' for x in df['avg_gap_days']]
+
+    fig.add_trace(go.Bar(
+        x=df['tag_name'],
+        y=df['avg_gap_days'],
+        marker=dict(color=colors),
+        text=df['avg_gap_days'].apply(lambda x: f'{x:.1f}d'),
+        textposition='outside',
+        hovertemplate='<b>%{x}</b><br>Avg Gap: %{y:.2f} days<br><extra></extra>'
+    ))
+
+    fig.update_layout(
+        title=title,
+        xaxis_title='Tag',
+        yaxis_title='Average Gap (days)',
+        height=height,
+        margin=dict(t=50, b=100, l=50, r=20),
+        showlegend=False
+    )
+
+    # Add horizontal line at y=0
+    fig.add_hline(y=0, line_dash="dash", line_color="gray", opacity=0.5)
+
+    return fig

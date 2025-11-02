@@ -823,3 +823,217 @@ def calculate_category_statistics(
         'std': df['amount'].std(),
         'count': len(df)
     }
+
+
+def calculate_tag_statistics(
+    transactions_df: pd.DataFrame
+) -> Dict[str, any]:
+    """
+    Calculate overall tag usage statistics.
+
+    Args:
+        transactions_df: DataFrame with transaction data including 'tags' column
+
+    Returns:
+        Dictionary with tag statistics
+    """
+    if transactions_df.empty or 'tags' not in transactions_df.columns:
+        return {
+            'total_transactions': 0,
+            'transactions_with_tags': 0,
+            'transactions_without_tags': 0,
+            'unique_tags': 0,
+            'total_tag_occurrences': 0,
+            'most_common_tags': []
+        }
+
+    # Explode tags to count them
+    df_with_tags = transactions_df[transactions_df['tags'].apply(lambda x: len(x) > 0 if isinstance(x, list) else False)]
+    df_without_tags = transactions_df[transactions_df['tags'].apply(lambda x: len(x) == 0 if isinstance(x, list) else True)]
+
+    # Get all tags
+    all_tags = []
+    for tags_list in df_with_tags['tags']:
+        if isinstance(tags_list, list):
+            all_tags.extend(tags_list)
+
+    # Count unique tags and most common
+    from collections import Counter
+    tag_counts = Counter(all_tags)
+    most_common = tag_counts.most_common(10)
+
+    return {
+        'total_transactions': len(transactions_df),
+        'transactions_with_tags': len(df_with_tags),
+        'transactions_without_tags': len(df_without_tags),
+        'unique_tags': len(tag_counts),
+        'total_tag_occurrences': len(all_tags),
+        'most_common_tags': most_common
+    }
+
+
+def calculate_tag_distribution(
+    transactions_df: pd.DataFrame
+) -> pd.DataFrame:
+    """
+    Calculate transaction distribution by tags.
+
+    Args:
+        transactions_df: DataFrame with transaction data including 'tags' column
+
+    Returns:
+        DataFrame with columns: tag_name, transaction_count, total_amount, avg_amount
+    """
+    if transactions_df.empty or 'tags' not in transactions_df.columns:
+        return pd.DataFrame(columns=['tag_name', 'transaction_count', 'total_amount', 'avg_amount'])
+
+    # Explode tags to create one row per tag
+    df_exploded = transactions_df.explode('tags')
+    df_exploded = df_exploded[df_exploded['tags'].notna()]
+
+    if df_exploded.empty:
+        return pd.DataFrame(columns=['tag_name', 'transaction_count', 'total_amount', 'avg_amount'])
+
+    # Group by tag
+    tag_stats = df_exploded.groupby('tags').agg({
+        'id': 'count',
+        'amount': ['sum', 'mean']
+    }).reset_index()
+
+    tag_stats.columns = ['tag_name', 'transaction_count', 'total_amount', 'avg_amount']
+
+    # Sort by transaction count descending
+    tag_stats = tag_stats.sort_values('transaction_count', ascending=False)
+
+    return tag_stats
+
+
+def calculate_import_batches(
+    transactions_df: pd.DataFrame
+) -> pd.DataFrame:
+    """
+    Group transactions by import date (created_at) to identify import batches.
+
+    Args:
+        transactions_df: DataFrame with transaction data including 'created_at' column
+
+    Returns:
+        DataFrame with import batches: import_date, transaction_count, date_range, tags
+    """
+    if transactions_df.empty or 'created_at' not in transactions_df.columns:
+        return pd.DataFrame(columns=['import_date', 'transaction_count', 'earliest_txn_date', 'latest_txn_date', 'unique_tags'])
+
+    df = transactions_df.copy()
+
+    # Ensure created_at is datetime
+    if not pd.api.types.is_datetime64_any_dtype(df['created_at']):
+        df['created_at'] = pd.to_datetime(df['created_at'], utc=True)
+
+    # Ensure date is datetime
+    if not pd.api.types.is_datetime64_any_dtype(df['date']):
+        df['date'] = pd.to_datetime(df['date'], utc=True)
+
+    # Remove timezone for grouping
+    if hasattr(df['created_at'].dt, 'tz') and df['created_at'].dt.tz is not None:
+        df['created_at'] = df['created_at'].dt.tz_localize(None)
+    if hasattr(df['date'].dt, 'tz') and df['date'].dt.tz is not None:
+        df['date'] = df['date'].dt.tz_localize(None)
+
+    # Group by import date (truncate to date only)
+    df['import_date'] = df['created_at'].dt.date
+
+    # Aggregate by import date
+    batches = df.groupby('import_date').agg({
+        'id': 'count',
+        'date': ['min', 'max'],
+        'tags': lambda x: list(set([tag for tags in x if isinstance(tags, list) for tag in tags]))
+    }).reset_index()
+
+    batches.columns = ['import_date', 'transaction_count', 'earliest_txn_date', 'latest_txn_date', 'unique_tags']
+
+    # Convert date columns back to datetime for proper formatting
+    batches['earliest_txn_date'] = pd.to_datetime(batches['earliest_txn_date'])
+    batches['latest_txn_date'] = pd.to_datetime(batches['latest_txn_date'])
+
+    # Sort by import date descending
+    batches = batches.sort_values('import_date', ascending=False)
+
+    return batches
+
+
+def calculate_import_gap(
+    transactions_df: pd.DataFrame
+) -> pd.DataFrame:
+    """
+    Calculate the gap between transaction date and import date.
+
+    Args:
+        transactions_df: DataFrame with 'date' and 'created_at' columns
+
+    Returns:
+        DataFrame with gap statistics per tag
+    """
+    if transactions_df.empty or 'date' not in transactions_df.columns or 'created_at' not in transactions_df.columns:
+        return pd.DataFrame(columns=['tag_name', 'avg_gap_days', 'min_gap_days', 'max_gap_days', 'transaction_count'])
+
+    df = transactions_df.copy()
+
+    # Ensure dates are datetime
+    if not pd.api.types.is_datetime64_any_dtype(df['date']):
+        df['date'] = pd.to_datetime(df['date'], utc=True)
+    if not pd.api.types.is_datetime64_any_dtype(df['created_at']):
+        df['created_at'] = pd.to_datetime(df['created_at'], utc=True)
+
+    # Remove timezone
+    if hasattr(df['date'].dt, 'tz') and df['date'].dt.tz is not None:
+        df['date'] = df['date'].dt.tz_localize(None)
+    if hasattr(df['created_at'].dt, 'tz') and df['created_at'].dt.tz is not None:
+        df['created_at'] = df['created_at'].dt.tz_localize(None)
+
+    # Calculate gap in days
+    df['gap_days'] = (df['created_at'] - df['date']).dt.total_seconds() / 86400
+
+    # Explode tags
+    df_exploded = df.explode('tags')
+    df_exploded = df_exploded[df_exploded['tags'].notna()]
+
+    if df_exploded.empty:
+        return pd.DataFrame(columns=['tag_name', 'avg_gap_days', 'min_gap_days', 'max_gap_days', 'transaction_count'])
+
+    # Group by tag
+    gap_stats = df_exploded.groupby('tags').agg({
+        'gap_days': ['mean', 'min', 'max'],
+        'id': 'count'
+    }).reset_index()
+
+    gap_stats.columns = ['tag_name', 'avg_gap_days', 'min_gap_days', 'max_gap_days', 'transaction_count']
+
+    # Sort by average gap descending
+    gap_stats = gap_stats.sort_values('avg_gap_days', ascending=False)
+
+    return gap_stats
+
+
+def get_transactions_by_tag(
+    transactions_df: pd.DataFrame,
+    tag_name: str
+) -> pd.DataFrame:
+    """
+    Get all transactions with a specific tag.
+
+    Args:
+        transactions_df: DataFrame with transaction data
+        tag_name: Name of the tag to filter by
+
+    Returns:
+        DataFrame with transactions that have the specified tag
+    """
+    if transactions_df.empty or 'tags' not in transactions_df.columns:
+        return pd.DataFrame()
+
+    # Filter transactions that have the specified tag
+    df_filtered = transactions_df[transactions_df['tags'].apply(
+        lambda x: tag_name in x if isinstance(x, list) else False
+    )].copy()
+
+    return df_filtered

@@ -90,6 +90,14 @@ Deep dive into detailed category analysis:
 - Top transactions per category
 - Statistical analysis (mean, median, min, max)
 
+### 🏷️ Transaction Tags Analysis
+Analyze your transaction tags and import patterns:
+- Tag distribution and usage statistics
+- Import batch tracking and timeline
+- Gap analysis between transaction date and import date (identify timezone issues)
+- Tag-based transaction filtering and exploration
+- Export capabilities for detailed analysis
+
 ### 🚀 Savings Forecast & Roadmap
 Visualize your savings growth over time:
 - Interactive 3D timeline visualization
