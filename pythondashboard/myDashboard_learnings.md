@@ -61,6 +61,17 @@ monthly_average = total_amount / max(total_months, 1)  # Avoid division by zero
 ```
 
 **Related Files:**
-- `/pythondashboard/pages/5_🏷️_Categories.py` - Line ~700
+- `/pythondashboard/pages/5_🏷️_Categories.py` - Line ~700 (monthly average in category table)
+- `/pythondashboard/pages/16_🚀_Savings_Forecast.py` - Line ~159 (`months_between` function for monthly contributions)
+
+**Additional Examples:**
+
+**Savings Contributions:**
+If you're contributing €100/month to a savings goal from May 1 to September 30:
+- ❌ Old calculation: 4 months × €100 = €400
+- ✅ Fixed calculation: 5 months × €100 = €500
+
+**Budget Averages (Budget_Timeline.py - CORRECT):**
+Budget_Timeline.py doesn't have this issue because it builds a dataframe with one row per calendar month, then uses `len(monthly_df)` to count months. This approach is naturally correct as long as the dataframe is built properly.
 
 ---

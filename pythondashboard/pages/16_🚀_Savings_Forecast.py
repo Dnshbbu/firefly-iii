@@ -157,11 +157,18 @@ def calculate_compound_interest(principal, rate, years, compounding_frequency=1)
 
 
 def months_between(start_dt: datetime, end_dt: datetime) -> int:
-    """Calculate full months between two dates (floor)."""
+    """
+    Calculate number of calendar months spanned between two dates (inclusive).
+    
+    Example: May 1 to September 30 = 5 months (May, June, July, August, September)
+    
+    This counts the calendar months touched by the date range, which is correct
+    for calculating monthly contributions (e.g., if you contribute every month
+    from May to September, you make 5 contributions, not 4).
+    """
     if end_dt <= start_dt:
         return 0
-    r = relativedelta(end_dt, start_dt)
-    return r.years * 12 + r.months + (1 if r.days >= 0 else 0) - 1
+    return (end_dt.year - start_dt.year) * 12 + (end_dt.month - start_dt.month) + 1
 
 
 def fv_with_monthly_contrib(principal: float, rate: float, start_dt: datetime, end_dt: datetime,
