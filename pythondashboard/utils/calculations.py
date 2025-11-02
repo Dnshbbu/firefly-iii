@@ -790,7 +790,7 @@ def calculate_category_statistics(
         category_name: Name of the category
 
     Returns:
-        Dictionary with mean, median, min, max, std, and count
+        Dictionary with mean (monthly average), median, min, max, std, and count
     """
     if transactions_df.empty:
         return {
@@ -815,13 +815,27 @@ def calculate_category_statistics(
             'count': 0
         }
 
+    # Ensure date is datetime and handle timezone
+    if pd.api.types.is_datetime64_any_dtype(df['date']):
+        if hasattr(df['date'].dt, 'tz') and df['date'].dt.tz is not None:
+            df['date'] = df['date'].dt.tz_localize(None)
+    else:
+        df['date'] = pd.to_datetime(df['date'], utc=True)
+        df['date'] = df['date'].dt.tz_localize(None)
+
+    # Calculate monthly totals
+    monthly_totals = df.groupby(pd.Grouper(key='date', freq='ME'))['amount'].sum()
+
+    # Calculate mean as average per month
+    monthly_average = monthly_totals.mean() if len(monthly_totals) > 0 else 0
+
     return {
-        'mean': df['amount'].mean(),
-        'median': df['amount'].median(),
-        'min': df['amount'].min(),
-        'max': df['amount'].max(),
-        'std': df['amount'].std(),
-        'count': len(df)
+        'mean': monthly_average,  # Average per month
+        'median': df['amount'].median(),  # Median transaction amount
+        'min': df['amount'].min(),  # Min transaction amount
+        'max': df['amount'].max(),  # Max transaction amount
+        'std': df['amount'].std(),  # Standard deviation of transaction amounts
+        'count': len(df)  # Total number of transactions
     }
 
 
