@@ -384,14 +384,27 @@ try:
         # Top 6 budget gauges - compact 3x2 grid
         st.markdown("### 🎯 Budget Utilization Overview")
 
+        # Calculate number of days in the period for average calculation
+        start_dt = datetime.strptime(start_date_str, '%Y-%m-%d')
+        end_dt = datetime.strptime(end_date_str, '%Y-%m-%d')
+        period_days = (end_dt - start_dt).days + 1
+        period_months = period_days / 30.44  # Average days per month
+
         top_budgets = budget_performance.head(6)
         cols = st.columns(3)
         for idx, (_, budget) in enumerate(top_budgets.iterrows()):
             with cols[idx % 3]:
+                # Calculate average monthly spending
+                avg_monthly = budget['spent'] / period_months if period_months > 0 else 0
+
+                # Create enhanced gauge with percentage, amount, and average
                 fig_gauge = create_budget_utilization_gauges(
                     budget['budget_name'],
                     budget['utilization_pct'],
-                    height=200
+                    height=250,
+                    total_budgeted=budget['budgeted'],
+                    total_spent=budget['spent'],
+                    avg_spent=avg_monthly
                 )
                 st.plotly_chart(fig_gauge, use_container_width=True, config={'displayModeBar': False})
 

@@ -569,7 +569,10 @@ def create_budget_vs_actual_chart(
 def create_budget_utilization_gauges(
     budget_name: str,
     utilization_pct: float,
-    height: int = 250
+    height: int = 250,
+    total_budgeted: float = None,
+    total_spent: float = None,
+    avg_spent: float = None
 ) -> go.Figure:
     """
     Create a gauge chart for budget utilization.
@@ -578,6 +581,9 @@ def create_budget_utilization_gauges(
         budget_name: Name of the budget
         utilization_pct: Utilization percentage (0-100+)
         height: Chart height in pixels
+        total_budgeted: Total budgeted amount (optional)
+        total_spent: Total spent amount (optional)
+        avg_spent: Average monthly spending (optional)
 
     Returns:
         Plotly Figure object
@@ -585,36 +591,109 @@ def create_budget_utilization_gauges(
     # Determine color based on utilization
     if utilization_pct >= 100:
         bar_color = "#f87171"  # Red
+        delta_color = "red"
     elif utilization_pct >= 80:
         bar_color = "#fbbf24"  # Yellow
+        delta_color = "orange"
     else:
         bar_color = "#4ade80"  # Green
+        delta_color = "green"
 
-    fig = go.Figure(go.Indicator(
-        mode="gauge+number",
-        value=utilization_pct,
-        title={'text': budget_name, 'font': {'size': 16}},
-        number={'suffix': '%', 'font': {'size': 20}},
-        gauge={
-            'axis': {'range': [None, max(100, utilization_pct)]},
-            'bar': {'color': bar_color},
-            'steps': [
-                {'range': [0, 50], 'color': "rgba(74, 222, 128, 0.2)"},
-                {'range': [50, 80], 'color': "rgba(74, 222, 128, 0.3)"},
-                {'range': [80, 100], 'color': "rgba(251, 191, 36, 0.3)"},
-                {'range': [100, max(100, utilization_pct)], 'color': "rgba(248, 113, 113, 0.3)"}
-            ],
-            'threshold': {
-                'line': {'color': "white", 'width': 4},
-                'thickness': 0.75,
-                'value': 100
+    # Build title with optional information
+    if avg_spent is not None:
+        title_text = f"{budget_name}<br><sub>Avg: €{avg_spent:,.2f}/mo</sub>"
+    else:
+        title_text = budget_name
+
+    # Build number display with additional information
+    if total_spent is not None and total_budgeted is not None:
+        # Calculate difference
+        difference = round(total_spent - total_budgeted, 2)
+
+        # Format delta text with proper sign and arrow
+        if difference > 0:
+            arrow = "▲"  # Up arrow for over budget
+            delta_text = f"{arrow} +€{abs(difference):,.2f}"
+        elif difference < 0:
+            arrow = "▼"  # Down arrow for under budget
+            delta_text = f"{arrow} -€{abs(difference):,.2f}"
+        else:
+            arrow = ""
+            delta_text = "€0.00"
+
+        # Use mode="gauge+number" without delta to avoid the automatic colored percentage
+        # Shift the gauge up by adjusting the domain to make room for annotations below
+        fig = go.Figure(go.Indicator(
+            mode="gauge+number",
+            value=utilization_pct,
+            title={'text': title_text, 'font': {'size': 14}},
+            number={'suffix': '%', 'font': {'size': 20}},
+            domain={'x': [0, 1], 'y': [0.20, 1]},  # Shift gauge up by starting at 0.20 to create more space below
+            gauge={
+                'axis': {'range': [None, max(100, utilization_pct)], 'tickfont': {'size': 10}},
+                'bar': {'color': bar_color},
+                'steps': [
+                    {'range': [0, 50], 'color': "rgba(74, 222, 128, 0.2)"},
+                    {'range': [50, 80], 'color': "rgba(74, 222, 128, 0.3)"},
+                    {'range': [80, 100], 'color': "rgba(251, 191, 36, 0.3)"},
+                    {'range': [100, max(100, utilization_pct)], 'color': "rgba(248, 113, 113, 0.3)"}
+                ],
+                'threshold': {
+                    'line': {'color': "white", 'width': 4},
+                    'thickness': 0.75,
+                    'value': 100
+                }
             }
-        }
-    ))
+        ))
+
+        # Add annotations for total spent and difference below the gauge with more spacing
+        # Position spent amount in the space below the gauge
+        fig.add_annotation(
+            text=f"€{total_spent:,.2f}",
+            xref="paper", yref="paper",
+            x=0.5, y=0.12,
+            showarrow=False,
+            font=dict(size=12),
+            xanchor='center',
+            yanchor='middle'
+        )
+
+        # Position difference at the very bottom with more spacing
+        fig.add_annotation(
+            text=delta_text,
+            xref="paper", yref="paper",
+            x=0.5, y=0.04,
+            showarrow=False,
+            font=dict(size=12, color=delta_color),
+            xanchor='center',
+            yanchor='middle'
+        )
+    else:
+        fig = go.Figure(go.Indicator(
+            mode="gauge+number",
+            value=utilization_pct,
+            title={'text': title_text, 'font': {'size': 14}},
+            number={'suffix': '%', 'font': {'size': 20}, 'prefix': ''},
+            gauge={
+                'axis': {'range': [None, max(100, utilization_pct)], 'tickfont': {'size': 10}},
+                'bar': {'color': bar_color},
+                'steps': [
+                    {'range': [0, 50], 'color': "rgba(74, 222, 128, 0.2)"},
+                    {'range': [50, 80], 'color': "rgba(74, 222, 128, 0.3)"},
+                    {'range': [80, 100], 'color': "rgba(251, 191, 36, 0.3)"},
+                    {'range': [100, max(100, utilization_pct)], 'color': "rgba(248, 113, 113, 0.3)"}
+                ],
+                'threshold': {
+                    'line': {'color': "white", 'width': 4},
+                    'thickness': 0.75,
+                    'value': 100
+                }
+            }
+        ))
 
     fig.update_layout(
         height=height,
-        margin=dict(t=50, b=20, l=20, r=20)
+        margin=dict(t=60, b=15, l=30, r=30)
     )
 
     return fig

@@ -15,6 +15,7 @@ sys.path.append(str(Path(__file__).parent.parent))
 from utils.api_client import FireflyAPIClient
 from utils.navigation import render_sidebar_navigation
 from utils.config import get_firefly_url, get_firefly_token
+from utils.charts import create_budget_utilization_gauges
 
 # Page configuration
 st.set_page_config(
@@ -609,68 +610,6 @@ def get_per_budget_monthly_data(
     return budget_monthly_data
 
 
-def create_budget_gauge(budget_name: str, total_budgeted: float, total_spent: float, avg_spent: float) -> go.Figure:
-    """Create a gauge chart for a budget showing utilization"""
-    # Calculate utilization percentage
-    utilization_pct = (total_spent / total_budgeted * 100) if total_budgeted > 0 else 0
-
-    # Calculate difference and round it properly
-    difference = round(total_spent - total_budgeted, 2)
-
-    # Determine color based on utilization
-    if utilization_pct >= 100:
-        color = "red"
-        delta_color = "red"
-    elif utilization_pct >= 80:
-        color = "orange"
-        delta_color = "orange"
-    else:
-        color = "green"
-        delta_color = "green"
-
-    # Format delta text with proper sign
-    if difference > 0:
-        delta_text = f"+€{abs(difference):,.2f}"
-    elif difference < 0:
-        delta_text = f"-€{abs(difference):,.2f}"
-    else:
-        delta_text = "€0.00"
-
-    fig = go.Figure(go.Indicator(
-        mode="gauge+number",
-        value=total_spent,
-        title={'text': f"{budget_name}<br><sub>Avg: €{avg_spent:,.2f}/mo</sub>", 'font': {'size': 14}},
-        number={
-            'valueformat': '€,.2f',
-            'font': {'size': 22},
-            'prefix': '',
-            'suffix': f'<br><span style="font-size:16px; color:{delta_color};">{delta_text}</span>'
-        },
-        domain={'x': [0, 1], 'y': [0, 1]},
-        gauge={
-            'axis': {'range': [None, total_budgeted * 1.2], 'tickformat': '€,.0f', 'tickfont': {'size': 10}},
-            'bar': {'color': color},
-            'steps': [
-                {'range': [0, total_budgeted * 0.8], 'color': 'lightgray'},
-                {'range': [total_budgeted * 0.8, total_budgeted], 'color': 'lightyellow'}
-            ],
-            'threshold': {
-                'line': {'color': "blue", 'width': 2},
-                'thickness': 0.75,
-                'value': total_budgeted
-            }
-        }
-    ))
-
-    fig.update_layout(
-        height=270,
-        margin=dict(t=65, b=30, l=30, r=30),
-        font=dict(size=12)
-    )
-
-    return fig
-
-
 def create_small_budget_chart(budget_name: str, budget_df: pd.DataFrame, current_month: int) -> go.Figure:
     """Create a small chart for an individual budget showing expected, actual, and running average"""
     fig = go.Figure()
@@ -1172,8 +1111,18 @@ try:
                         months_with_data = len(budget_df[budget_df['spent'] > 0])
                         avg_spent = round(total_spent / months_with_data, 2) if months_with_data > 0 else 0
 
+                        # Calculate utilization percentage
+                        utilization_pct = (total_spent / total_budgeted * 100) if total_budgeted > 0 else 0
+
                         with cols[j]:
-                            fig_gauge = create_budget_gauge(budget_name, total_budgeted, total_spent, avg_spent)
+                            fig_gauge = create_budget_utilization_gauges(
+                                budget_name,
+                                utilization_pct,
+                                height=250,
+                                total_budgeted=total_budgeted,
+                                total_spent=total_spent,
+                                avg_spent=avg_spent
+                            )
                             st.plotly_chart(fig_gauge, config={'displayModeBar': False, 'responsive': True})
         else:
             st.info("No budget data available for the selected period.")
