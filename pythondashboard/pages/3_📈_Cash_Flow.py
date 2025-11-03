@@ -529,16 +529,104 @@ try:
                 income_sources = calculate_income_sources(df_filtered, start_date_str, end_date_str)
 
                 if not income_sources.empty:
-                    # Create pie chart - smaller
+                    # Create pie chart - smaller with click interactivity
                     fig_income = create_pie_chart(
                         income_sources,
                         labels='source_name',
                         values='total_amount',
-                        title="Income by Source",
+                        title="Income by Source (Click to drill down)",
                         height=300
                     )
 
-                    st.plotly_chart(fig_income, use_container_width=True, config={'displayModeBar': False})
+                    # Display chart with click events
+                    from streamlit_plotly_events import plotly_events
+
+                    selected_points_income = plotly_events(
+                        fig_income,
+                        click_event=True,
+                        hover_event=False,
+                        select_event=False,
+                        override_height=300,
+                        override_width="100%",
+                        key="income_pie_chart"
+                    )
+
+                    # Show income source details when clicked
+                    if selected_points_income and len(selected_points_income) > 0:
+                        # Get the clicked point data
+                        point_data = selected_points_income[0]
+
+                        # Try to get source name from different possible keys
+                        selected_source = None
+                        if 'pointNumber' in point_data:
+                            point_index = point_data['pointNumber']
+                            selected_source = income_sources.iloc[point_index]['source_name']
+                        elif 'pointIndex' in point_data:
+                            point_index = point_data['pointIndex']
+                            selected_source = income_sources.iloc[point_index]['source_name']
+                        elif 'label' in point_data:
+                            selected_source = point_data['label']
+                        elif 'x' in point_data:
+                            selected_source = point_data['x']
+
+                        if selected_source and selected_source in income_sources['source_name'].values:
+                            st.markdown(f"### 🔍 {selected_source}")
+
+                            # Get transactions for this income source
+                            income_txns = df_filtered[
+                                (df_filtered['source_name'] == selected_source) &
+                                (df_filtered['type'] == 'deposit')
+                            ].copy()
+
+                            if not income_txns.empty:
+                                # Calculate monthly average
+                                income_txns_copy = income_txns.copy()
+                                # Ensure date is datetime and handle timezone
+                                if pd.api.types.is_datetime64_any_dtype(income_txns_copy['date']):
+                                    if hasattr(income_txns_copy['date'].dt, 'tz') and income_txns_copy['date'].dt.tz is not None:
+                                        income_txns_copy['date'] = income_txns_copy['date'].dt.tz_localize(None)
+                                else:
+                                    income_txns_copy['date'] = pd.to_datetime(income_txns_copy['date'], utc=True)
+                                    income_txns_copy['date'] = income_txns_copy['date'].dt.tz_localize(None)
+
+                                # Calculate monthly totals
+                                monthly_totals = income_txns_copy.groupby(pd.Grouper(key='date', freq='ME'))['amount'].sum()
+                                monthly_average = monthly_totals.mean() if len(monthly_totals) > 0 else 0
+
+                                # Statistics
+                                cols = st.columns(5)
+                                cols[0].metric("Transactions", len(income_txns))
+                                cols[1].metric("Total", f"€{income_txns['amount'].sum():,.0f}")
+                                cols[2].metric("Avg/Month", f"€{monthly_average:,.0f}")
+                                cols[3].metric("Min", f"€{income_txns['amount'].min():,.0f}")
+                                cols[4].metric("Max", f"€{income_txns['amount'].max():,.0f}")
+
+                                # Transaction table
+                                st.caption("📋 All Transactions:")
+
+                                # Show all transactions sorted by date
+                                income_txns_sorted = income_txns.sort_values('date', ascending=False)
+                                display_df = income_txns_sorted[['date', 'description', 'source_name', 'amount']].copy()
+                                # Ensure date is datetime before formatting
+                                if not pd.api.types.is_datetime64_any_dtype(display_df['date']):
+                                    display_df['date'] = pd.to_datetime(display_df['date'], utc=True)
+                                # Remove timezone if present
+                                if hasattr(display_df['date'].dt, 'tz') and display_df['date'].dt.tz is not None:
+                                    display_df['date'] = display_df['date'].dt.tz_localize(None)
+                                display_df['date'] = display_df['date'].dt.strftime('%Y-%m-%d')
+
+                                st.dataframe(
+                                    display_df,
+                                    use_container_width=True,
+                                    hide_index=True,
+                                    column_config={
+                                        'date': 'Date',
+                                        'description': 'Description',
+                                        'source_name': 'Source',
+                                        'amount': st.column_config.NumberColumn('Amount', format="€%.2f")
+                                    },
+                                    height=350
+                                )
 
                     # Show table in expander
                     with st.expander("View All Sources", expanded=False):
