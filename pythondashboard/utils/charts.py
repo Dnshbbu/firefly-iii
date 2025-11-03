@@ -462,6 +462,7 @@ def create_budget_vs_actual_chart(
 ) -> go.Figure:
     """
     Create a stacked bar chart showing budgeted, spent, and remaining amounts.
+    Uses green for under-budget and red for over-budget to make status intuitive.
 
     Args:
         df: DataFrame with budget data
@@ -477,27 +478,65 @@ def create_budget_vs_actual_chart(
     """
     fig = go.Figure()
 
-    # Spent amount (red)
-    fig.add_trace(go.Bar(
-        x=df[name_col],
-        y=df[spent_col],
-        name='Spent',
-        marker=dict(color='#f87171'),
-        text=df[spent_col].apply(lambda x: f'€{x:,.0f}'),
-        textposition='inside'
-    ))
+    # Separate data into under-budget and over-budget
+    df_copy = df.copy()
+    df_copy['is_over_budget'] = df_copy[remaining_col] < 0
+    
+    # For under-budget: show spent (green) + remaining (lighter green)
+    under_budget_mask = ~df_copy['is_over_budget']
+    if under_budget_mask.any():
+        # Spent amount for under-budget items (green)
+        fig.add_trace(go.Bar(
+            x=df_copy[under_budget_mask][name_col],
+            y=df_copy[under_budget_mask][spent_col],
+            name='Spent (Under Budget)',
+            marker=dict(color='#4ade80'),  # Green
+            text=df_copy[under_budget_mask][spent_col].apply(lambda x: f'€{x:,.0f}'),
+            textposition='inside',
+            legendgroup='under'
+        ))
 
-    # Remaining amount (green)
-    fig.add_trace(go.Bar(
-        x=df[name_col],
-        y=df[remaining_col],
-        name='Remaining',
-        marker=dict(color='#4ade80'),
-        text=df[remaining_col].apply(lambda x: f'€{x:,.0f}' if x > 0 else ''),
-        textposition='inside'
-    ))
+        # Remaining amount for under-budget items (lighter green)
+        fig.add_trace(go.Bar(
+            x=df_copy[under_budget_mask][name_col],
+            y=df_copy[under_budget_mask][remaining_col],
+            name='Remaining',
+            marker=dict(color='#86efac'),  # Lighter green
+            text=df_copy[under_budget_mask][remaining_col].apply(lambda x: f'€{x:,.0f}' if x > 0 else ''),
+            textposition='inside',
+            legendgroup='under'
+        ))
+    
+    # For over-budget: show budgeted (orange) + overspent (red)
+    over_budget_mask = df_copy['is_over_budget']
+    if over_budget_mask.any():
+        # Budgeted amount for over-budget items (orange/warning)
+        fig.add_trace(go.Bar(
+            x=df_copy[over_budget_mask][name_col],
+            y=df_copy[over_budget_mask][budget_col],
+            name='Budgeted Amount',
+            marker=dict(color='#fb923c'),  # Orange
+            text=df_copy[over_budget_mask][budget_col].apply(lambda x: f'€{x:,.0f}'),
+            textposition='inside',
+            legendgroup='over'
+        ))
 
-    # Add a line for budget limit
+        # Over-budget amount (red) - show the excess above budget
+        df_copy['overspent'] = df_copy.apply(
+            lambda row: row[spent_col] - row[budget_col] if row['is_over_budget'] else 0,
+            axis=1
+        )
+        fig.add_trace(go.Bar(
+            x=df_copy[over_budget_mask][name_col],
+            y=df_copy[over_budget_mask]['overspent'],
+            name='Over Budget',
+            marker=dict(color='#ef4444'),  # Red
+            text=df_copy[over_budget_mask]['overspent'].apply(lambda x: f'€{x:,.0f}' if x > 0 else ''),
+            textposition='inside',
+            legendgroup='over'
+        ))
+
+    # Add a marker for budget limit (yellow diamond)
     fig.add_trace(go.Scatter(
         x=df[name_col],
         y=df[budget_col],
