@@ -299,29 +299,25 @@ try:
 
         st.markdown("---")
 
-        # Initialize active tab in session state
-        if 'category_details_active_tab' not in st.session_state:
-            st.session_state.category_details_active_tab = "Trends"
-
-        # Tab selection using radio buttons (more reliable state management)
+        # Tab selection using radio buttons - let Streamlit manage the state via key
         selected_tab = st.radio(
             "View",
-            ["📈 Trends", "🔍 Deep Dive"],
-            index=0 if st.session_state.category_details_active_tab == "Trends" else 1,
+            ["📈 Trends (multiple categories)", "🔍 Deep Dive (single category)"],
+            index=0,  # Default to Trends
             horizontal=True,
-            key="tab_selector",
+            key="category_tab_selector",
             label_visibility="collapsed"
         )
 
-        # Update session state based on selection
-        if "📈 Trends" in selected_tab:
-            st.session_state.category_details_active_tab = "Trends"
+        # Determine active tab based on selection
+        if selected_tab == "📈 Trends (multiple categories)":
+            active_tab = "Trends"
         else:
-            st.session_state.category_details_active_tab = "Deep Dive"
+            active_tab = "Deep Dive"
 
         st.markdown("---")
 
-        if st.session_state.category_details_active_tab == "Trends":
+        if active_tab == "Trends":
             st.markdown("**Category Spending Trends**")
 
             # Calculate trends
@@ -383,13 +379,17 @@ try:
                 # Get all transactions for this category
                 category_transactions = df_expenses[df_expenses['category_name'] == selected_category].copy()
 
+                # Calculate total spending for this category
+                total_spending = category_transactions['amount'].sum()
+
                 # Display statistics - compact row
-                cols = st.columns(5)
+                cols = st.columns(6)
                 cols[0].metric("Transactions", f"{int(stats['count'])}")
-                cols[1].metric("Average", f"€{stats['mean']:,.0f}")
-                cols[2].metric("Median", f"€{stats['median']:,.0f}")
-                cols[3].metric("Min", f"€{stats['min']:,.0f}")
-                cols[4].metric("Max", f"€{stats['max']:,.0f}")
+                cols[1].metric("Total", f"€{total_spending:,.0f}")
+                cols[2].metric("Avg/Month", f"€{stats['mean']:,.0f}")
+                cols[3].metric("Median", f"€{stats['median']:,.0f}")
+                cols[4].metric("Min", f"€{stats['min']:,.0f}")
+                cols[5].metric("Max", f"€{stats['max']:,.0f}")
 
                 # Monthly comparison chart - compact
                 if not monthly_data.empty:
