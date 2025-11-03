@@ -217,11 +217,13 @@ def get_monthly_budget_data(
                     # Remove timezone to make comparisons work
                     transactions_df['date'] = transactions_df['date'].dt.tz_localize(None)
 
+                # Use half-open interval [start, end_of_month + 1 day) to include the full last day
+                compare_end_exclusive = compare_end + pd.Timedelta(days=1)
                 budget_transactions = transactions_df[
                     (transactions_df['budget_name'] == budget_name) &
                     (transactions_df['type'] == 'withdrawal') &
                     (transactions_df['date'] >= compare_start) &
-                    (transactions_df['date'] <= compare_end)
+                    (transactions_df['date'] < compare_end_exclusive)
                 ]
                 total_spent += budget_transactions['amount'].sum()
 
@@ -579,11 +581,13 @@ def get_per_budget_monthly_data(
                     # Remove timezone to make comparisons work
                     transactions_df['date'] = transactions_df['date'].dt.tz_localize(None)
 
+                # Use half-open interval [start, end_of_month + 1 day) to include the full last day
+                compare_end_exclusive = compare_end + pd.Timedelta(days=1)
                 budget_transactions = transactions_df[
                     (transactions_df['budget_name'] == budget_name) &
                     (transactions_df['type'] == 'withdrawal') &
                     (transactions_df['date'] >= compare_start) &
-                    (transactions_df['date'] <= compare_end)
+                    (transactions_df['date'] < compare_end_exclusive)
                 ]
                 spent_amount = budget_transactions['amount'].sum()
 
@@ -1111,7 +1115,7 @@ try:
         st.markdown("### 📊 Budget Timeline")
 
         fig_timeline = create_timeline_chart(monthly_df, current_month_index)
-        st.plotly_chart(fig_timeline, use_container_width=True, config={'displayModeBar': False})
+        st.plotly_chart(fig_timeline, config={'displayModeBar': False, 'responsive': True})
 
         st.markdown("---")
 
@@ -1122,11 +1126,11 @@ try:
 
         with col1:
             fig_cumulative = create_cumulative_chart(monthly_df, current_month_index)
-            st.plotly_chart(fig_cumulative, use_container_width=True, config={'displayModeBar': False})
+            st.plotly_chart(fig_cumulative, config={'displayModeBar': False, 'responsive': True})
 
         with col2:
             fig_deviation = create_deviation_chart(monthly_df, current_month_index)
-            st.plotly_chart(fig_deviation, use_container_width=True, config={'displayModeBar': False})
+            st.plotly_chart(fig_deviation, config={'displayModeBar': False, 'responsive': True})
 
         st.markdown("---")
 
@@ -1170,7 +1174,7 @@ try:
 
                         with cols[j]:
                             fig_gauge = create_budget_gauge(budget_name, total_budgeted, total_spent, avg_spent)
-                            st.plotly_chart(fig_gauge, use_container_width=True, config={'displayModeBar': False})
+                            st.plotly_chart(fig_gauge, config={'displayModeBar': False, 'responsive': True})
         else:
             st.info("No budget data available for the selected period.")
 
@@ -1200,7 +1204,7 @@ try:
 
                         with cols[j]:
                             fig = create_small_budget_chart(budget_name, budget_df, today.month)
-                            st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
+                            st.plotly_chart(fig, config={'displayModeBar': False, 'responsive': True})
         else:
             st.info("No budget data available for the selected period.")
 
@@ -1226,7 +1230,7 @@ try:
 
         st.dataframe(
             display_df,
-            use_container_width=True,
+            width='stretch',
             hide_index=True,
             column_config={
                 'month_full': 'Month',

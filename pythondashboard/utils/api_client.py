@@ -341,10 +341,10 @@ class FireflyAPIClient:
         # Convert date columns to datetime
         if not df.empty:
             if 'date' in df.columns:
-                df['date'] = pd.to_datetime(df['date'])
+                df['date'] = pd.to_datetime(df['date'], utc=True)
             if 'created_at' in df.columns:
-                df['created_at'] = pd.to_datetime(df['created_at'])
+                df['created_at'] = pd.to_datetime(df['created_at'], utc=True)
             if 'updated_at' in df.columns:
-                df['updated_at'] = pd.to_datetime(df['updated_at'])
+                df['updated_at'] = pd.to_datetime(df['updated_at'], utc=True)
 
         return df
