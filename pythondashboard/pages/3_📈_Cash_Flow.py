@@ -458,11 +458,25 @@ try:
                             ].copy()
 
                             if not category_txns.empty:
+                                # Calculate monthly average
+                                cat_txns_copy = category_txns.copy()
+                                # Ensure date is datetime and handle timezone
+                                if pd.api.types.is_datetime64_any_dtype(cat_txns_copy['date']):
+                                    if hasattr(cat_txns_copy['date'].dt, 'tz') and cat_txns_copy['date'].dt.tz is not None:
+                                        cat_txns_copy['date'] = cat_txns_copy['date'].dt.tz_localize(None)
+                                else:
+                                    cat_txns_copy['date'] = pd.to_datetime(cat_txns_copy['date'], utc=True)
+                                    cat_txns_copy['date'] = cat_txns_copy['date'].dt.tz_localize(None)
+
+                                # Calculate monthly totals
+                                monthly_totals = cat_txns_copy.groupby(pd.Grouper(key='date', freq='ME'))['amount'].sum()
+                                monthly_average = monthly_totals.mean() if len(monthly_totals) > 0 else 0
+
                                 # Statistics
                                 cols = st.columns(5)
                                 cols[0].metric("Transactions", len(category_txns))
                                 cols[1].metric("Total", f"€{category_txns['amount'].sum():,.0f}")
-                                cols[2].metric("Average", f"€{category_txns['amount'].mean():,.0f}")
+                                cols[2].metric("Avg/Month", f"€{monthly_average:,.0f}")
                                 cols[3].metric("Min", f"€{category_txns['amount'].min():,.0f}")
                                 cols[4].metric("Max", f"€{category_txns['amount'].max():,.0f}")
 
