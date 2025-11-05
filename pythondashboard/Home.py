@@ -113,6 +113,13 @@ Prepare bank statement CSV files for import:
 - Duplicate transaction removal
 - Format conversion for Firefly III import
 
+### 📄 PDF Table Extractor
+Extract tables from PDF files and export as CSV:
+- Automatic table detection in PDFs
+- Preview all tables with row/column counts
+- Download individual or combined tables as CSV
+- Works with bank statements, reports, and any structured PDFs
+
 ---
 
 Use the sidebar to navigate between different tools.

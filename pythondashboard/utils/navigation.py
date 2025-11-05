@@ -31,6 +31,7 @@ PAGE_SECTIONS = {
     ],
     "🛠️ Tools": [
         {"label": "📄 CSV Preprocessor", "file": "2_📄_CSV_Preprocessor.py"},
+        {"label": "📄 PDF Table Extractor", "file": "18_📄_PDF_Table_Extractor.py"},
     ]
 }
 

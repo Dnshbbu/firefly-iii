@@ -61,7 +61,8 @@
       "Bash(docker ps:*)",
       "Bash(docker inspect:*)",
       "Bash(docker volume inspect:*)",
-      "Bash(docker run:*)"
+      "Bash(docker run:*)",
+      "Bash(pip install:*)"
     ],
     "deny": [],
     "ask": []
