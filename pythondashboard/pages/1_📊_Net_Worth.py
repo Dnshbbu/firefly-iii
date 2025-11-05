@@ -511,7 +511,7 @@ try:
                 # Currency distribution donut chart
                 currency_chart = create_currency_distribution_chart(df)
                 if currency_chart:
-                    st.plotly_chart(currency_chart, use_container_width=True)
+                    st.plotly_chart(currency_chart, config={'displayModeBar': False, 'responsive': True})
 
             with col2:
                 # Overall asset vs liability (all currencies combined for visual)
@@ -561,7 +561,7 @@ try:
 
                 st.dataframe(
                     health_data,
-                    use_container_width=True,
+                    width='stretch',
                     hide_index=True,
                     height=210
                 )
@@ -584,13 +584,13 @@ try:
                 chart_col1, chart_col2 = st.columns(2)
 
                 with chart_col1:
-                    st.plotly_chart(create_account_type_chart(df, currency), use_container_width=True, config={'displayModeBar': False})
+                    st.plotly_chart(create_account_type_chart(df, currency), config={'displayModeBar': False, 'responsive': True})
 
                 with chart_col2:
-                    st.plotly_chart(create_asset_liability_comparison(df, currency), use_container_width=True, config={'displayModeBar': False})
+                    st.plotly_chart(create_asset_liability_comparison(df, currency), config={'displayModeBar': False, 'responsive': True})
 
                 # Row 2: Full breakdown chart (compact) - include zero balances
-                st.plotly_chart(create_account_breakdown_chart(df, currency, include_zero_balance=True), use_container_width=True, config={'displayModeBar': False})
+                st.plotly_chart(create_account_breakdown_chart(df, currency, include_zero_balance=True), config={'displayModeBar': False, 'responsive': True})
 
                 st.markdown("---")
 
@@ -632,7 +632,7 @@ try:
 
                 st.dataframe(
                     df_display_formatted,
-                    use_container_width=True,
+                    width='stretch',
                     hide_index=True,
                     height=400,
                     column_config={
