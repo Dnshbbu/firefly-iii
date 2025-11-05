@@ -182,7 +182,7 @@ else:
                     filtered_df = filtered_df[filtered_df['Active'] == '❌']
 
                 st.markdown(f"**Accounts List** ({len(filtered_df)} accounts)")
-                st.dataframe(filtered_df, use_container_width=True, height=400)
+                st.dataframe(filtered_df, width='stretch', height=400)
 
                 # Expandable details for each account
                 with st.expander("📄 View Detailed Account Information"):
@@ -496,7 +496,7 @@ else:
                     st.markdown(f"**Selected {len(selected_for_deletion)} account(s) for deletion:**")
 
                     deletion_preview = df[df['ID'].isin(selected_for_deletion)]
-                    st.dataframe(deletion_preview, use_container_width=True)
+                    st.dataframe(deletion_preview, width='stretch')
 
                     # Show detailed information for each selected account
                     st.markdown("---")
@@ -632,7 +632,7 @@ else:
                             })
 
                         preview_df = pd.DataFrame(preview_data)
-                        st.dataframe(preview_df, use_container_width=True, height=300)
+                        st.dataframe(preview_df, width='stretch', height=300)
 
                         # Import options
                         st.markdown("**Import Options**")

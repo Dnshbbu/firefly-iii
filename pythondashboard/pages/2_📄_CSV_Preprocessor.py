@@ -126,7 +126,7 @@ if uploaded_file is not None:
         original_row_count = len(df)
 
         st.markdown(f"**Original Data** ({original_row_count} rows)")
-        st.dataframe(df, use_container_width=True, height=250)
+        st.dataframe(df, width='stretch', height=250)
 
         # Detect bank type based on columns
         bank_type = "Unknown"
@@ -242,10 +242,10 @@ if uploaded_file is not None:
             if removed_rows_list:
                 removed_df = pd.concat(removed_rows_list, ignore_index=True)
                 with st.expander(f"Removed Rows ({len(removed_df)})", expanded=False):
-                    st.dataframe(removed_df, use_container_width=True, height=300)
+                    st.dataframe(removed_df, width='stretch', height=300)
 
             st.markdown("**Processed Data**")
-            st.dataframe(processed_df, use_container_width=True, height=400)
+            st.dataframe(processed_df, width='stretch', height=400)
 
             # Download button
             csv = processed_df.to_csv(index=False)
@@ -306,7 +306,7 @@ if uploaded_file is not None:
                         st.markdown(f"- {rule}")
 
             st.markdown("**Processed Data**")
-            st.dataframe(processed_df, use_container_width=True, height=400)
+            st.dataframe(processed_df, width='stretch', height=400)
 
             # Download button
             csv = processed_df.to_csv(index=False)
@@ -368,7 +368,7 @@ if uploaded_file is not None:
                         st.markdown(f"- {rule}")
 
             st.markdown("**Processed Data**")
-            st.dataframe(processed_df, use_container_width=True, height=400)
+            st.dataframe(processed_df, width='stretch', height=400)
 
             # Download button
             csv = processed_df.to_csv(index=False)
@@ -436,7 +436,7 @@ if uploaded_file is not None:
                         st.markdown(f"- {rule}")
 
             st.markdown("**Processed Data**")
-            st.dataframe(processed_df, use_container_width=True, height=400)
+            st.dataframe(processed_df, width='stretch', height=400)
 
             # Download button
             csv = processed_df.to_csv(index=False)

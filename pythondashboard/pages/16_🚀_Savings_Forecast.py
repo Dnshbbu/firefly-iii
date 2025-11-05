@@ -1218,7 +1218,7 @@ if st.session_state.savings_list:
             annotations=annotations
         )
 
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig)
 
     with col2:
         st.markdown("**💎 Maturity Values**")
@@ -1321,7 +1321,7 @@ if st.session_state.savings_list:
             font=dict(family='Segoe UI, Arial', size=12)
         )
 
-        st.plotly_chart(fig_bars, use_container_width=True)
+        st.plotly_chart(fig_bars)
 
     st.markdown("---")
 
@@ -1615,7 +1615,7 @@ if st.session_state.savings_list:
                 uniformtext_minsize=8,
                 uniformtext_mode='hide'
             )
-            st.plotly_chart(ladder_fig, use_container_width=True, config={'displayModeBar': False})
+            st.plotly_chart(ladder_fig, config={'displayModeBar': False, 'responsive': True})
         else:
             st.info("Add savings to see upcoming maturities")
 
@@ -1629,7 +1629,7 @@ if st.session_state.savings_list:
             alloc_agg = alloc_df.groupby('Type')['Amount'].sum().reset_index()
             pie_fig = create_pie_chart(alloc_agg, labels='Type', values='Amount', title='', hole=0.5)
             pie_fig.update_layout(template='plotly_dark', height=280, margin=dict(t=10, b=10, l=10, r=10), font=dict(size=10))
-            st.plotly_chart(pie_fig, use_container_width=True, config={'displayModeBar': False})
+            st.plotly_chart(pie_fig, config={'displayModeBar': False, 'responsive': True})
         else:
             st.info("No allocation to show yet")
 
@@ -1703,7 +1703,7 @@ if st.session_state.savings_list:
             # Display dataframe with row selection
             event = st.dataframe(
                 df.drop(columns=['Delete']),
-                use_container_width=True,
+                width='stretch',
                 height=min(350, (len(table_data) + 1) * 35 + 3),
                 on_select="rerun",
                 selection_mode="multi-row"

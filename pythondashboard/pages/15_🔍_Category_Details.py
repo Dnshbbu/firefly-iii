@@ -358,7 +358,7 @@ try:
                     title="",  # Title moved to markdown above for compactness
                     height=400
                 )
-                st.plotly_chart(fig_trends, use_container_width=True, config={'displayModeBar': False})
+                st.plotly_chart(fig_trends, config={'displayModeBar': False, 'responsive': True})
             else:
                 st.info("Please select at least one category to display trends")
 
@@ -400,7 +400,7 @@ try:
                         selected_category,
                         height=300
                     )
-                    st.plotly_chart(fig_comparison, use_container_width=True, config={'displayModeBar': False})
+                    st.plotly_chart(fig_comparison, config={'displayModeBar': False, 'responsive': True})
 
                 # All transactions - collapsible
                 with st.expander(f"📋 All Transactions ({len(category_transactions)})", expanded=False):
@@ -418,7 +418,7 @@ try:
 
                         st.dataframe(
                             transactions_display,
-                            use_container_width=True,
+                            width='stretch',
                             hide_index=True,
                             column_config={
                                 'date': 'Date',

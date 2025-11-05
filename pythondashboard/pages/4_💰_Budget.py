@@ -373,11 +373,11 @@ try:
                 title="Budget vs. Actual Spending",
                 height=350
             )
-            st.plotly_chart(fig_budget_vs_actual, use_container_width=True, config={'displayModeBar': False})
+            st.plotly_chart(fig_budget_vs_actual, config={'displayModeBar': False, 'responsive': True})
 
         with chart_col2:
             fig_progress = create_budget_progress_bars(budget_performance, height=350)
-            st.plotly_chart(fig_progress, use_container_width=True, config={'displayModeBar': False})
+            st.plotly_chart(fig_progress, config={'displayModeBar': False, 'responsive': True})
 
         st.markdown("---")
 
@@ -406,7 +406,7 @@ try:
                     total_spent=budget['spent'],
                     avg_spent=avg_monthly
                 )
-                st.plotly_chart(fig_gauge, use_container_width=True, config={'displayModeBar': False})
+                st.plotly_chart(fig_gauge, config={'displayModeBar': False, 'responsive': True})
 
         st.markdown("---")
 
@@ -448,7 +448,7 @@ try:
                     title="Daily Spending: Ideal vs. Actual",
                     height=250
                 )
-                st.plotly_chart(fig_burn_rate, use_container_width=True, config={'displayModeBar': False})
+                st.plotly_chart(fig_burn_rate, config={'displayModeBar': False, 'responsive': True})
 
             with col2:
                 if burn_rate_metrics['projected_over_under'] < 0:
@@ -476,7 +476,7 @@ try:
 
             st.dataframe(
                 budget_display[['budget_name', 'budgeted', 'spent', 'remaining', 'utilization_pct', 'status']],
-                use_container_width=True,
+                width='stretch',
                 hide_index=True,
                 column_config={
                     'budget_name': 'Budget',

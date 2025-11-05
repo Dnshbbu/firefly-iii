@@ -188,7 +188,7 @@ st.markdown("This table shows when transactions with each tag were imported into
 
 st.dataframe(
     tag_import_summary,
-    use_container_width=True,
+    width='stretch',
     hide_index=True,
     column_config={
         'Tag': st.column_config.TextColumn('Tag', width='medium'),

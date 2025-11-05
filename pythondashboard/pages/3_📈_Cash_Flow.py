@@ -373,7 +373,7 @@ try:
                         height=350
                     )
 
-                    st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
+                    st.plotly_chart(fig, config={'displayModeBar': False, 'responsive': True})
                 else:
                     st.warning("No data available for the selected period.")
 
@@ -390,7 +390,7 @@ try:
                         height=350
                     )
 
-                    st.plotly_chart(fig_waterfall, use_container_width=True, config={'displayModeBar': False})
+                    st.plotly_chart(fig_waterfall, config={'displayModeBar': False, 'responsive': True})
                 else:
                     st.info("Waterfall chart is only available for monthly aggregation.")
 
@@ -496,7 +496,7 @@ try:
 
                                 st.dataframe(
                                     display_df,
-                                    use_container_width=True,
+                                    width='stretch',
                                     hide_index=True,
                                     column_config={
                                         'date': 'Date',
@@ -511,7 +511,7 @@ try:
                     with st.expander("View All Categories", expanded=False):
                         st.dataframe(
                             category_spending,
-                            use_container_width=True,
+                            width='stretch',
                             hide_index=True,
                             height=250,
                             column_config={
@@ -617,7 +617,7 @@ try:
 
                                 st.dataframe(
                                     display_df,
-                                    use_container_width=True,
+                                    width='stretch',
                                     hide_index=True,
                                     column_config={
                                         'date': 'Date',
@@ -632,7 +632,7 @@ try:
                     with st.expander("View All Sources", expanded=False):
                         st.dataframe(
                             income_sources,
-                            use_container_width=True,
+                            width='stretch',
                             hide_index=True,
                             height=250,
                             column_config={
@@ -705,7 +705,7 @@ try:
 
                     st.dataframe(
                         df_display_formatted,
-                        use_container_width=True,
+                        width='stretch',
                         hide_index=True,
                         column_config={
                             'date': 'Date',
@@ -763,7 +763,7 @@ try:
 
                         st.dataframe(
                             df_transfers_formatted,
-                            use_container_width=True,
+                            width='stretch',
                             hide_index=True,
                             column_config=column_config,
                             height=400

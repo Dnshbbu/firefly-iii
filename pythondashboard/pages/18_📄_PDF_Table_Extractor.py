@@ -213,7 +213,7 @@ if uploaded_file is not None:
                             st.metric("Columns", info['cols'])
 
                         st.markdown("**Table Preview:**")
-                        st.dataframe(df, use_container_width=True, height=300)
+                        st.dataframe(df, width='stretch', height=300)
 
                         # Download button for this table
                         csv_data = df.to_csv(index=False)
@@ -386,7 +386,7 @@ if uploaded_file is not None:
                                     df_parsed = pd.DataFrame(transactions)
 
                                     st.markdown("**✅ Successfully Parsed Transactions:**")
-                                    st.dataframe(df_parsed, use_container_width=True, height=300)
+                                    st.dataframe(df_parsed, width='stretch', height=300)
 
                                     # Download as CSV
                                     csv_data = df_parsed.to_csv(index=False)

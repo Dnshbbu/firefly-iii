@@ -412,7 +412,7 @@ try:
 
                         st.dataframe(
                             all_txns,
-                            use_container_width=True,
+                            width='stretch',
                             hide_index=True,
                             column_config={
                                 'date': 'Date',
@@ -640,7 +640,7 @@ body {
                         font=dict(color='#e2e8f0')
                     )
 
-                    st.plotly_chart(fig_monthly_bar, use_container_width=True, config={'displayModeBar': False})
+                    st.plotly_chart(fig_monthly_bar, config={'displayModeBar': False, 'responsive': True})
             else:
                 # Show placeholder when nothing is selected
                 st.info("👈 Click on a category in the pie chart to view transaction timeline")
@@ -693,7 +693,7 @@ body {
                 title=f"Pareto Analysis - {len(selected_for_pareto)} Categories",
                 height=350
             )
-            st.plotly_chart(fig_pareto, use_container_width=True, config={'displayModeBar': False})
+            st.plotly_chart(fig_pareto, config={'displayModeBar': False, 'responsive': True})
 
             # Find 80% threshold
             categories_80 = filtered_data[filtered_data['cumulative_pct'] <= 80]
@@ -721,7 +721,7 @@ body {
 
             st.dataframe(
                 category_display,
-                use_container_width=True,
+                width='stretch',
                 hide_index=True,
                 column_config={
                     'category_name': 'Category',

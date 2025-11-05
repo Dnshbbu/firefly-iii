@@ -128,7 +128,7 @@ if page == "CSV Preprocessing":
             original_row_count = len(df)
 
             st.markdown(f"**Original Data** ({original_row_count} rows)")
-            st.dataframe(df, use_container_width=True, height=250)
+            st.dataframe(df, width='stretch', height=250)
 
             # Detect bank type based on columns
             bank_type = "Unknown"
@@ -213,7 +213,7 @@ if page == "CSV Preprocessing":
                         })
 
                     comparison_df = pd.DataFrame(comparison_data)
-                    st.dataframe(comparison_df, use_container_width=True, height=300)
+                    st.dataframe(comparison_df, width='stretch', height=300)
 
             st.markdown("---")
             # Preprocessing options
@@ -310,10 +310,10 @@ if page == "CSV Preprocessing":
                 if removed_rows_list:
                     removed_df = pd.concat(removed_rows_list, ignore_index=True)
                     with st.expander(f"Removed Rows ({len(removed_df)})", expanded=False):
-                        st.dataframe(removed_df, use_container_width=True, height=300)
+                        st.dataframe(removed_df, width='stretch', height=300)
 
                 st.markdown("**Processed Data**")
-                st.dataframe(processed_df, use_container_width=True, height=400)
+                st.dataframe(processed_df, width='stretch', height=400)
 
                 # Download button
                 csv = processed_df.to_csv(index=False)
@@ -466,7 +466,7 @@ if page == "CSV Preprocessing":
                             st.markdown(f"- {rule}")
 
                 st.markdown("**Processed Data**")
-                st.dataframe(processed_df, use_container_width=True, height=400)
+                st.dataframe(processed_df, width='stretch', height=400)
 
                 # Download button
                 csv = processed_df.to_csv(index=False)
@@ -528,7 +528,7 @@ if page == "CSV Preprocessing":
                             st.markdown(f"- {rule}")
 
                 st.markdown("**Processed Data**")
-                st.dataframe(processed_df, use_container_width=True, height=400)
+                st.dataframe(processed_df, width='stretch', height=400)
 
                 # Download button
                 csv = processed_df.to_csv(index=False)
@@ -591,7 +591,7 @@ if page == "CSV Preprocessing":
                             st.markdown(f"- {rule}")
 
                 st.markdown("**Processed Data**")
-                st.dataframe(processed_df, use_container_width=True, height=400)
+                st.dataframe(processed_df, width='stretch', height=400)
 
                 # Download button
                 csv = processed_df.to_csv(index=False)
