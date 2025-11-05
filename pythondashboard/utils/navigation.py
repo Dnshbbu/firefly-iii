@@ -40,6 +40,7 @@ def render_sidebar_navigation():
     """
     Renders a collapsible navigation sidebar with grouped sections.
     Uses buttons with st.switch_page for navigation.
+    Each page also has a small external link icon to open in a new tab.
     """
     # Load compact CSS for entire sidebar
     st.markdown("""
@@ -94,7 +95,7 @@ def render_sidebar_navigation():
             display: block !important;
             box-sizing: content-box !important;
         }
-        
+
         /* Reset all inner elements to prevent clipping */
         section[data-testid="stSidebar"] div[role="alert"] div {
             line-height: inherit !important;
@@ -102,7 +103,7 @@ def render_sidebar_navigation():
             min-height: 0 !important;
             overflow: visible !important;
         }
-        
+
         /* Alert text - add pseudo element for descender space */
         section[data-testid="stSidebar"] div[role="alert"] p {
             margin: 0 !important;
@@ -111,7 +112,7 @@ def render_sidebar_navigation():
             line-height: 1.5 !important;
             display: block !important;
         }
-        
+
         /* Force descender space with after pseudo-element */
         section[data-testid="stSidebar"] div[role="alert"] p::after {
             content: "";
@@ -227,6 +228,55 @@ def render_sidebar_navigation():
         div[data-baseweb="popover"] {
             font-size: 0.75rem !important;
         }
+
+        /* Navigation row with button and external link icon */
+        .nav-row {
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+            margin-bottom: 0.1rem;
+            position: relative;
+        }
+
+        .nav-row > div:first-child {
+            flex: 1;
+        }
+
+        .nav-row > div:last-child {
+            flex-shrink: 0;
+        }
+
+        /* External link styling - more modern look */
+        .nav-external-link {
+            font-size: 0.7rem;
+            color: #888;
+            text-decoration: none;
+            padding: 0.35rem 0.4rem;
+            border-radius: 4px;
+            transition: all 0.25s ease;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 1.8rem;
+            height: 2rem;
+            background-color: rgba(0, 0, 0, 0.02);
+            border: 1px solid rgba(0, 0, 0, 0.08);
+            opacity: 0.7;
+        }
+
+        .nav-external-link:hover {
+            background-color: rgba(59, 130, 246, 0.1);
+            border-color: rgba(59, 130, 246, 0.3);
+            color: #3b82f6;
+            opacity: 1;
+            transform: translateY(-1px);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .nav-external-link:active {
+            transform: translateY(0);
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+        }
     </style>
     """, unsafe_allow_html=True)
 
@@ -236,10 +286,45 @@ def render_sidebar_navigation():
         # Create an expander for each section (default collapsed)
         with st.sidebar.expander(section_name, expanded=False):
             for page_info in page_list:
-                # Create a button for each page that triggers navigation
-                if st.button(page_info['label'], key=f"nav_{page_info['file']}", use_container_width=True):
-                    # Construct the full path to the page
-                    page_path = os.path.join(BASE_DIR, "pages", page_info['file'])
-                    st.switch_page(page_path)
+                # Create a row with button and external link icon
+                # Use st.markdown with HTML to create the layout
+                page_file = page_info['file']
+                page_label = page_info['label']
+
+                # Create columns for button and link icon
+                col1, col2 = st.columns([6, 1])
+
+                with col1:
+                    # Create a button for each page that triggers navigation
+                    if st.button(page_label, key=f"nav_{page_file}", use_container_width=True):
+                        # Construct the full path to the page
+                        page_path = os.path.join(BASE_DIR, "pages", page_file)
+                        st.switch_page(page_path)
+
+                with col2:
+                    # Create external link icon using markdown link
+                    # The link will open the page in a new tab
+                    # Streamlit URL format: extract the page title after the number and emoji
+                    # e.g., "4_💰_Budget.py" -> "Budget"
+                    import re
+                    # Remove the file extension first
+                    page_name = page_file.replace('.py', '')
+                    # Remove the number prefix and first emoji/underscore (e.g., "4_💰_")
+                    # Pattern: starts with digits, underscore, emoji, underscore
+                    page_url_part = re.sub(r'^\d+_[^_]+_', '', page_name)
+
+                    # Using a modern external link SVG icon
+                    external_link_svg = '''
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+                        <polyline points="15 3 21 3 21 9"></polyline>
+                        <line x1="10" y1="14" x2="21" y2="3"></line>
+                    </svg>
+                    '''
+
+                    st.markdown(
+                        f'<a href="/{page_url_part}" target="_blank" class="nav-external-link" title="Open in new tab">{external_link_svg}</a>',
+                        unsafe_allow_html=True
+                    )
 
     st.sidebar.markdown("---")
