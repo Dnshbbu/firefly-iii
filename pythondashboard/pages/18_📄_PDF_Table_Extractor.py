@@ -358,12 +358,16 @@ if uploaded_file is not None:
                                             except:
                                                 formatted_date = date_str
 
+                                            # Clean amount values - remove currency symbols
+                                            clean_money_out = money_out.replace('€', '').strip() if money_out else ''
+                                            clean_money_in = money_in.replace('€', '').strip() if money_in else ''
+
                                             transactions.append({
                                                 'Type': 'CARD_PAYMENT' if 'repayment' not in description.lower() else 'TRANSFER',
                                                 'Started Date': formatted_date,
                                                 'Completed Date': formatted_date,
                                                 'Description': description,
-                                                'Amount': money_out if money_out else f"-{money_in}" if money_in else '',
+                                                'Amount': f"-{clean_money_out}" if clean_money_out else clean_money_in if clean_money_in else '',
                                                 'Fee': '0.00',
                                                 'Balance': balance.replace('€', '').replace('-€', '-')
                                             })

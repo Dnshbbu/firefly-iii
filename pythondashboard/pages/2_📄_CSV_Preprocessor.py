@@ -399,7 +399,7 @@ if page == "CSV Preprocessing":
                 rule1 = st.checkbox(
                     "Format dates to m/d/Y (e.g., 9/13/2025)",
                     value=True,
-                    help="Converts 'Started Date' and 'Completed Date' columns to m/d/Y format for Firefly III import"
+                    help="Converts 'Started Date' and 'Completed Date' columns to m/d/Y format for Firefly III import (handles both with and without timestamps)"
                 )
 
                 # Apply preprocessing
@@ -407,14 +407,19 @@ if page == "CSV Preprocessing":
                 applied_rules = []
 
                 if rule1:
-                    # Convert dates from YYYY-MM-DD HH:MM:SS to m/d/Y
+                    # Convert dates - handles multiple formats:
+                    # - m/d/Y (already correct format, e.g., "10/1/2025")
+                    # - m/d/Y H:M (with time, e.g., "9/1/2025 13:22")
+                    # - YYYY-MM-DD (e.g., "2025-10-01")
+                    # - YYYY-MM-DD HH:MM:SS (e.g., "2025-10-01 13:22:00")
                     def convert_date(date_str):
                         try:
-                            # Try parsing with time
+                            # Try parsing - pandas will handle various formats
                             dt = pd.to_datetime(date_str)
                             # Format as m/d/Y (no leading zeros)
                             return f"{dt.month}/{dt.day}/{dt.year}"
                         except:
+                            # If parsing fails, return as-is
                             return date_str
 
                     processed_df['Started Date'] = processed_df['Started Date'].apply(convert_date)
