@@ -229,21 +229,15 @@ def render_sidebar_navigation():
             font-size: 0.75rem !important;
         }
 
-        /* Navigation row with button and external link icon */
-        .nav-row {
-            display: flex;
-            align-items: center;
-            gap: 0.25rem;
-            margin-bottom: 0.1rem;
-            position: relative;
+        /* Remove gap between columns in navigation */
+        section[data-testid="stSidebar"] div[data-testid="column"] {
+            padding-left: 0 !important;
+            padding-right: 0 !important;
         }
 
-        .nav-row > div:first-child {
-            flex: 1;
-        }
-
-        .nav-row > div:last-child {
-            flex-shrink: 0;
+        /* Ensure buttons and links align properly */
+        section[data-testid="stSidebar"] div[data-testid="stHorizontalBlock"] {
+            gap: 0.15rem !important;
         }
 
         /* External link styling - more modern look */
@@ -251,17 +245,18 @@ def render_sidebar_navigation():
             font-size: 0.7rem;
             color: #888;
             text-decoration: none;
-            padding: 0.35rem 0.4rem;
+            padding: 0.25rem 0.4rem;
             border-radius: 4px;
             transition: all 0.25s ease;
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            min-width: 1.8rem;
-            height: 2rem;
+            min-width: 1.6rem;
             background-color: rgba(0, 0, 0, 0.02);
             border: 1px solid rgba(0, 0, 0, 0.08);
             opacity: 0.7;
+            align-self: center;
+            margin-top: 0.3rem;
         }
 
         .nav-external-link:hover {
@@ -292,7 +287,8 @@ def render_sidebar_navigation():
                 page_label = page_info['label']
 
                 # Create columns for button and link icon
-                col1, col2 = st.columns([6, 1])
+                # Use spec to ensure no gap between columns
+                col1, col2 = st.columns([0.85, 0.15], gap="small")
 
                 with col1:
                     # Create a button for each page that triggers navigation
