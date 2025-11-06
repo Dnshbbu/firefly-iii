@@ -1,0 +1,392 @@
+import streamlit as st
+import pandas as pd
+import io
+from pathlib import Path
+import sys
+
+# Add parent directory to path to import utils
+sys.path.append(str(Path(__file__).parent.parent))
+from utils.navigation import render_sidebar_navigation
+
+# Page configuration
+st.set_page_config(
+    page_title="CSV Combiner - Firefly III",
+    page_icon="🔥",
+    layout="wide"
+)
+
+# Render custom navigation
+render_sidebar_navigation()
+
+# Compact CSS styling
+st.markdown("""
+<style>
+    /* Reduce padding and margins */
+    .block-container {
+        padding-top: 5rem !important;
+        padding-bottom: 0rem;
+        padding-left: 2rem;
+        padding-right: 2rem;
+    }
+
+    /* Compact headers */
+    h1 {
+        padding-top: 0rem;
+        padding-bottom: 0.5rem;
+        font-size: 2rem;
+        margin-top: 0;
+    }
+
+    h2 {
+        padding-top: 0.5rem;
+        padding-bottom: 0.25rem;
+        font-size: 1.5rem;
+    }
+
+    h3 {
+        padding-top: 0.25rem;
+        padding-bottom: 0.25rem;
+        font-size: 1.2rem;
+    }
+
+    /* Compact dataframes */
+    .dataframe {
+        font-size: 0.85rem;
+    }
+
+    /* Compact metrics */
+    [data-testid="stMetricValue"] {
+        font-size: 1.5rem;
+    }
+
+    [data-testid="stMetricLabel"] {
+        font-size: 0.85rem;
+    }
+
+    /* Reduce spacing between elements */
+    .element-container {
+        margin-bottom: 0.5rem;
+    }
+
+    /* Compact file uploader */
+    [data-testid="stFileUploader"] {
+        padding: 0.5rem;
+    }
+
+    /* Compact checkbox labels */
+    .stCheckbox {
+        margin-bottom: 0.25rem;
+    }
+
+    /* Compact info/warning boxes */
+    .stAlert {
+        padding: 0.5rem;
+        margin-bottom: 0.5rem;
+    }
+
+    /* Reduce spacing in markdown lists */
+    ul, ol {
+        margin-top: 0.25rem;
+        margin-bottom: 0.25rem;
+    }
+
+    li {
+        margin-bottom: 0.1rem;
+    }
+
+    /* Compact download button */
+    .stDownloadButton {
+        margin-top: 0.5rem;
+    }
+
+    /* Reduce horizontal rule thickness */
+    hr {
+        margin-top: 0.5rem;
+        margin-bottom: 0.5rem;
+    }
+
+    /* File card styling */
+    .file-card {
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        padding: 0.75rem;
+        margin-bottom: 0.5rem;
+        background-color: #f8f9fa;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .file-card-info {
+        flex-grow: 1;
+    }
+
+    .file-card-filename {
+        font-weight: 600;
+        font-size: 0.9rem;
+        margin-bottom: 0.25rem;
+    }
+
+    .file-card-details {
+        font-size: 0.75rem;
+        color: #666;
+    }
+
+    .file-card-actions {
+        display: flex;
+        gap: 0.5rem;
+        align-items: center;
+    }
+</style>
+""", unsafe_allow_html=True)
+
+st.title("📄 CSV Combiner")
+st.markdown("Combine multiple CSV files into a single file. Headers from subsequent files are automatically removed.")
+st.markdown("---")
+
+# Initialize session state for uploaded files
+if 'uploaded_files_data' not in st.session_state:
+    st.session_state.uploaded_files_data = []
+
+# File uploader
+st.subheader("1. Upload CSV Files")
+uploaded_files = st.file_uploader(
+    "Choose CSV files to combine",
+    type=['csv'],
+    accept_multiple_files=True,
+    key="csv_uploader"
+)
+
+# Process newly uploaded files
+if uploaded_files:
+    # Get list of already uploaded filenames
+    existing_names = [f['name'] for f in st.session_state.uploaded_files_data]
+
+    # Add only new files that aren't already uploaded
+    for uploaded_file in uploaded_files:
+        if uploaded_file.name not in existing_names:
+            # Read the file data
+            file_bytes = uploaded_file.read()
+
+            # Try to read as CSV to get row count
+            try:
+                df_temp = pd.read_csv(io.BytesIO(file_bytes))
+                row_count = len(df_temp)
+                header = list(df_temp.columns)
+            except Exception as e:
+                st.error(f"Error reading {uploaded_file.name}: {str(e)}")
+                continue
+
+            # Store file data
+            st.session_state.uploaded_files_data.append({
+                'name': uploaded_file.name,
+                'data': file_bytes,
+                'rows': row_count,
+                'header': header
+            })
+
+# Display uploaded files with reordering controls
+if st.session_state.uploaded_files_data:
+    st.markdown("---")
+    st.subheader("2. Reorder and Manage Files")
+    st.caption("Use the buttons to reorder files or remove them from the list. Files will be combined in the order shown below.")
+
+    # Display each file with controls
+    for idx, file_info in enumerate(st.session_state.uploaded_files_data):
+        col1, col2, col3, col4, col5 = st.columns([0.5, 0.5, 3, 1, 0.8])
+
+        with col1:
+            # Move up button (disabled for first item)
+            if st.button("⬆️", key=f"up_{idx}", disabled=(idx == 0), help="Move up"):
+                # Swap with previous item
+                st.session_state.uploaded_files_data[idx], st.session_state.uploaded_files_data[idx-1] = \
+                    st.session_state.uploaded_files_data[idx-1], st.session_state.uploaded_files_data[idx]
+                st.rerun()
+
+        with col2:
+            # Move down button (disabled for last item)
+            if st.button("⬇️", key=f"down_{idx}", disabled=(idx == len(st.session_state.uploaded_files_data) - 1), help="Move down"):
+                # Swap with next item
+                st.session_state.uploaded_files_data[idx], st.session_state.uploaded_files_data[idx+1] = \
+                    st.session_state.uploaded_files_data[idx+1], st.session_state.uploaded_files_data[idx]
+                st.rerun()
+
+        with col3:
+            st.markdown(f"**{idx + 1}. {file_info['name']}**")
+
+        with col4:
+            st.caption(f"{file_info['rows']} rows")
+
+        with col5:
+            # Remove button
+            if st.button("🗑️", key=f"remove_{idx}", help="Remove"):
+                st.session_state.uploaded_files_data.pop(idx)
+                st.rerun()
+
+    # Show preview of headers
+    with st.expander("📋 View Headers from Each File", expanded=False):
+        for idx, file_info in enumerate(st.session_state.uploaded_files_data):
+            st.markdown(f"**{idx + 1}. {file_info['name']}**")
+            st.code(", ".join(file_info['header']), language=None)
+
+    # Clear all button
+    st.markdown("---")
+    col_clear, col_spacer = st.columns([1, 3])
+    with col_clear:
+        if st.button("🗑️ Clear All Files", use_container_width=True):
+            st.session_state.uploaded_files_data = []
+            st.rerun()
+
+    # Combine button and preview
+    st.markdown("---")
+    st.subheader("3. Combine Files")
+
+    # Check if all files have the same header
+    headers = [tuple(f['header']) for f in st.session_state.uploaded_files_data]
+    all_headers_match = len(set(headers)) == 1
+
+    if not all_headers_match:
+        st.warning("⚠️ Warning: Not all files have the same headers. The combined file will use the headers from the first file.")
+
+        # Show which headers differ
+        with st.expander("Show Header Differences", expanded=False):
+            for idx, file_info in enumerate(st.session_state.uploaded_files_data):
+                if idx == 0:
+                    st.markdown(f"**{idx + 1}. {file_info['name']}** (Reference)")
+                else:
+                    if tuple(file_info['header']) != headers[0]:
+                        st.markdown(f"**{idx + 1}. {file_info['name']}** ⚠️ Different headers")
+                    else:
+                        st.markdown(f"**{idx + 1}. {file_info['name']}** ✓ Matching headers")
+                st.code(", ".join(file_info['header']), language=None)
+    else:
+        st.success(f"✓ All {len(st.session_state.uploaded_files_data)} files have matching headers")
+
+    # Option to keep or skip headers
+    st.markdown("**Options**")
+    keep_intermediate_headers = st.checkbox(
+        "Keep headers from all files (not recommended)",
+        value=False,
+        help="By default, only the first file's header is kept. Enable this to keep headers from all files (they will appear as data rows)."
+    )
+
+    if st.button("🔗 Combine CSV Files", type="primary", use_container_width=True):
+        try:
+            combined_dfs = []
+
+            # Read all files
+            for idx, file_info in enumerate(st.session_state.uploaded_files_data):
+                df = pd.read_csv(io.BytesIO(file_info['data']))
+
+                # For all files after the first, either keep or remove header
+                # If we're keeping headers, we need to convert to CSV and back to make header a row
+                if idx > 0 and not keep_intermediate_headers:
+                    # Just append the data (header is already removed by pandas)
+                    pass
+                elif idx > 0 and keep_intermediate_headers:
+                    # Convert to CSV string with header, then read back without treating first row as header
+                    csv_string = df.to_csv(index=False)
+                    df = pd.read_csv(io.StringIO(csv_string), header=None)
+                    # For the first file, also need to include its header as a row
+                    if len(combined_dfs) == 1:
+                        first_df = combined_dfs[0]
+                        # Add column names as first row
+                        header_row = pd.DataFrame([first_df.columns], columns=first_df.columns)
+                        combined_dfs[0] = pd.concat([header_row, first_df], ignore_index=True)
+                        # Rename columns to integers to match
+                        combined_dfs[0].columns = range(len(combined_dfs[0].columns))
+
+                combined_dfs.append(df)
+
+            # Combine all dataframes
+            combined_df = pd.concat(combined_dfs, ignore_index=True)
+
+            # Show preview
+            st.markdown("**Preview of Combined CSV**")
+            st.dataframe(combined_df, width='stretch', height=400)
+
+            # Show statistics
+            col1, col2, col3 = st.columns(3)
+            with col1:
+                st.metric("Total Rows", len(combined_df))
+            with col2:
+                st.metric("Total Columns", len(combined_df.columns))
+            with col3:
+                st.metric("Files Combined", len(st.session_state.uploaded_files_data))
+
+            # Breakdown by file
+            with st.expander("📊 Row Breakdown by File", expanded=False):
+                for idx, file_info in enumerate(st.session_state.uploaded_files_data):
+                    st.markdown(f"**{idx + 1}. {file_info['name']}**: {file_info['rows']} rows")
+
+                if not keep_intermediate_headers:
+                    st.markdown(f"**Total**: {len(combined_df)} rows (headers removed from {len(st.session_state.uploaded_files_data) - 1} files)")
+                else:
+                    expected_total = sum(f['rows'] for f in st.session_state.uploaded_files_data) + len(st.session_state.uploaded_files_data)
+                    st.markdown(f"**Total**: {len(combined_df)} rows (including {len(st.session_state.uploaded_files_data)} header rows)")
+
+            # Generate download filename
+            if len(st.session_state.uploaded_files_data) > 0:
+                first_filename = st.session_state.uploaded_files_data[0]['name']
+                if first_filename.endswith('.csv'):
+                    base_name = first_filename[:-4]
+                else:
+                    base_name = first_filename
+                output_filename = f"{base_name}_combined_{len(st.session_state.uploaded_files_data)}_files.csv"
+            else:
+                output_filename = "combined.csv"
+
+            # Convert to CSV
+            csv_output = combined_df.to_csv(index=False)
+
+            # Download button
+            st.download_button(
+                label="📥 Download Combined CSV",
+                data=csv_output,
+                file_name=output_filename,
+                mime='text/csv',
+                use_container_width=True,
+                type="primary"
+            )
+
+        except Exception as e:
+            st.error(f"Error combining files: {str(e)}")
+            st.exception(e)
+
+else:
+    st.info("👆 Upload CSV files to get started")
+
+# Instructions
+st.markdown("---")
+with st.expander("ℹ️ How to Use", expanded=False):
+    st.markdown("""
+    ### Instructions
+
+    1. **Upload Files**: Click "Browse files" to select multiple CSV files or drag and drop them
+    2. **Reorder Files**: Use ⬆️ and ⬇️ buttons to change the order in which files will be combined
+    3. **Remove Files**: Click 🗑️ to remove a file from the list
+    4. **Combine**: Click "Combine CSV Files" to merge all files in the current order
+    5. **Download**: Download the combined CSV file
+
+    ### Important Notes
+
+    - **Headers are automatically removed** from all files except the first one
+    - Files are combined in the order shown in the list
+    - All files should ideally have the same column structure
+    - The combined file will use the headers from the first file
+    - You can reorder files at any time before combining
+
+    ### Use Case Example
+
+    If you have monthly bank statements like:
+    - `Revolut_CC_Jan.csv` (7 rows)
+    - `Revolut_CC_Feb.csv` (5 rows)
+    - `Revolut_CC_March.csv` (10 rows)
+
+    The combined file will have:
+    - Header from Jan file (1 row)
+    - Data from Jan file (7 rows)
+    - Data from Feb file (5 rows, header removed)
+    - Data from March file (10 rows, header removed)
+    - **Total: 23 rows** (including header)
+    """)

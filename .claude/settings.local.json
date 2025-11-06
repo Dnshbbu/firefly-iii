@@ -63,7 +63,8 @@
       "Bash(docker volume inspect:*)",
       "Bash(docker run:*)",
       "Bash(pip install:*)",
-      "Bash(find:*)"
+      "Bash(find:*)",
+      "Bash(./venv/Scripts/python.exe:*)"
     ],
     "deny": [],
     "ask": []
