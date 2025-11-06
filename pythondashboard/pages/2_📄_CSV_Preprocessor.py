@@ -19,91 +19,101 @@ st.set_page_config(
 # Render custom navigation
 render_sidebar_navigation()
 
-# Compact CSS styling
+# Ultra-compact CSS styling - DENSE dashboard
 st.markdown("""
 <style>
-    /* Reduce padding and margins */
+    /* Minimal padding for maximum density */
     .block-container {
-        padding-top: 5rem !important;
-        padding-bottom: 0rem;
-        padding-left: 2rem;
-        padding-right: 2rem;
+        padding-top: 3rem !important;
+        padding-bottom: 0rem !important;
+        padding-left: 1rem !important;
+        padding-right: 1rem !important;
+        max-width: 100% !important;
     }
 
     /* Compact headers */
     h1 {
-        padding-top: 0rem;
-        padding-bottom: 0.5rem;
-        font-size: 2rem;
-        margin-top: 0;
+        padding-top: 0rem !important;
+        padding-bottom: 0.3rem !important;
+        margin-top: 0 !important;
+        margin-bottom: 0.3rem !important;
+        font-size: 1.8rem !important;
     }
-
     h2 {
-        padding-top: 0.5rem;
-        padding-bottom: 0.25rem;
-        font-size: 1.5rem;
+        padding-top: 0.2rem !important;
+        padding-bottom: 0.2rem !important;
+        margin-top: 0.3rem !important;
+        margin-bottom: 0.3rem !important;
+        font-size: 1.3rem !important;
     }
-
     h3 {
-        padding-top: 0.25rem;
-        padding-bottom: 0.25rem;
-        font-size: 1.2rem;
-    }
-
-    /* Compact dataframes */
-    .dataframe {
-        font-size: 0.85rem;
+        padding-top: 0.1rem !important;
+        padding-bottom: 0.1rem !important;
+        margin-top: 0.2rem !important;
+        margin-bottom: 0.2rem !important;
+        font-size: 1.1rem !important;
     }
 
     /* Compact metrics */
     [data-testid="stMetricValue"] {
-        font-size: 1.5rem;
+        font-size: 1.3rem !important;
+    }
+    [data-testid="stMetricLabel"] {
+        font-size: 0.75rem !important;
+        margin-bottom: 0 !important;
+    }
+    [data-testid="stMetric"] {
+        padding: 0.3rem !important;
     }
 
-    [data-testid="stMetricLabel"] {
-        font-size: 0.85rem;
+    /* Compact dataframes */
+    .dataframe {
+        font-size: 0.75rem !important;
     }
 
     /* Reduce spacing between elements */
     .element-container {
-        margin-bottom: 0.5rem;
+        margin-bottom: 0.2rem !important;
+    }
+
+    /* Compact dividers */
+    hr {
+        margin-top: 0.3rem !important;
+        margin-bottom: 0.3rem !important;
     }
 
     /* Compact file uploader */
     [data-testid="stFileUploader"] {
-        padding: 0.5rem;
+        padding: 0.3rem !important;
     }
 
     /* Compact checkbox labels */
     .stCheckbox {
-        margin-bottom: 0.25rem;
+        margin-bottom: 0.2rem !important;
     }
 
     /* Compact info/warning boxes */
     .stAlert {
-        padding: 0.5rem;
-        margin-bottom: 0.5rem;
+        padding: 0.3rem !important;
+        margin-bottom: 0.3rem !important;
+        font-size: 0.85rem !important;
     }
 
-    /* Reduce spacing in markdown lists */
-    ul, ol {
-        margin-top: 0.25rem;
-        margin-bottom: 0.25rem;
+    /* Compact expanders */
+    .streamlit-expanderHeader {
+        font-size: 0.9rem !important;
+        padding: 0.3rem !important;
     }
 
-    li {
-        margin-bottom: 0.1rem;
+    /* Compact buttons */
+    .stButton button {
+        padding: 0.25rem 0.75rem !important;
+        font-size: 0.85rem !important;
     }
 
     /* Compact download button */
     .stDownloadButton {
-        margin-top: 0.5rem;
-    }
-
-    /* Reduce horizontal rule thickness */
-    hr {
-        margin-top: 0.5rem;
-        margin-bottom: 0.5rem;
+        margin-top: 0.3rem !important;
     }
 </style>
 """, unsafe_allow_html=True)
