@@ -208,19 +208,20 @@ if uploaded_file is not None:
                 processed_df = processed_df[~mask]
 
             if rule4:
-                # Convert dates from YYYY-MM-DD HH:MM:SS to m/d/Y
+                # Convert dates from YYYY-MM-DD HH:MM:SS to m/d/Y H:M:S
+                # Adds 04:00:00 time to avoid timezone conversion issues
                 def convert_date(date_str):
                     try:
                         # Try parsing with time
                         dt = pd.to_datetime(date_str)
-                        # Format as m/d/Y (no leading zeros)
-                        return f"{dt.month}/{dt.day}/{dt.year}"
+                        # Format as m/d/Y H:M:S with 04:00:00 time to avoid midnight UTC issues
+                        return f"{dt.month}/{dt.day}/{dt.year} 4:00:00"
                     except:
                         return date_str
 
                 processed_df['Started Date'] = processed_df['Started Date'].apply(convert_date)
                 processed_df['Completed Date'] = processed_df['Completed Date'].apply(convert_date)
-                applied_rules.append("Date formatting: Converted 'Started Date' and 'Completed Date' to m/d/Y format")
+                applied_rules.append("Date formatting: Converted 'Started Date' and 'Completed Date' to m/d/Y H:M:S format with 04:00:00 time")
 
             # Show results
             st.markdown("**Results**")
@@ -280,16 +281,17 @@ if uploaded_file is not None:
 
             if rule1:
                 # Convert dates - they should already be in m/d/Y format, but ensure consistency
+                # Adds 04:00:00 time to avoid timezone conversion issues
                 def convert_date(date_str):
                     try:
                         dt = pd.to_datetime(date_str)
-                        # Format as m/d/Y (no leading zeros)
-                        return f"{dt.month}/{dt.day}/{dt.year}"
+                        # Format as m/d/Y H:M:S with 04:00:00 time to avoid midnight UTC issues
+                        return f"{dt.month}/{dt.day}/{dt.year} 4:00:00"
                     except:
                         return date_str
 
                 processed_df['Time'] = processed_df['Time'].apply(convert_date)
-                applied_rules.append("Date formatting: Ensured 'Time' column is in m/d/Y format")
+                applied_rules.append("Date formatting: Ensured 'Time' column is in m/d/Y H:M:S format with 04:00:00 time")
 
             # Show results
             st.markdown("**Results**")
@@ -340,18 +342,19 @@ if uploaded_file is not None:
             applied_rules = []
 
             if rule1:
-                # Convert dates from dd/mm/yyyy to d/m/Y (no leading zeros)
+                # Convert dates from dd/mm/yyyy to d/m/Y H:M:S (no leading zeros)
+                # Adds 04:00:00 time to avoid timezone conversion issues
                 def convert_date(date_str):
                     try:
                         # Parse date - could be dd/mm/yyyy format
                         dt = pd.to_datetime(date_str, dayfirst=True)
-                        # Format as d/m/Y (no leading zeros)
-                        return f"{dt.day}/{dt.month}/{dt.year}"
+                        # Format as d/m/Y H:M:S with 04:00:00 time to avoid midnight UTC issues
+                        return f"{dt.day}/{dt.month}/{dt.year} 4:00:00"
                     except:
                         return date_str
 
                 processed_df[aib_date_col] = processed_df[aib_date_col].apply(convert_date)
-                applied_rules.append("Date formatting: Converted 'Posted Transactions Date' to d/m/Y format")
+                applied_rules.append("Date formatting: Converted 'Posted Transactions Date' to d/m/Y H:M:S format with 04:00:00 time")
 
             # Show results
             st.markdown("**Results**")
@@ -407,19 +410,20 @@ if uploaded_file is not None:
                 # - m/d/Y H:M (with time, e.g., "9/1/2025 13:22")
                 # - YYYY-MM-DD (e.g., "2025-10-01")
                 # - YYYY-MM-DD HH:MM:SS (e.g., "2025-10-01 13:22:00")
+                # Adds 04:00:00 time to avoid timezone conversion issues
                 def convert_date(date_str):
                     try:
                         # Try parsing - pandas will handle various formats
                         dt = pd.to_datetime(date_str)
-                        # Format as m/d/Y (no leading zeros)
-                        return f"{dt.month}/{dt.day}/{dt.year}"
+                        # Format as m/d/Y H:M:S with 04:00:00 time to avoid midnight UTC issues
+                        return f"{dt.month}/{dt.day}/{dt.year} 4:00:00"
                     except:
                         # If parsing fails, return as-is
                         return date_str
 
                 processed_df['Started Date'] = processed_df['Started Date'].apply(convert_date)
                 processed_df['Completed Date'] = processed_df['Completed Date'].apply(convert_date)
-                applied_rules.append("Date formatting: Converted 'Started Date' and 'Completed Date' to m/d/Y format")
+                applied_rules.append("Date formatting: Converted 'Started Date' and 'Completed Date' to m/d/Y H:M:S format with 04:00:00 time")
 
             # Show results
             st.markdown("**Results**")

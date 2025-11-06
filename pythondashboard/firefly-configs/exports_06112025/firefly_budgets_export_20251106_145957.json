@@ -1,0 +1,163 @@
+{
+  "export_date": "2025-11-06T14:59:57.931442",
+  "firefly_iii_budgets_export": true,
+  "total_budgets": 4,
+  "budgets": [
+    {
+      "type": "budgets",
+      "id": "63",
+      "attributes": {
+        "created_at": "2025-11-02T00:07:21+00:00",
+        "updated_at": "2025-11-02T00:07:21+00:00",
+        "active": true,
+        "name": "Discretionary",
+        "order": 1,
+        "notes": null,
+        "auto_budget_type": "reset",
+        "auto_budget_period": "monthly",
+        "object_group_id": null,
+        "object_group_order": null,
+        "object_group_title": null,
+        "object_has_currency_setting": true,
+        "currency_id": "1",
+        "currency_code": "EUR",
+        "currency_name": "Euro",
+        "currency_symbol": "€",
+        "currency_decimal_places": 2,
+        "primary_currency_id": "1",
+        "primary_currency_name": "Euro",
+        "primary_currency_code": "EUR",
+        "primary_currency_symbol": "€",
+        "primary_currency_decimal_places": 2,
+        "auto_budget_amount": "400.00",
+        "pc_auto_budget_amount": null,
+        "spent": null,
+        "pc_spent": null
+      },
+      "links": {
+        "self": "http://localhost/api/v1/budgets/63",
+        "0": {
+          "rel": "self",
+          "uri": "/budgets/63"
+        }
+      }
+    },
+    {
+      "type": "budgets",
+      "id": "64",
+      "attributes": {
+        "created_at": "2025-11-02T00:07:44+00:00",
+        "updated_at": "2025-11-02T00:07:44+00:00",
+        "active": true,
+        "name": "Essentials",
+        "order": 2,
+        "notes": null,
+        "auto_budget_type": "reset",
+        "auto_budget_period": "monthly",
+        "object_group_id": null,
+        "object_group_order": null,
+        "object_group_title": null,
+        "object_has_currency_setting": true,
+        "currency_id": "1",
+        "currency_code": "EUR",
+        "currency_name": "Euro",
+        "currency_symbol": "€",
+        "currency_decimal_places": 2,
+        "primary_currency_id": "1",
+        "primary_currency_name": "Euro",
+        "primary_currency_code": "EUR",
+        "primary_currency_symbol": "€",
+        "primary_currency_decimal_places": 2,
+        "auto_budget_amount": "500.00",
+        "pc_auto_budget_amount": null,
+        "spent": null,
+        "pc_spent": null
+      },
+      "links": {
+        "self": "http://localhost/api/v1/budgets/64",
+        "0": {
+          "rel": "self",
+          "uri": "/budgets/64"
+        }
+      }
+    },
+    {
+      "type": "budgets",
+      "id": "66",
+      "attributes": {
+        "created_at": "2025-11-02T00:08:24+00:00",
+        "updated_at": "2025-11-06T14:58:13+00:00",
+        "active": true,
+        "name": "Housing",
+        "order": 3,
+        "notes": null,
+        "auto_budget_type": "reset",
+        "auto_budget_period": "monthly",
+        "object_group_id": null,
+        "object_group_order": null,
+        "object_group_title": null,
+        "object_has_currency_setting": true,
+        "currency_id": "1",
+        "currency_code": "EUR",
+        "currency_name": "Euro",
+        "currency_symbol": "€",
+        "currency_decimal_places": 2,
+        "primary_currency_id": "1",
+        "primary_currency_name": "Euro",
+        "primary_currency_code": "EUR",
+        "primary_currency_symbol": "€",
+        "primary_currency_decimal_places": 2,
+        "auto_budget_amount": "1750.00",
+        "pc_auto_budget_amount": null,
+        "spent": null,
+        "pc_spent": null
+      },
+      "links": {
+        "self": "http://localhost/api/v1/budgets/66",
+        "0": {
+          "rel": "self",
+          "uri": "/budgets/66"
+        }
+      }
+    },
+    {
+      "type": "budgets",
+      "id": "67",
+      "attributes": {
+        "created_at": "2025-11-02T00:08:46+00:00",
+        "updated_at": "2025-11-06T14:58:13+00:00",
+        "active": true,
+        "name": "YearlyOnce",
+        "order": 4,
+        "notes": null,
+        "auto_budget_type": "reset",
+        "auto_budget_period": "yearly",
+        "object_group_id": null,
+        "object_group_order": null,
+        "object_group_title": null,
+        "object_has_currency_setting": true,
+        "currency_id": "1",
+        "currency_code": "EUR",
+        "currency_name": "Euro",
+        "currency_symbol": "€",
+        "currency_decimal_places": 2,
+        "primary_currency_id": "1",
+        "primary_currency_name": "Euro",
+        "primary_currency_code": "EUR",
+        "primary_currency_symbol": "€",
+        "primary_currency_decimal_places": 2,
+        "auto_budget_amount": "1300.00",
+        "pc_auto_budget_amount": null,
+        "spent": null,
+        "pc_spent": null
+      },
+      "links": {
+        "self": "http://localhost/api/v1/budgets/67",
+        "0": {
+          "rel": "self",
+          "uri": "/budgets/67"
+        }
+      }
+    }
+  ]
+}
