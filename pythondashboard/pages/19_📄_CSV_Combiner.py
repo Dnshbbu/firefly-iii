@@ -148,23 +148,40 @@ st.markdown("---")
 if 'uploaded_files_data' not in st.session_state:
     st.session_state.uploaded_files_data = []
 
+# Initialize session state for ignored files (files user deleted but still in uploader)
+if 'ignored_files' not in st.session_state:
+    st.session_state.ignored_files = set()
+
+# Initialize uploader key for resetting
+if 'uploader_key' not in st.session_state:
+    st.session_state.uploader_key = 0
+
 # File uploader
 st.subheader("1. Upload CSV Files")
 uploaded_files = st.file_uploader(
     "Choose CSV files to combine",
     type=['csv'],
     accept_multiple_files=True,
-    key="csv_uploader"
+    key=f"csv_uploader_{st.session_state.uploader_key}"
 )
 
-# Process newly uploaded files
+# Process uploaded files - sync with session state
 if uploaded_files:
-    # Get list of already uploaded filenames
+    # Get list of uploaded filenames from widget
+    uploaded_names = [f.name for f in uploaded_files]
+
+    # Remove files from session state that are no longer in the uploader (unless they're ignored)
+    st.session_state.uploaded_files_data = [
+        f for f in st.session_state.uploaded_files_data
+        if f['name'] in uploaded_names or f['name'] in st.session_state.ignored_files
+    ]
+
+    # Get list of already uploaded filenames in session state
     existing_names = [f['name'] for f in st.session_state.uploaded_files_data]
 
-    # Add only new files that aren't already uploaded
+    # Add only new files that aren't already uploaded or ignored
     for uploaded_file in uploaded_files:
-        if uploaded_file.name not in existing_names:
+        if uploaded_file.name not in existing_names and uploaded_file.name not in st.session_state.ignored_files:
             # Read the file data
             file_bytes = uploaded_file.read()
 
@@ -184,6 +201,40 @@ if uploaded_files:
                 'rows': row_count,
                 'header': header
             })
+elif not uploaded_files and st.session_state.uploaded_files_data:
+    # If uploader is empty but we have files in session state, clear them
+    st.session_state.uploaded_files_data = []
+    st.session_state.ignored_files = set()
+
+# Show action buttons if there are files in uploader or session state
+if uploaded_files or st.session_state.uploaded_files_data:
+    st.markdown("---")
+    col1, col2, col3, col4 = st.columns([1, 1, 1, 2])
+
+    with col1:
+        # Disable if no files in uploader to add
+        files_to_add = len(st.session_state.ignored_files) if uploaded_files else 0
+        if st.button("➕ Add All Files", use_container_width=True, help="Add all uploaded files back to the list", disabled=(files_to_add == 0)):
+            # Clear ignored files and re-process uploader
+            st.session_state.ignored_files = set()
+            st.rerun()
+
+    with col2:
+        # Disable if no files to clear
+        if st.button("🗑️ Clear All Files", use_container_width=True, help="Remove all files from the list (keeps them in uploader)", disabled=(len(st.session_state.uploaded_files_data) == 0)):
+            # Add all current files to ignored list
+            for file_info in st.session_state.uploaded_files_data:
+                st.session_state.ignored_files.add(file_info['name'])
+            st.session_state.uploaded_files_data = []
+            st.rerun()
+
+    with col3:
+        if st.button("🔄 Reset Page", use_container_width=True, help="Reset entire page and clear uploader", type="secondary"):
+            st.session_state.uploaded_files_data = []
+            st.session_state.ignored_files = set()
+            # Increment the uploader key to force a complete reset
+            st.session_state.uploader_key += 1
+            st.rerun()
 
 # Display uploaded files with reordering controls
 if st.session_state.uploaded_files_data:
@@ -220,7 +271,12 @@ if st.session_state.uploaded_files_data:
         with col5:
             # Remove button
             if st.button("🗑️", key=f"remove_{idx}", help="Remove"):
-                st.session_state.uploaded_files_data.pop(idx)
+                # Remove from session state
+                removed_file = st.session_state.uploaded_files_data.pop(idx)
+                # Add to a list of files to ignore (so sync doesn't re-add them)
+                if 'ignored_files' not in st.session_state:
+                    st.session_state.ignored_files = set()
+                st.session_state.ignored_files.add(removed_file['name'])
                 st.rerun()
 
     # Show preview of headers
@@ -228,14 +284,6 @@ if st.session_state.uploaded_files_data:
         for idx, file_info in enumerate(st.session_state.uploaded_files_data):
             st.markdown(f"**{idx + 1}. {file_info['name']}**")
             st.code(", ".join(file_info['header']), language=None)
-
-    # Clear all button
-    st.markdown("---")
-    col_clear, col_spacer = st.columns([1, 3])
-    with col_clear:
-        if st.button("🗑️ Clear All Files", use_container_width=True):
-            st.session_state.uploaded_files_data = []
-            st.rerun()
 
     # Combine button and preview
     st.markdown("---")
