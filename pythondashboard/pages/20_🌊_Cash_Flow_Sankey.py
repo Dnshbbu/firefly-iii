@@ -359,14 +359,7 @@ try:
                     paper_bgcolor='rgba(14, 17, 23, 0)',
                     plot_bgcolor='rgba(14, 17, 23, 0)',
                     font=dict(color='rgba(250, 250, 250, 0.9)', size=11, family='Arial, sans-serif'),
-                    title_font=dict(color='rgba(250, 250, 250, 0.9)'),
-                    hoverlabel=dict(
-                        bgcolor='rgba(30, 30, 30, 0.95)',
-                        font_size=12,
-                        font_family='Arial, sans-serif',
-                        font_color='rgba(250, 250, 250, 0.95)',
-                        bordercolor='rgba(60, 60, 60, 0.95)'
-                    )
+                    title_font=dict(color='rgba(250, 250, 250, 0.9)')
                 )
 
                 # Convert figure to HTML with custom JavaScript for hover effects
@@ -399,24 +392,9 @@ try:
                     .gtitle {
                         fill: rgba(250, 250, 250, 0.9) !important;
                     }
-                    /* Dark mode for hover tooltips */
-                    .hoverlayer .hovertext {
-                        background-color: rgba(30, 30, 30, 0.95) !important;
-                        border-color: rgba(60, 60, 60, 0.95) !important;
-                    }
-                    .hoverlayer .hovertext path {
-                        fill: rgba(30, 30, 30, 0.95) !important;
-                        stroke: rgba(60, 60, 60, 0.95) !important;
-                    }
-                    .hoverlayer .hovertext text {
-                        fill: rgba(250, 250, 250, 0.95) !important;
-                    }
-                    g.hovertext path {
-                        fill: rgba(30, 30, 30, 0.95) !important;
-                        stroke: rgba(60, 60, 60, 0.95) !important;
-                    }
-                    g.hovertext text {
-                        fill: rgba(250, 250, 250, 0.95) !important;
+                    /* Hide hover tooltips completely */
+                    .hoverlayer {
+                        display: none !important;
                     }
                 </style>
                 """

@@ -248,7 +248,7 @@ def create_sankey_with_destinations(
             color=node_colors,
             x=node_x,
             y=node_y,
-            hovertemplate='%{label}<extra></extra>',
+            hoverinfo='none',
             customdata=list(range(len(all_labels)))
         ),
         link=dict(
@@ -256,7 +256,7 @@ def create_sankey_with_destinations(
             target=targets,
             value=values,
             color=link_colors,
-            hovertemplate='%{source.label} → %{target.label}<br>€%{value:,.0f}<extra></extra>'
+            hoverinfo='none'
         ),
         textfont=dict(size=10, family='Arial, sans-serif'),
         valueformat='.0f',
