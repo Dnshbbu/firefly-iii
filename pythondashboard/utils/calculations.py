@@ -124,8 +124,9 @@ def calculate_category_spending(
         start_dt = pd.to_datetime(start_date)
         df = df[df['date'] >= start_dt]
     if end_date:
-        end_dt = pd.to_datetime(end_date)
-        df = df[df['date'] <= end_dt]
+        # Add one day to include all transactions on the end date
+        end_dt = pd.to_datetime(end_date) + pd.Timedelta(days=1)
+        df = df[df['date'] < end_dt]
 
     # Filter for expenses only (withdrawals)
     expense_df = df[df['type'] == 'withdrawal'].copy()
@@ -185,8 +186,9 @@ def calculate_income_sources(
         start_dt = pd.to_datetime(start_date)
         df = df[df['date'] >= start_dt]
     if end_date:
-        end_dt = pd.to_datetime(end_date)
-        df = df[df['date'] <= end_dt]
+        # Add one day to include all transactions on the end date
+        end_dt = pd.to_datetime(end_date) + pd.Timedelta(days=1)
+        df = df[df['date'] < end_dt]
 
     # Filter for income only (deposits)
     income_df = df[df['type'] == 'deposit'].copy()
@@ -268,14 +270,15 @@ def calculate_period_comparison(
         df['date'] = df['date'].dt.tz_localize(None)
 
     # Prepare date filters (no timezone needed since we removed it from df['date'])
+    # Add one day to end dates to include all transactions on those dates
     current_start_dt = pd.to_datetime(current_start)
-    current_end_dt = pd.to_datetime(current_end)
+    current_end_dt = pd.to_datetime(current_end) + pd.Timedelta(days=1)
     previous_start_dt = pd.to_datetime(previous_start)
-    previous_end_dt = pd.to_datetime(previous_end)
+    previous_end_dt = pd.to_datetime(previous_end) + pd.Timedelta(days=1)
 
     # Current period
     current_df = df[(df['date'] >= current_start_dt) &
-                    (df['date'] <= current_end_dt)]
+                    (df['date'] < current_end_dt)]
 
     current_income = current_df[current_df['type'] == 'deposit']['amount'].sum()
     current_expenses = current_df[current_df['type'] == 'withdrawal']['amount'].sum()
@@ -283,7 +286,7 @@ def calculate_period_comparison(
 
     # Previous period
     previous_df = df[(df['date'] >= previous_start_dt) &
-                     (df['date'] <= previous_end_dt)]
+                     (df['date'] < previous_end_dt)]
 
     previous_income = previous_df[previous_df['type'] == 'deposit']['amount'].sum()
     previous_expenses = previous_df[previous_df['type'] == 'withdrawal']['amount'].sum()
@@ -712,8 +715,9 @@ def calculate_category_percentage(
         start_dt = pd.to_datetime(start_date)
         df = df[df['date'] >= start_dt]
     if end_date:
-        end_dt = pd.to_datetime(end_date)
-        df = df[df['date'] <= end_dt]
+        # Add one day to include all transactions on the end date
+        end_dt = pd.to_datetime(end_date) + pd.Timedelta(days=1)
+        df = df[df['date'] < end_dt]
 
     # Filter for expenses only
     df = df[df['type'] == 'withdrawal'].copy()
@@ -1087,8 +1091,9 @@ def calculate_destination_accounts_spending(
         start_dt = pd.to_datetime(start_date)
         df = df[df['date'] >= start_dt]
     if end_date:
-        end_dt = pd.to_datetime(end_date)
-        df = df[df['date'] <= end_dt]
+        # Add one day to include all transactions on the end date
+        end_dt = pd.to_datetime(end_date) + pd.Timedelta(days=1)
+        df = df[df['date'] < end_dt]
 
     # Filter for expenses only (withdrawals)
     expense_df = df[df['type'] == 'withdrawal'].copy()
@@ -1144,8 +1149,9 @@ def calculate_destination_to_category_mapping(
         start_dt = pd.to_datetime(start_date)
         df = df[df['date'] >= start_dt]
     if end_date:
-        end_dt = pd.to_datetime(end_date)
-        df = df[df['date'] <= end_dt]
+        # Add one day to include all transactions on the end date
+        end_dt = pd.to_datetime(end_date) + pd.Timedelta(days=1)
+        df = df[df['date'] < end_dt]
 
     # Filter for expenses only (withdrawals)
     expense_df = df[df['type'] == 'withdrawal'].copy()
