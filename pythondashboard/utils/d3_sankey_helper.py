@@ -41,43 +41,93 @@ def prepare_sankey_data(
     Returns:
         Dictionary with nodes and links for D3 Sankey
     """
-    # Top income sources - sorted descending by amount
-    top_income = income_df.nlargest(top_n_income, income_amount_col).copy()
-    if len(income_df) > top_n_income:
-        other_income = income_df.iloc[top_n_income:][income_amount_col].sum()
+    node_filters: dict[str, dict] = {}
+
+    def _node_key(node_type: str, name: str) -> str:
+        return f"{node_type}::{name}"
+
+    # Helper to register node drilldown metadata
+    def register_node(
+        node_type: str,
+        name: str,
+        *,
+        filter_field: str | None,
+        filter_values: list[str] | None,
+        type_filter: str | None = None,
+        is_virtual: bool = False,
+        description: str | None = None
+    ) -> None:
+        node_filters[_node_key(node_type, name)] = {
+            "type": node_type,
+            "name": name,
+            "filter_field": filter_field,
+            "filter_values": filter_values or [],
+            "type_filter": type_filter,
+            "is_virtual": is_virtual,
+            "description": description or "",
+        }
+
+    # Top income sources - sorted descending by amount and track members
+    income_sorted = income_df.sort_values(income_amount_col, ascending=False).reset_index(drop=True)
+    top_income = income_sorted.head(top_n_income).copy()
+    other_income_members: list[str] = []
+    if len(income_sorted) > top_n_income:
+        remaining_income_df = income_sorted.iloc[top_n_income:]
+        other_income = remaining_income_df[income_amount_col].sum()
+        other_income_members = remaining_income_df[income_source_col].tolist()
         if other_income > 0:
             top_income = pd.concat([top_income, pd.DataFrame({
                 income_source_col: ['Other Income'],
                 income_amount_col: [other_income]
             })], ignore_index=True)
-    # Ensure income sources are sorted by amount descending (highest at top)
-    top_income = top_income.sort_values(income_amount_col, ascending=False).reset_index(drop=True)
+    top_income = top_income.reset_index(drop=True)
+    income_member_map = {
+        row[income_source_col]: (
+            other_income_members if row[income_source_col] == 'Other Income' and other_income_members else [row[income_source_col]]
+        ) for _, row in top_income.iterrows()
+    }
 
-    # Top destination accounts - sorted descending by amount
-    top_destinations = destination_df.nlargest(top_n_destination, destination_amount_col).copy()
-    if len(destination_df) > top_n_destination:
-        other_dest = destination_df.iloc[top_n_destination:][destination_amount_col].sum()
+    # Top destination accounts - sorted descending by amount and track members
+    destination_sorted = destination_df.sort_values(destination_amount_col, ascending=False).reset_index(drop=True)
+    top_destinations = destination_sorted.head(top_n_destination).copy()
+    other_destination_members: list[str] = []
+    if len(destination_sorted) > top_n_destination:
+        remaining_dest_df = destination_sorted.iloc[top_n_destination:]
+        other_dest = remaining_dest_df[destination_amount_col].sum()
+        other_destination_members = remaining_dest_df[destination_account_col].tolist()
         if other_dest > 0:
             top_destinations = pd.concat([top_destinations, pd.DataFrame({
                 destination_account_col: ['Other Destinations'],
                 destination_amount_col: [other_dest]
             })], ignore_index=True)
-    # Ensure destinations are sorted by amount descending (highest at top)
-    top_destinations = top_destinations.sort_values(destination_amount_col, ascending=False).reset_index(drop=True)
+    top_destinations = top_destinations.reset_index(drop=True)
+    destination_member_map = {
+        row[destination_account_col]: (
+            other_destination_members if row[destination_account_col] == 'Other Destinations' and other_destination_members else [row[destination_account_col]]
+        ) for _, row in top_destinations.iterrows()
+    }
 
-    # Top categories from mapping - sorted descending by amount
+    # Top categories from mapping - sorted descending by amount and track members
     category_totals = destination_category_mapping_df.groupby(category_col)[mapping_amount_col].sum().reset_index()
     category_totals.columns = [category_col, 'total']
-    top_categories = category_totals.nlargest(top_n_category, 'total').copy()
-    if len(category_totals) > top_n_category:
-        other_cat = category_totals.iloc[top_n_category:]['total'].sum()
+    category_sorted = category_totals.sort_values('total', ascending=False).reset_index(drop=True)
+    top_categories = category_sorted.head(top_n_category).copy()
+    other_category_members: list[str] = []
+    if len(category_sorted) > top_n_category:
+        remaining_cat_df = category_sorted.iloc[top_n_category:]
+        other_cat = remaining_cat_df['total'].sum()
+        other_category_members = remaining_cat_df[category_col].tolist()
         if other_cat > 0:
             top_categories = pd.concat([top_categories, pd.DataFrame({
                 category_col: ['Other Categories'],
                 'total': [other_cat]
             })], ignore_index=True)
-    # Ensure categories are sorted by total descending (highest at top)
-    top_categories = top_categories.sort_values('total', ascending=False).reset_index(drop=True)
+    top_categories = top_categories.reset_index(drop=True)
+    category_member_map = {
+        row[category_col]: (
+            other_category_members if row[category_col] == 'Other Categories' and other_category_members else [row[category_col]]
+        ) for _, row in top_categories.iterrows()
+    }
 
     # Calculate totals
     total_income = top_income[income_amount_col].sum()
@@ -101,6 +151,13 @@ def prepare_sankey_data(
             "layer": 0,
             "type": "income"
         })
+        register_node(
+            "income",
+            name,
+            filter_field=income_source_col,
+            filter_values=income_member_map.get(name, [name]),
+            type_filter="deposit",
+        )
 
     # Layer 1: Total Income
     node_index_map["total_income"] = len(nodes)
@@ -111,6 +168,13 @@ def prepare_sankey_data(
         "layer": 1,
         "type": "total_income"
     })
+    register_node(
+        "total_income",
+        "💰 Total Income",
+        filter_field="type",
+        filter_values=["deposit"],
+        type_filter="deposit",
+    )
 
     # Layer 2: Remaining + Total Expenses
     if remaining > 0:
@@ -123,6 +187,14 @@ def prepare_sankey_data(
             "layer": 2,
             "type": "remaining"
         })
+        register_node(
+            "remaining",
+            "💎 Remaining",
+            filter_field=None,
+            filter_values=None,
+            description="Remaining is derived from total income minus expenses.",
+            is_virtual=True,
+        )
 
     total_expenses_pct = (total_expenses / total_income * 100) if total_income > 0 else 0
     node_index_map["total_expenses"] = len(nodes)
@@ -133,6 +205,13 @@ def prepare_sankey_data(
         "layer": 2,
         "type": "total_expenses"
     })
+    register_node(
+        "total_expenses",
+        "💸 Total Expenses",
+        filter_field="type",
+        filter_values=["withdrawal"],
+        type_filter="withdrawal",
+    )
 
     # Layer 3: Destination accounts
     for idx, row in top_destinations.iterrows():
@@ -147,6 +226,13 @@ def prepare_sankey_data(
             "layer": 3,
             "type": "destination"
         })
+        register_node(
+            "destination",
+            name,
+            filter_field=destination_account_col,
+            filter_values=destination_member_map.get(name, [name]),
+            type_filter="withdrawal",
+        )
 
     # Layer 4: Categories
     for idx, row in top_categories.iterrows():
@@ -161,6 +247,13 @@ def prepare_sankey_data(
             "layer": 4,
             "type": "category"
         })
+        register_node(
+            "category",
+            name,
+            filter_field=category_col,
+            filter_values=category_member_map.get(name, [name]),
+            type_filter="withdrawal",
+        )
 
     # Build links array
     links = []
@@ -231,7 +324,8 @@ def prepare_sankey_data(
             "total_income": float(total_income),
             "total_expenses": float(total_expenses),
             "remaining": float(remaining)
-        }
+        },
+        "node_filters": node_filters
     }
 
 
@@ -364,6 +458,142 @@ def generate_d3_sankey_html(data: dict, title: str, height: int = 700) -> str:
             position: relative;
         }}
 
+        #details-panel {{
+            margin-top: 25px;
+            padding: 20px;
+            background: rgba(15, 23, 42, 0.7);
+            border: 1px solid rgba(148, 163, 184, 0.25);
+            border-radius: 10px;
+            backdrop-filter: blur(6px);
+            color: #f8fafc;
+        }}
+
+        #details-panel h3 {{
+            margin: 0;
+        }}
+
+        #details-panel p {{
+            margin: 4px 0 0 0;
+            color: #cbd5f5;
+            font-size: 0.9rem;
+        }}
+
+        .details-content {{
+            margin-top: 15px;
+            background: rgba(15, 23, 42, 0.35);
+            border: 1px solid rgba(148, 163, 184, 0.2);
+            border-radius: 8px;
+            padding: 12px 16px;
+            min-height: 120px;
+        }}
+
+        .selection-header {{
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-bottom: 10px;
+        }}
+
+        .selection-header .label {{
+            font-size: 0.8rem;
+            color: #a5b4fc;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }}
+
+        .selection-header .value {{
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: #7dd3fc;
+        }}
+
+        .selection-metrics {{
+            display: flex;
+            gap: 16px;
+            font-size: 0.85rem;
+        }}
+
+        .selection-metrics span {{
+            display: block;
+            color: #cbd5f5;
+        }}
+
+        .selection-metrics strong {{
+            font-size: 1rem;
+            color: #f8fafc;
+        }}
+
+        .group-note {{
+            font-size: 0.85rem;
+            color: #cbd5f5;
+            margin-bottom: 8px;
+        }}
+
+        .table-wrapper {{
+            max-height: 360px;
+            overflow-y: auto;
+            border-radius: 6px;
+            border: 1px solid rgba(148, 163, 184, 0.2);
+        }}
+
+        .transactions-table {{
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.85rem;
+        }}
+
+        .transactions-table thead {{
+            position: sticky;
+            top: 0;
+            background: rgba(15, 23, 42, 0.95);
+            z-index: 1;
+        }}
+
+        .transactions-table th,
+        .transactions-table td {{
+            padding: 8px 10px;
+            text-align: left;
+            border-bottom: 1px solid rgba(148, 163, 184, 0.15);
+        }}
+
+        .transactions-table th {{
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: #94a3b8;
+        }}
+
+        .transactions-table td.amount,
+        .transactions-table th.amount {{
+            text-align: right;
+            white-space: nowrap;
+        }}
+
+        .transactions-table tbody tr:hover {{
+            background: rgba(59, 130, 246, 0.08);
+        }}
+
+        .table-footer {{
+            margin-top: 8px;
+            font-size: 0.8rem;
+            color: #94a3b8;
+        }}
+
+        .empty-state {{
+            text-align: center;
+            padding: 20px;
+            color: #cbd5f5;
+        }}
+
+        .empty-state .state-title {{
+            font-size: 1rem;
+            font-weight: 600;
+            margin-bottom: 6px;
+            color: #f8fafc;
+        }}
+
         #chart-container:fullscreen {{
             background-color: #0e1117;
             padding: 20px;
@@ -413,8 +643,24 @@ def generate_d3_sankey_html(data: dict, title: str, height: int = 700) -> str:
         <div id="chart"></div>
     </div>
 
+    <div id="details-panel">
+        <div class="details-header">
+            <h3>🔍 Transaction Drilldown</h3>
+            <p>Click any node to inspect its underlying transactions. Aggregated nodes expand into their member sources, accounts, or categories.</p>
+        </div>
+        <div id="details-content" class="details-content">
+            <div class="empty-state">
+                <div class="state-title">Ready to explore</div>
+                <p>Select a node in the Sankey diagram to view detailed transactions.</p>
+            </div>
+        </div>
+    </div>
+
     <script>
         const data = {data_json};
+        const transactions = data.transactions || [];
+        const nodeFilters = data.node_filters || {{}};
+        const MAX_ROWS = 150;
 
         // Color scheme
         const colors = {{
@@ -438,6 +684,144 @@ def generate_d3_sankey_html(data: dict, title: str, height: int = 700) -> str:
 
         const margin = {{top: 10, right: 10, bottom: 10, left: 10}};
         let svg, g, zoom, sankey, link, node;
+
+        const escapeHtml = (value) => {{
+            if (value === undefined || value === null) return '';
+            return String(value)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }};
+
+        const formatCurrency = (value) => {{
+            const amount = Number(value || 0);
+            return new Intl.NumberFormat('en-IE', {{
+                style: 'currency',
+                currency: 'EUR',
+                maximumFractionDigits: 0
+            }}).format(amount);
+        }};
+
+        const getNodeKey = (node) => `${{node.type}}::${{node.name}}`;
+
+        function filterTransactions(meta) {{
+            if (!transactions.length) return [];
+            let results = transactions.slice();
+
+            if (meta.type_filter) {{
+                results = results.filter(txn => txn.type === meta.type_filter);
+            }}
+
+            if (
+                meta.filter_field &&
+                Array.isArray(meta.filter_values) &&
+                meta.filter_values.length > 0
+            ) {{
+                const allowed = new Set(meta.filter_values.map(v => (v ?? '')));
+                results = results.filter(txn => allowed.has((txn[meta.filter_field] ?? '')));
+            }}
+
+            return results;
+        }}
+
+        function renderTransactions(node, meta) {{
+            const container = document.getElementById('details-content');
+            if (!container) return;
+
+            if (meta.is_virtual) {{
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <div class="state-title">${{escapeHtml(node.name)}}</div>
+                        <p>${{escapeHtml(meta.description || 'This node represents a derived metric.')}}</p>
+                    </div>
+                `;
+                return;
+            }}
+
+            const nodeTransactions = filterTransactions(meta);
+
+            if (!nodeTransactions.length) {{
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <div class="state-title">${{escapeHtml(node.name)}}</div>
+                        <p>No transactions found for this node in the selected period.</p>
+                    </div>
+                `;
+                return;
+            }}
+
+            const total = nodeTransactions.reduce((acc, txn) => acc + Math.abs(Number(txn.amount || 0)), 0);
+            const avg = total / nodeTransactions.length;
+            const limited = nodeTransactions.slice(0, MAX_ROWS);
+            const clipped = nodeTransactions.length > MAX_ROWS;
+
+            const tableRows = limited.map(txn => `
+                <tr>
+                    <td>${{escapeHtml(txn.date || '')}}</td>
+                    <td>${{escapeHtml(txn.description || '')}}</td>
+                    <td>${{escapeHtml(txn.source_name || '')}}</td>
+                    <td>${{escapeHtml(txn.destination_name || '')}}</td>
+                    <td>${{escapeHtml(txn.category_name || '')}}</td>
+                    <td class="amount">${{formatCurrency(Math.abs(Number(txn.amount || 0)))}}</td>
+                </tr>
+            `).join('');
+
+            const groupNote = meta.filter_values && meta.filter_values.length > 1
+                ? `<div class="group-note">Includes ${{meta.filter_values.length}} grouped entries.</div>`
+                : '';
+
+            container.innerHTML = `
+                <div class="selection-header">
+                    <div>
+                        <div class="label">Selected Node</div>
+                        <div class="value">${{escapeHtml(node.name)}}</div>
+                    </div>
+                    <div class="selection-metrics">
+                        <div><span>Transactions</span><strong>${{nodeTransactions.length}}</strong></div>
+                        <div><span>Total</span><strong>${{formatCurrency(total)}}</strong></div>
+                        <div><span>Average</span><strong>${{formatCurrency(avg)}}</strong></div>
+                    </div>
+                </div>
+                ${{groupNote}}
+                <div class="table-wrapper">
+                    <table class="transactions-table">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Description</th>
+                                <th>Source</th>
+                                <th>Destination</th>
+                                <th>Category</th>
+                                <th class="amount">Amount</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${{tableRows}}
+                        </tbody>
+                    </table>
+                </div>
+                ${{clipped ? `<div class="table-footer">Showing ${{limited.length}} of ${{nodeTransactions.length}} transactions. Narrow your date range for the full list.</div>` : ''}}
+            `;
+        }}
+
+        function handleNodeClick(nodeData) {{
+            const meta = nodeFilters[getNodeKey(nodeData)];
+            if (!meta) {{
+                const container = document.getElementById('details-content');
+                if (container) {{
+                    container.innerHTML = `
+                        <div class="empty-state">
+                            <div class="state-title">${{escapeHtml(nodeData.name)}}</div>
+                            <p>No drilldown data is available for this node.</p>
+                        </div>
+                    `;
+                }}
+                return;
+            }}
+            renderTransactions(nodeData, meta);
+        }}
 
         function drawChart() {{
             // Clear existing chart
@@ -605,6 +989,9 @@ def generate_d3_sankey_html(data: dict, title: str, height: int = 700) -> str:
                 }})
                 .on("mouseout", function() {{
                     resetHighlight();
+                }})
+                .on("click", function(event, d) {{
+                    handleNodeClick(d);
                 }});
 
             // Link hover

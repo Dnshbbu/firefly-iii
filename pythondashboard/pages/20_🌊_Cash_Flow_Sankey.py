@@ -299,6 +299,14 @@ try:
             # Separate transfers from income/expenses
             df_filtered = df[df['type'].isin(['deposit', 'withdrawal'])].copy()
 
+            # Normalize key text fields so drilldowns match what the Sankey displays
+            df_filtered['source_name'] = df_filtered['source_name'].fillna('Unknown')
+            df_filtered['source_name'] = df_filtered['source_name'].replace('', 'Unknown')
+            df_filtered['destination_name'] = df_filtered['destination_name'].fillna('Unknown')
+            df_filtered['destination_name'] = df_filtered['destination_name'].replace('', 'Unknown')
+            df_filtered['category_name'] = df_filtered['category_name'].fillna('Uncategorized')
+            df_filtered['category_name'] = df_filtered['category_name'].replace('', 'Uncategorized')
+
             if df_filtered.empty:
                 st.warning("No income or expense transactions found in the selected date range.")
                 st.stop()
@@ -347,6 +355,26 @@ try:
                     top_n_category=top_n_expense
                 )
 
+                # Package transaction rows for drill-down interactions inside the D3 component
+                transactions_view = df_filtered[
+                    ['id', 'date', 'type', 'source_name', 'destination_name', 'category_name', 'description', 'amount']
+                ].copy()
+
+                if not transactions_view.empty:
+                    if pd.api.types.is_datetime64_any_dtype(transactions_view['date']):
+                        transactions_view['date'] = transactions_view['date'].dt.tz_localize(None)
+                    else:
+                        transactions_view['date'] = pd.to_datetime(transactions_view['date'], utc=True)
+                        transactions_view['date'] = transactions_view['date'].dt.tz_localize(None)
+
+                    transactions_view['date'] = transactions_view['date'].dt.strftime('%Y-%m-%d')
+                    transactions_view['description'] = transactions_view['description'].fillna('')
+                    transactions_view['amount'] = transactions_view['amount'].astype(float)
+
+                    sankey_data['transactions'] = transactions_view.to_dict(orient='records')
+                else:
+                    sankey_data['transactions'] = []
+
                 # Generate D3 Sankey HTML
                 import streamlit.components.v1 as components
 
@@ -356,8 +384,9 @@ try:
                     height=700
                 )
 
-                # Display using components.html
-                components.html(sankey_html, height=750, scrolling=False)
+                # Display using components.html (extra height so the drilldown table is fully visible)
+                components.html(sankey_html, height=1100, scrolling=True)
+                st.caption("Tip: Click any node in the Sankey to populate the transaction drilldown panel below the chart.")
 
                 # Show detailed breakdown in expanders
                 col1, col2, col3 = st.columns(3)
