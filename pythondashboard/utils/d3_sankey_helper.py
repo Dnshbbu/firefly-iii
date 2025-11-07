@@ -554,9 +554,10 @@ def generate_d3_sankey_html(data: dict, title: str, height: int = 700) -> str:
                 .append("tspan")
                 .attr("x", d => d.x0 < width / 2 ? d.x1 + 6 : d.x0 - 6)
                 .attr("dy", "1.2em")
-                .style("fill", "#60a5fa")
+                .style("fill", "#7dd3fc")
                 .style("font-size", "10px")
                 .style("font-weight", "500")
+                .style("font-family", "'Segoe UI', 'Roboto', 'Helvetica Neue', sans-serif")
                 .text(d => `€${{d.amount.toLocaleString('en-IE', {{maximumFractionDigits: 0}})}} (${{d.percentage.toFixed(1)}}%)`);
 
             // Hover interactions

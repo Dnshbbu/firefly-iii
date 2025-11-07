@@ -329,8 +329,6 @@ try:
             st.markdown("---")
 
             # Display Sankey diagram
-            st.markdown("### 🌊 Complete Cash Flow Visualization")
-
             if not income_sources.empty and not destination_accounts.empty and not category_spending.empty:
 
                 # Prepare data for D3 Sankey
