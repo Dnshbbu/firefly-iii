@@ -41,7 +41,7 @@ def prepare_sankey_data(
     Returns:
         Dictionary with nodes and links for D3 Sankey
     """
-    # Top income sources
+    # Top income sources - sorted descending by amount
     top_income = income_df.nlargest(top_n_income, income_amount_col).copy()
     if len(income_df) > top_n_income:
         other_income = income_df.iloc[top_n_income:][income_amount_col].sum()
@@ -50,9 +50,10 @@ def prepare_sankey_data(
                 income_source_col: ['Other Income'],
                 income_amount_col: [other_income]
             })], ignore_index=True)
-    top_income = top_income.reset_index(drop=True)
+    # Ensure income sources are sorted by amount descending (highest at top)
+    top_income = top_income.sort_values(income_amount_col, ascending=False).reset_index(drop=True)
 
-    # Top destination accounts
+    # Top destination accounts - sorted descending by amount
     top_destinations = destination_df.nlargest(top_n_destination, destination_amount_col).copy()
     if len(destination_df) > top_n_destination:
         other_dest = destination_df.iloc[top_n_destination:][destination_amount_col].sum()
@@ -61,9 +62,10 @@ def prepare_sankey_data(
                 destination_account_col: ['Other Destinations'],
                 destination_amount_col: [other_dest]
             })], ignore_index=True)
-    top_destinations = top_destinations.reset_index(drop=True)
+    # Ensure destinations are sorted by amount descending (highest at top)
+    top_destinations = top_destinations.sort_values(destination_amount_col, ascending=False).reset_index(drop=True)
 
-    # Top categories from mapping
+    # Top categories from mapping - sorted descending by amount
     category_totals = destination_category_mapping_df.groupby(category_col)[mapping_amount_col].sum().reset_index()
     category_totals.columns = [category_col, 'total']
     top_categories = category_totals.nlargest(top_n_category, 'total').copy()
@@ -74,7 +76,8 @@ def prepare_sankey_data(
                 category_col: ['Other Categories'],
                 'total': [other_cat]
             })], ignore_index=True)
-    top_categories = top_categories.reset_index(drop=True)
+    # Ensure categories are sorted by total descending (highest at top)
+    top_categories = top_categories.sort_values('total', ascending=False).reset_index(drop=True)
 
     # Calculate totals
     total_income = top_income[income_amount_col].sum()
@@ -380,7 +383,12 @@ def generate_d3_sankey_html(data: dict, title: str, height: int = 700) -> str:
             .nodePadding(20)
             .extent([[1, 1], [width - 1, height - 1]])
             .nodeId(d => d.index)
-            .nodeAlign(d3.sankeyLeft);
+            .nodeAlign(d3.sankeyLeft)
+            .nodeSort((a, b) => {{
+                // Sort nodes by amount descending (highest at top)
+                // This preserves the order we set in the data
+                return b.amount - a.amount;
+            }});
 
         // Add index to nodes
         data.nodes.forEach((node, i) => {{
