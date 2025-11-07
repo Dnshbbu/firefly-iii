@@ -529,7 +529,7 @@ try:
                     with st.expander("💵 Income Sources Details", expanded=False):
                         st.dataframe(
                             income_sources,
-                            use_container_width=True,
+                            width='stretch',
                             hide_index=True,
                             column_config={
                                 'source_name': 'Source',
@@ -543,7 +543,7 @@ try:
                     with st.expander("🏢 Destination Accounts Details", expanded=False):
                         st.dataframe(
                             destination_accounts,
-                            use_container_width=True,
+                            width='stretch',
                             hide_index=True,
                             column_config={
                                 'destination_name': 'Destination',
@@ -557,7 +557,7 @@ try:
                     with st.expander("💸 Expense Categories Details", expanded=False):
                         st.dataframe(
                             category_spending,
-                            use_container_width=True,
+                            width='stretch',
                             hide_index=True,
                             column_config={
                                 'category_name': 'Category',
