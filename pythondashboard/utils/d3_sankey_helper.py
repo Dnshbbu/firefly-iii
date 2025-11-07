@@ -264,12 +264,14 @@ def generate_d3_sankey_html(data: dict, title: str, height: int = 700) -> str:
             padding: 20px;
             font-family: Arial, sans-serif;
             background-color: transparent;
-            overflow: hidden;
+            overflow: auto;
         }}
 
         #chart {{
             width: 100%;
             height: {height}px;
+            overflow: visible;
+            position: relative;
         }}
 
         .node rect {{
@@ -345,11 +347,51 @@ def generate_d3_sankey_html(data: dict, title: str, height: int = 700) -> str:
             color: rgba(250, 250, 250, 0.9);
             font-size: 1.3rem;
         }}
+
+        #zoom-controls {{
+            position: absolute;
+            top: 50px;
+            right: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            z-index: 1001;
+        }}
+
+        .zoom-btn {{
+            width: 35px;
+            height: 35px;
+            background: rgba(30, 30, 30, 0.95);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 4px;
+            color: #fff;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+        }}
+
+        .zoom-btn:hover {{
+            background: rgba(60, 60, 60, 0.95);
+            border-color: rgba(255, 255, 255, 0.4);
+        }}
+
+        .zoom-btn:active {{
+            transform: scale(0.95);
+        }}
     </style>
 </head>
 <body>
     <h2>{title}</h2>
     <div id="tooltip"></div>
+    <div id="zoom-controls">
+        <button class="zoom-btn" id="zoom-in" title="Zoom In">+</button>
+        <button class="zoom-btn" id="zoom-out" title="Zoom Out">−</button>
+        <button class="zoom-btn" id="zoom-reset" title="Reset Zoom">⟲</button>
+    </div>
     <div id="chart"></div>
 
     <script>
@@ -373,9 +415,33 @@ def generate_d3_sankey_html(data: dict, title: str, height: int = 700) -> str:
         const svg = d3.select("#chart")
             .append("svg")
             .attr("width", width + margin.left + margin.right)
-            .attr("height", height + margin.top + margin.bottom)
-            .append("g")
+            .attr("height", height + margin.top + margin.bottom);
+
+        // Create a group for zoom/pan transformations
+        const g = svg.append("g")
             .attr("transform", `translate(${{margin.left}},${{margin.top}})`);
+
+        // Setup zoom behavior
+        const zoom = d3.zoom()
+            .scaleExtent([0.1, 4])  // Allow zoom from 10% to 400%
+            .on("zoom", (event) => {{
+                g.attr("transform", event.transform);
+            }});
+
+        svg.call(zoom);
+
+        // Zoom control functions
+        d3.select("#zoom-in").on("click", () => {{
+            svg.transition().duration(300).call(zoom.scaleBy, 1.3);
+        }});
+
+        d3.select("#zoom-out").on("click", () => {{
+            svg.transition().duration(300).call(zoom.scaleBy, 0.7);
+        }});
+
+        d3.select("#zoom-reset").on("click", () => {{
+            svg.transition().duration(300).call(zoom.transform, d3.zoomIdentity.translate(margin.left, margin.top));
+        }});
 
         // Create Sankey generator
         const sankey = d3.sankey()
@@ -405,7 +471,7 @@ def generate_d3_sankey_html(data: dict, title: str, height: int = 700) -> str:
         const color = d => colors[d.type] || '#999';
 
         // Add links
-        const link = svg.append("g")
+        const link = g.append("g")
             .attr("class", "links")
             .selectAll("path")
             .data(links)
@@ -417,7 +483,7 @@ def generate_d3_sankey_html(data: dict, title: str, height: int = 700) -> str:
             .attr("stroke-width", d => Math.max(1, d.width));
 
         // Add nodes
-        const node = svg.append("g")
+        const node = g.append("g")
             .attr("class", "nodes")
             .selectAll("g")
             .data(nodes)
