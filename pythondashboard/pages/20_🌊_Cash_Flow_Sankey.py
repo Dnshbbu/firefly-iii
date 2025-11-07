@@ -8,8 +8,13 @@ from pathlib import Path
 sys.path.append(str(Path(__file__).parent.parent))
 
 from utils.api_client import FireflyAPIClient
-from utils.charts import create_sankey_diagram
-from utils.calculations import calculate_category_spending, calculate_income_sources
+from utils.sankey_helper import create_sankey_with_destinations
+from utils.calculations import (
+    calculate_category_spending,
+    calculate_income_sources,
+    calculate_destination_accounts_spending,
+    calculate_destination_to_category_mapping
+)
 from utils.navigation import render_sidebar_navigation
 from utils.config import get_firefly_url, get_firefly_token
 
@@ -246,6 +251,15 @@ top_n_income = st.sidebar.slider(
     help="Number of top income sources to display"
 )
 
+top_n_destination = st.sidebar.slider(
+    "Top Destination Accounts",
+    min_value=5,
+    max_value=30,
+    value=15,
+    step=1,
+    help="Number of top destination accounts to display"
+)
+
 top_n_expense = st.sidebar.slider(
     "Top Expense Categories",
     min_value=5,
@@ -294,9 +308,11 @@ try:
             total_expenses = df_filtered[df_filtered['type'] == 'withdrawal']['amount'].sum()
             net_flow = total_income - total_expenses
 
-            # Calculate income sources and expense categories
+            # Calculate income sources, destination accounts, and categories
             income_sources = calculate_income_sources(df_filtered, start_date_str, end_date_str)
+            destination_accounts = calculate_destination_accounts_spending(df_filtered, start_date_str, end_date_str)
             category_spending = calculate_category_spending(df_filtered, start_date_str, end_date_str)
+            destination_category_mapping = calculate_destination_to_category_mapping(df_filtered, start_date_str, end_date_str)
 
             # Display summary metrics
             st.markdown("### 💰 Financial Summary")
@@ -315,25 +331,29 @@ try:
             # Display Sankey diagram
             st.markdown("### 🌊 Complete Cash Flow Visualization")
 
-            if not income_sources.empty and not category_spending.empty:
+            if not income_sources.empty and not destination_accounts.empty and not category_spending.empty:
 
-                fig_sankey = create_sankey_diagram(
+                fig_sankey = create_sankey_with_destinations(
                     income_df=income_sources,
-                    expense_df=category_spending,
+                    destination_df=destination_accounts,
+                    destination_category_mapping_df=destination_category_mapping,
                     income_source_col='source_name',
                     income_amount_col='total_amount',
-                    expense_category_col='category_name',
-                    expense_amount_col='total_amount',
+                    destination_account_col='destination_name',
+                    destination_amount_col='total_amount',
+                    category_col='category_name',
+                    mapping_amount_col='total_amount',
                     title=f"Cash Flow Sankey Diagram ({start_date_str} to {end_date_str})",
                     height=700,
                     top_n_income=top_n_income,
-                    top_n_expense=top_n_expense
+                    top_n_destination=top_n_destination,
+                    top_n_category=top_n_expense
                 )
 
                 st.plotly_chart(fig_sankey, use_container_width=True, config={'displayModeBar': True})
 
                 # Show detailed breakdown in expanders
-                col1, col2 = st.columns(2)
+                col1, col2, col3 = st.columns(3)
 
                 with col1:
                     with st.expander("💵 Income Sources Details", expanded=False):
@@ -350,6 +370,20 @@ try:
                         )
 
                 with col2:
+                    with st.expander("🏢 Destination Accounts Details", expanded=False):
+                        st.dataframe(
+                            destination_accounts,
+                            use_container_width=True,
+                            hide_index=True,
+                            column_config={
+                                'destination_name': 'Destination',
+                                'total_amount': st.column_config.NumberColumn('Total', format="€%.2f"),
+                                'transaction_count': 'Count'
+                            },
+                            height=400
+                        )
+
+                with col3:
                     with st.expander("💸 Expense Categories Details", expanded=False):
                         st.dataframe(
                             category_spending,
@@ -366,6 +400,8 @@ try:
             else:
                 if income_sources.empty:
                     st.warning("No income sources found in the selected date range.")
+                if destination_accounts.empty:
+                    st.warning("No destination accounts found in the selected date range.")
                 if category_spending.empty:
                     st.warning("No categorized expenses found in the selected date range.")
 

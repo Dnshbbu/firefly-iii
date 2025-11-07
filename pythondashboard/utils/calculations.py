@@ -1051,3 +1051,119 @@ def get_transactions_by_tag(
     )].copy()
 
     return df_filtered
+
+
+def calculate_destination_accounts_spending(
+    transactions_df: pd.DataFrame,
+    start_date: str = None,
+    end_date: str = None
+) -> pd.DataFrame:
+    """
+    Calculate spending by destination account (where money goes).
+
+    Args:
+        transactions_df: DataFrame with transaction data
+        start_date: Optional start date filter (YYYY-MM-DD)
+        end_date: Optional end date filter (YYYY-MM-DD)
+
+    Returns:
+        DataFrame with columns: destination_name, total_amount, transaction_count
+    """
+    if transactions_df.empty:
+        return pd.DataFrame(columns=['destination_name', 'total_amount', 'transaction_count'])
+
+    df = transactions_df.copy()
+
+    # Ensure date is datetime and handle timezone
+    if pd.api.types.is_datetime64_any_dtype(df['date']):
+        if hasattr(df['date'].dt, 'tz') and df['date'].dt.tz is not None:
+            df['date'] = df['date'].dt.tz_localize(None)
+    else:
+        df['date'] = pd.to_datetime(df['date'], utc=True)
+        df['date'] = df['date'].dt.tz_localize(None)
+
+    # Filter by date range if provided
+    if start_date:
+        start_dt = pd.to_datetime(start_date)
+        df = df[df['date'] >= start_dt]
+    if end_date:
+        end_dt = pd.to_datetime(end_date)
+        df = df[df['date'] <= end_dt]
+
+    # Filter for expenses only (withdrawals)
+    expense_df = df[df['type'] == 'withdrawal'].copy()
+
+    # Replace None and empty destination names with 'Unknown'
+    expense_df['destination_name'] = expense_df['destination_name'].fillna('Unknown')
+    expense_df['destination_name'] = expense_df['destination_name'].replace('', 'Unknown')
+
+    # Group by destination account
+    destination_summary = expense_df.groupby('destination_name').agg({
+        'amount': ['sum', 'count']
+    }).reset_index()
+
+    destination_summary.columns = ['destination_name', 'total_amount', 'transaction_count']
+
+    # Sort by total amount descending
+    destination_summary = destination_summary.sort_values('total_amount', ascending=False)
+
+    return destination_summary
+
+
+def calculate_destination_to_category_mapping(
+    transactions_df: pd.DataFrame,
+    start_date: str = None,
+    end_date: str = None
+) -> pd.DataFrame:
+    """
+    Calculate the mapping of destination accounts to categories with amounts.
+
+    Args:
+        transactions_df: DataFrame with transaction data
+        start_date: Optional start date filter (YYYY-MM-DD)
+        end_date: Optional end date filter (YYYY-MM-DD)
+
+    Returns:
+        DataFrame with columns: destination_name, category_name, total_amount
+    """
+    if transactions_df.empty:
+        return pd.DataFrame(columns=['destination_name', 'category_name', 'total_amount'])
+
+    df = transactions_df.copy()
+
+    # Ensure date is datetime and handle timezone
+    if pd.api.types.is_datetime64_any_dtype(df['date']):
+        if hasattr(df['date'].dt, 'tz') and df['date'].dt.tz is not None:
+            df['date'] = df['date'].dt.tz_localize(None)
+    else:
+        df['date'] = pd.to_datetime(df['date'], utc=True)
+        df['date'] = df['date'].dt.tz_localize(None)
+
+    # Filter by date range if provided
+    if start_date:
+        start_dt = pd.to_datetime(start_date)
+        df = df[df['date'] >= start_dt]
+    if end_date:
+        end_dt = pd.to_datetime(end_date)
+        df = df[df['date'] <= end_dt]
+
+    # Filter for expenses only (withdrawals)
+    expense_df = df[df['type'] == 'withdrawal'].copy()
+
+    # Replace None and empty names
+    expense_df['destination_name'] = expense_df['destination_name'].fillna('Unknown')
+    expense_df['destination_name'] = expense_df['destination_name'].replace('', 'Unknown')
+    expense_df['category_name'] = expense_df['category_name'].fillna('Uncategorized')
+    expense_df['category_name'] = expense_df['category_name'].replace('', 'Uncategorized')
+
+    # Group by destination and category
+    mapping = expense_df.groupby(['destination_name', 'category_name']).agg({
+        'amount': 'sum'
+    }).reset_index()
+
+    mapping.columns = ['destination_name', 'category_name', 'total_amount']
+
+    # Sort by total amount descending
+    mapping = mapping.sort_values('total_amount', ascending=False)
+
+    return mapping

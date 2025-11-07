@@ -1269,35 +1269,53 @@ def create_gap_analysis_chart(
 def create_sankey_diagram(
     income_df: pd.DataFrame,
     expense_df: pd.DataFrame,
+    destination_df: pd.DataFrame = None,
+    destination_category_mapping_df: pd.DataFrame = None,
     income_source_col: str = 'source_name',
     income_amount_col: str = 'total_amount',
     expense_category_col: str = 'category_name',
     expense_amount_col: str = 'total_amount',
+    destination_account_col: str = 'destination_name',
+    destination_amount_col: str = 'total_amount',
     title: str = 'Cash Flow: Income Sources → Total Income → Expenses + Remaining',
     height: int = 600,
     top_n_income: int = 10,
+    top_n_destination: int = 15,
     top_n_expense: int = 15
 ) -> go.Figure:
     """
-    Create a three-tier Sankey diagram showing:
-    1. Income sources flowing into Total Income
-    2. Total Income splitting into expense categories and remaining amount
+    Create a 5-tier Sankey diagram showing complete cash flow:
+    1. Income sources → Total Income
+    2. Total Income → (Remaining + Total Expenses)
+    3. Total Expenses → Destination Accounts
+    4. Destination Accounts → Categories
 
     Args:
         income_df: DataFrame with income sources and amounts
         expense_df: DataFrame with expense categories and amounts
+        destination_df: DataFrame with destination accounts and amounts
+        destination_category_mapping_df: DataFrame mapping destinations to categories with amounts
         income_source_col: Column name for income source names
         income_amount_col: Column name for income amounts
         expense_category_col: Column name for expense category names
         expense_amount_col: Column name for expense amounts
+        destination_account_col: Column name for destination account names
+        destination_amount_col: Column name for destination amounts
         title: Chart title
         height: Chart height in pixels
         top_n_income: Number of top income sources to display
+        top_n_destination: Number of top destination accounts to display
         top_n_expense: Number of top expense categories to display
 
     Returns:
         Plotly Figure object
     """
+    # If no destination data provided, fall back to simpler structure
+    if destination_df is None or destination_category_mapping_df is None:
+        # Use old 4-tier structure (without destinations)
+        return _create_simple_sankey(income_df, expense_df, income_source_col, income_amount_col,
+                                     expense_category_col, expense_amount_col, title, height,
+                                     top_n_income, top_n_expense)
     # Take top N income sources and expense categories
     top_income = income_df.nlargest(top_n_income, income_amount_col).copy()
     top_expenses = expense_df.nlargest(top_n_expense, expense_amount_col).copy()
@@ -1337,10 +1355,11 @@ def create_sankey_diagram(
     total_expenses = top_expenses[expense_amount_col].sum()
     remaining = total_income - total_expenses
 
-    # Build node structure: [Income Sources] + [Total Income] + [Remaining] + [Expense Categories]
+    # Build node structure: [Income Sources] + [Total Income] + [Remaining + Total Expenses] + [Expense Categories]
     # Layer 0: Income sources (left)
-    # Layer 1: Total Income (middle)
-    # Layer 2: Remaining (top right) + Expense categories (below, right)
+    # Layer 1: Total Income (middle-left)
+    # Layer 2: Remaining (top) + Total Expenses (middle-right)
+    # Layer 3: Expense categories (right)
 
     # Add amounts and percentages to node labels for visibility
     income_labels_with_amounts = [
@@ -1353,18 +1372,22 @@ def create_sankey_diagram(
     remaining_pct = (remaining / total_income * 100) if total_income > 0 else 0
     remaining_node_label = f"💎 Remaining<br>€{remaining:,.0f} ({remaining_pct:.1f}%)"
 
+    total_expenses_pct = (total_expenses / total_income * 100) if total_income > 0 else 0
+    total_expenses_node_label = f"💸 Total Expenses<br>€{total_expenses:,.0f} ({total_expenses_pct:.1f}%)"
+
     expense_labels_with_amounts = [
-        f"{label}<br>€{amount:,.0f} ({amount/total_income*100:.1f}%)"
+        f"{label}<br>€{amount:,.0f} ({amount/total_expenses*100:.1f}%)"
         for label, amount in zip(expense_labels, top_expenses[expense_amount_col])
     ]
 
-    # Put Remaining first in the right layer, then expenses
-    all_labels = income_labels_with_amounts + [total_income_node_label] + [remaining_node_label] + expense_labels_with_amounts
+    # Structure: Income Sources + Total Income + Remaining + Total Expenses + Categories
+    all_labels = income_labels_with_amounts + [total_income_node_label] + [remaining_node_label, total_expenses_node_label] + expense_labels_with_amounts
 
     # Calculate node indices
     total_income_idx = len(income_labels)
     remaining_idx = total_income_idx + 1
-    first_expense_idx = remaining_idx + 1
+    total_expenses_idx = total_income_idx + 2
+    first_expense_idx = total_expenses_idx + 1
 
     # Create links
     sources = []
@@ -1378,16 +1401,21 @@ def create_sankey_diagram(
         targets.append(total_income_idx)  # Total Income node
         values.append(income_amount)
 
-    # Phase 2: Total Income → Remaining (if positive) - This comes FIRST to position at top
+    # Phase 2: Total Income → Remaining (if positive)
     if remaining > 0:
         sources.append(total_income_idx)  # Total Income node
         targets.append(remaining_idx)  # Remaining node
         values.append(remaining)
 
-    # Phase 3: Total Income → Expense categories
+    # Phase 3: Total Income → Total Expenses
+    sources.append(total_income_idx)  # Total Income node
+    targets.append(total_expenses_idx)  # Total Expenses node
+    values.append(total_expenses)
+
+    # Phase 4: Total Expenses → Expense categories
     for i, expense_row in enumerate(top_expenses.itertuples()):
         expense_amount = getattr(expense_row, expense_amount_col)
-        sources.append(total_income_idx)  # Total Income node
+        sources.append(total_expenses_idx)  # Total Expenses node
         targets.append(first_expense_idx + i)  # Expense category index
         values.append(expense_amount)
 
@@ -1398,21 +1426,26 @@ def create_sankey_diagram(
     # Layer 1: Total Income (blue)
     total_income_color = ['rgba(59, 130, 246, 0.8)']
 
-    # Layer 2: Remaining (bright green) + Expense categories (red shades)
+    # Layer 2: Remaining (bright green) + Total Expenses (orange)
     remaining_color = ['rgba(34, 197, 94, 0.8)'] if remaining > 0 else ['rgba(239, 68, 68, 0.8)']
+    total_expenses_color = ['rgba(251, 146, 60, 0.8)']  # Orange for total expenses
+
+    # Layer 3: Expense categories (red shades)
     expense_colors = ['rgba(248, 113, 113, 0.7)'] * len(expense_labels)
 
-    node_colors = income_colors + total_income_color + remaining_color + expense_colors
+    node_colors = income_colors + total_income_color + remaining_color + total_expenses_color + expense_colors
 
     # Link colors
     # Green for income → total income
     income_link_colors = ['rgba(74, 222, 128, 0.3)'] * len(income_labels)
-    # Green for total income → remaining (if positive) - comes first
+    # Green for total income → remaining (if positive)
     remaining_link_color = ['rgba(34, 197, 94, 0.4)'] if remaining > 0 else []
-    # Red for total income → expenses
+    # Orange for total income → total expenses
+    total_expenses_link_color = ['rgba(251, 146, 60, 0.3)']
+    # Red for total expenses → expense categories
     expense_link_colors = ['rgba(248, 113, 113, 0.3)'] * len(expense_labels)
 
-    link_colors = income_link_colors + remaining_link_color + expense_link_colors
+    link_colors = income_link_colors + remaining_link_color + total_expenses_link_color + expense_link_colors
 
     # Create custom data for hover information
     node_customdata = []
@@ -1424,41 +1457,53 @@ def create_sankey_diagram(
     # Total Income
     node_customdata.append(f'€{total_income:,.0f}')
 
-    # Remaining (comes before expenses now)
+    # Remaining
     node_customdata.append(f'€{remaining:,.0f}')
+
+    # Total Expenses
+    node_customdata.append(f'€{total_expenses:,.0f}')
 
     # Expense categories
     for val in top_expenses[expense_amount_col].tolist():
         node_customdata.append(f'€{val:,.0f}')
 
-    # Set explicit Y positions to ensure Remaining is at top
-    # Y coordinates range from 0 (top) to 1 (bottom)
+    # Set explicit X and Y positions for 4-tier structure
+    # X coordinates: 0 (left) to 1 (right)
+    # Y coordinates: 0 (top) to 1 (bottom)
+    node_x_positions = []
     node_y_positions = []
 
-    # Income sources - distribute evenly on left
+    # Layer 0: Income sources - LEFT (x=0.01)
     num_income = len(income_labels)
-    if num_income > 1:
-        for i in range(num_income):
+    for i in range(num_income):
+        node_x_positions.append(0.01)
+        if num_income > 1:
             node_y_positions.append(i / (num_income - 1))
-    else:
-        node_y_positions.append(0.5)
+        else:
+            node_y_positions.append(0.5)
 
-    # Total Income - center
+    # Layer 1: Total Income - MIDDLE-LEFT (x=0.35, y=0.5)
+    node_x_positions.append(0.35)
     node_y_positions.append(0.5)
 
-    # Remaining - ALWAYS at top (y=0.05)
+    # Layer 2: Remaining (top) and Total Expenses (middle)
+    # Remaining - MIDDLE-RIGHT TOP (x=0.65, y=0.05)
+    node_x_positions.append(0.65)
     node_y_positions.append(0.05)
 
-    # Expense categories - distribute below Remaining
+    # Total Expenses - MIDDLE-RIGHT (x=0.65, y=0.5)
+    node_x_positions.append(0.65)
+    node_y_positions.append(0.5)
+
+    # Layer 3: Expense categories - RIGHT (x=0.99)
     num_expenses = len(expense_labels)
-    if num_expenses > 0:
-        # Start expenses from y=0.2 to leave space for Remaining at top
-        for i in range(num_expenses):
-            if num_expenses > 1:
-                y_pos = 0.2 + (i / (num_expenses - 1)) * 0.75  # Distribute from 0.2 to 0.95
-            else:
-                y_pos = 0.5
-            node_y_positions.append(y_pos)
+    for i in range(num_expenses):
+        node_x_positions.append(0.99)
+        if num_expenses > 1:
+            y_pos = 0.2 + (i / (num_expenses - 1)) * 0.75  # Distribute from 0.2 to 0.95
+        else:
+            y_pos = 0.5
+        node_y_positions.append(y_pos)
 
     fig = go.Figure(data=[go.Sankey(
         arrangement='snap',
@@ -1470,7 +1515,7 @@ def create_sankey_diagram(
             color=node_colors,
             customdata=node_customdata,
             hovertemplate='%{label}<br>Amount: %{customdata}<extra></extra>',
-            x=[0.01] * num_income + [0.5] + [0.99] * (1 + num_expenses),  # X positions: left, middle, right
+            x=node_x_positions,  # Explicit X positions for 4-tier layout
             y=node_y_positions  # Explicit Y positions
         ),
         link=dict(
