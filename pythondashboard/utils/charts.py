@@ -1264,3 +1264,197 @@ def create_gap_analysis_chart(
     fig.add_hline(y=0, line_dash="dash", line_color="gray", opacity=0.5)
 
     return fig
+
+
+def create_sankey_diagram(
+    income_df: pd.DataFrame,
+    expense_df: pd.DataFrame,
+    income_source_col: str = 'source_name',
+    income_amount_col: str = 'total_amount',
+    expense_category_col: str = 'category_name',
+    expense_amount_col: str = 'total_amount',
+    title: str = 'Cash Flow: Income Sources → Total Income → Expenses + Remaining',
+    height: int = 600,
+    top_n_income: int = 10,
+    top_n_expense: int = 15
+) -> go.Figure:
+    """
+    Create a three-tier Sankey diagram showing:
+    1. Income sources flowing into Total Income
+    2. Total Income splitting into expense categories and remaining amount
+
+    Args:
+        income_df: DataFrame with income sources and amounts
+        expense_df: DataFrame with expense categories and amounts
+        income_source_col: Column name for income source names
+        income_amount_col: Column name for income amounts
+        expense_category_col: Column name for expense category names
+        expense_amount_col: Column name for expense amounts
+        title: Chart title
+        height: Chart height in pixels
+        top_n_income: Number of top income sources to display
+        top_n_expense: Number of top expense categories to display
+
+    Returns:
+        Plotly Figure object
+    """
+    # Take top N income sources and expense categories
+    top_income = income_df.nlargest(top_n_income, income_amount_col).copy()
+    top_expenses = expense_df.nlargest(top_n_expense, expense_amount_col).copy()
+
+    # Create node labels for income sources
+    income_labels = top_income[income_source_col].tolist()
+
+    # Add "Other Income" if there are more items
+    if len(income_df) > top_n_income:
+        other_income_amount = income_df.iloc[top_n_income:][income_amount_col].sum()
+        if other_income_amount > 0:
+            top_income = pd.concat([
+                top_income,
+                pd.DataFrame({
+                    income_source_col: ['Other Income'],
+                    income_amount_col: [other_income_amount]
+                })
+            ], ignore_index=True)
+            income_labels.append('Other Income')
+
+    # Add "Other Expenses" if there are more items
+    expense_labels = top_expenses[expense_category_col].tolist()
+    if len(expense_df) > top_n_expense:
+        other_expense_amount = expense_df.iloc[top_n_expense:][expense_amount_col].sum()
+        if other_expense_amount > 0:
+            top_expenses = pd.concat([
+                top_expenses,
+                pd.DataFrame({
+                    expense_category_col: ['Other Expenses'],
+                    expense_amount_col: [other_expense_amount]
+                })
+            ], ignore_index=True)
+            expense_labels.append('Other Expenses')
+
+    # Calculate totals
+    total_income = top_income[income_amount_col].sum()
+    total_expenses = top_expenses[expense_amount_col].sum()
+    remaining = total_income - total_expenses
+
+    # Build node structure: [Income Sources] + [Total Income] + [Expense Categories] + [Remaining]
+    # Layer 0: Income sources (left)
+    # Layer 1: Total Income (middle)
+    # Layer 2: Expense categories + Remaining (right)
+
+    # Add amounts and percentages to node labels for visibility
+    income_labels_with_amounts = [
+        f"{label}<br>€{amount:,.0f} ({amount/total_income*100:.1f}%)"
+        for label, amount in zip(income_labels, top_income[income_amount_col])
+    ]
+
+    total_income_node_label = f"💰 Total Income<br>€{total_income:,.0f} (100%)"
+
+    expense_labels_with_amounts = [
+        f"{label}<br>€{amount:,.0f} ({amount/total_income*100:.1f}%)"
+        for label, amount in zip(expense_labels, top_expenses[expense_amount_col])
+    ]
+
+    remaining_pct = (remaining / total_income * 100) if total_income > 0 else 0
+    remaining_node_label = f"💎 Remaining<br>€{remaining:,.0f} ({remaining_pct:.1f}%)"
+
+    all_labels = income_labels_with_amounts + [total_income_node_label] + expense_labels_with_amounts + [remaining_node_label]
+
+    # Calculate node indices
+    total_income_idx = len(income_labels)
+    first_expense_idx = total_income_idx + 1
+    remaining_idx = len(all_labels) - 1
+
+    # Create links
+    sources = []
+    targets = []
+    values = []
+
+    # Phase 1: Income sources → Total Income
+    for i, income_row in enumerate(top_income.itertuples()):
+        income_amount = getattr(income_row, income_amount_col)
+        sources.append(i)  # Income source index
+        targets.append(total_income_idx)  # Total Income node
+        values.append(income_amount)
+
+    # Phase 2: Total Income → Expense categories
+    for i, expense_row in enumerate(top_expenses.itertuples()):
+        expense_amount = getattr(expense_row, expense_amount_col)
+        sources.append(total_income_idx)  # Total Income node
+        targets.append(first_expense_idx + i)  # Expense category index
+        values.append(expense_amount)
+
+    # Phase 3: Total Income → Remaining (if positive)
+    if remaining > 0:
+        sources.append(total_income_idx)  # Total Income node
+        targets.append(remaining_idx)  # Remaining node
+        values.append(remaining)
+
+    # Create color scheme
+    # Layer 0: Income sources (green shades)
+    income_colors = ['rgba(74, 222, 128, 0.7)'] * len(income_labels)
+
+    # Layer 1: Total Income (blue)
+    total_income_color = ['rgba(59, 130, 246, 0.8)']
+
+    # Layer 2: Expense categories (red shades) + Remaining (bright green)
+    expense_colors = ['rgba(248, 113, 113, 0.7)'] * len(expense_labels)
+    remaining_color = ['rgba(34, 197, 94, 0.8)'] if remaining > 0 else ['rgba(239, 68, 68, 0.8)']
+
+    node_colors = income_colors + total_income_color + expense_colors + remaining_color
+
+    # Link colors
+    # Green for income → total income
+    income_link_colors = ['rgba(74, 222, 128, 0.3)'] * len(income_labels)
+    # Red for total income → expenses
+    expense_link_colors = ['rgba(248, 113, 113, 0.3)'] * len(expense_labels)
+    # Green for total income → remaining (if positive)
+    remaining_link_color = ['rgba(34, 197, 94, 0.4)'] if remaining > 0 else []
+
+    link_colors = income_link_colors + expense_link_colors + remaining_link_color
+
+    # Create custom data for hover information
+    node_customdata = []
+
+    # Income sources
+    for val in top_income[income_amount_col].tolist():
+        node_customdata.append(f'€{val:,.0f}')
+
+    # Total Income
+    node_customdata.append(f'€{total_income:,.0f}')
+
+    # Expense categories
+    for val in top_expenses[expense_amount_col].tolist():
+        node_customdata.append(f'€{val:,.0f}')
+
+    # Remaining
+    node_customdata.append(f'€{remaining:,.0f}')
+
+    fig = go.Figure(data=[go.Sankey(
+        arrangement='snap',
+        node=dict(
+            pad=15,
+            thickness=25,
+            line=dict(color='white', width=1),
+            label=all_labels,
+            color=node_colors,
+            customdata=node_customdata,
+            hovertemplate='%{label}<br>Amount: %{customdata}<extra></extra>'
+        ),
+        link=dict(
+            source=sources,
+            target=targets,
+            value=values,
+            color=link_colors,
+            hovertemplate='%{source.label} → %{target.label}<br>Amount: €%{value:,.0f}<extra></extra>'
+        )
+    )])
+
+    fig.update_layout(
+        title=title,
+        height=height,
+        margin=dict(t=50, b=20, l=20, r=20),
+        font=dict(size=11, family='Arial, sans-serif')
+    )
+
+    return fig

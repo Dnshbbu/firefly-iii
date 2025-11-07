@@ -12,6 +12,7 @@ PAGE_SECTIONS = {
     "📊 Dashboards": [
         {"label": "📊 Net Worth", "file": "1_📊_Net_Worth.py"},
         {"label": "📈 Cash Flow", "file": "3_📈_Cash_Flow.py"},
+        {"label": "🌊 Cash Flow Sankey", "file": "20_🌊_Cash_Flow_Sankey.py"},
         {"label": "💰 Budget", "file": "4_💰_Budget.py"},
         {"label": "📅 Budget Timeline", "file": "14_📅_Budget_Timeline.py"},
         {"label": "🏷️ Categories", "file": "5_🏷️_Categories.py"},
