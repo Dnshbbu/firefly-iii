@@ -318,30 +318,6 @@ def generate_d3_sankey_html(data: dict, title: str, height: int = 700) -> str:
             opacity: 0.2;
         }}
 
-        #tooltip {{
-            position: absolute;
-            padding: 10px;
-            background: rgba(30, 30, 30, 0.95);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            border-radius: 4px;
-            pointer-events: none;
-            font-size: 12px;
-            color: #fff;
-            display: none;
-            z-index: 1000;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
-        }}
-
-        #tooltip .label {{
-            font-weight: bold;
-            margin-bottom: 4px;
-            font-size: 13px;
-        }}
-
-        #tooltip .value {{
-            color: #4ade80;
-        }}
-
         h2 {{
             margin: 0 0 10px 0;
             color: rgba(250, 250, 250, 0.9);
@@ -386,7 +362,6 @@ def generate_d3_sankey_html(data: dict, title: str, height: int = 700) -> str:
 </head>
 <body>
     <h2>{title}</h2>
-    <div id="tooltip"></div>
     <div id="zoom-controls">
         <button class="zoom-btn" id="zoom-in" title="Zoom In">+</button>
         <button class="zoom-btn" id="zoom-out" title="Zoom Out">−</button>
@@ -512,9 +487,6 @@ def generate_d3_sankey_html(data: dict, title: str, height: int = 700) -> str:
             .style("font-size", "10px")
             .text(d => `€${{d.amount.toLocaleString('en-IE', {{maximumFractionDigits: 0}})}} (${{d.percentage.toFixed(1)}}%)`);
 
-        // Tooltip
-        const tooltip = d3.select("#tooltip");
-
         // Hover interactions
         function highlightConnected(d, isNode) {{
             const connectedNodes = new Set();
@@ -557,45 +529,18 @@ def generate_d3_sankey_html(data: dict, title: str, height: int = 700) -> str:
         node
             .on("mouseover", function(event, d) {{
                 highlightConnected(d, true);
-
-                tooltip
-                    .style("display", "block")
-                    .html(`
-                        <div class="label">${{d.name}}</div>
-                        <div><span class="value">€${{d.amount.toLocaleString('en-IE', {{maximumFractionDigits: 2}})}}</span></div>
-                        <div>${{d.percentage.toFixed(1)}}% of ${{d.type === 'income' || d.type === 'total_income' ? 'income' : 'expenses'}}</div>
-                    `);
-            }})
-            .on("mousemove", function(event) {{
-                tooltip
-                    .style("left", (event.pageX + 10) + "px")
-                    .style("top", (event.pageY - 10) + "px");
             }})
             .on("mouseout", function() {{
                 resetHighlight();
-                tooltip.style("display", "none");
             }});
 
         // Link hover
         link
             .on("mouseover", function(event, d) {{
                 highlightConnected(d, false);
-
-                tooltip
-                    .style("display", "block")
-                    .html(`
-                        <div class="label">${{d.source.name}} → ${{d.target.name}}</div>
-                        <div><span class="value">€${{d.value.toLocaleString('en-IE', {{maximumFractionDigits: 2}})}}</span></div>
-                    `);
-            }})
-            .on("mousemove", function(event) {{
-                tooltip
-                    .style("left", (event.pageX + 10) + "px")
-                    .style("top", (event.pageY - 10) + "px");
             }})
             .on("mouseout", function() {{
                 resetHighlight();
-                tooltip.style("display", "none");
             }});
     </script>
 </body>
