@@ -350,7 +350,199 @@ try:
                     top_n_category=top_n_expense
                 )
 
-                st.plotly_chart(fig_sankey, use_container_width=True, config={'displayModeBar': True})
+                # Display Sankey with enhanced hover using HTML component
+                import plotly.io as pio
+                import streamlit.components.v1 as components
+
+                # Update figure layout for dark mode
+                fig_sankey.update_layout(
+                    paper_bgcolor='rgba(14, 17, 23, 0)',
+                    plot_bgcolor='rgba(14, 17, 23, 0)',
+                    font=dict(color='rgba(250, 250, 250, 0.9)', size=11, family='Arial, sans-serif'),
+                    title_font=dict(color='rgba(250, 250, 250, 0.9)'),
+                    hoverlabel=dict(
+                        bgcolor='rgba(30, 30, 30, 0.95)',
+                        font_size=12,
+                        font_family='Arial, sans-serif',
+                        font_color='rgba(250, 250, 250, 0.95)',
+                        bordercolor='rgba(60, 60, 60, 0.95)'
+                    )
+                )
+
+                # Convert figure to HTML with custom JavaScript for hover effects
+                fig_html = pio.to_html(fig_sankey, include_plotlyjs='cdn', config={'displayModeBar': True})
+
+                # Add dark mode CSS styling
+                dark_mode_css = """
+                <style>
+                    body {
+                        background-color: transparent !important;
+                        margin: 0;
+                        padding: 0;
+                    }
+                    .plotly-graph-div {
+                        background-color: transparent !important;
+                    }
+                    .js-plotly-plot {
+                        background-color: transparent !important;
+                    }
+                    .main-svg {
+                        background-color: transparent !important;
+                    }
+                    /* Fix text colors for dark mode */
+                    .sankey-node text {
+                        fill: rgba(250, 250, 250, 0.9) !important;
+                    }
+                    text {
+                        fill: rgba(250, 250, 250, 0.9) !important;
+                    }
+                    .gtitle {
+                        fill: rgba(250, 250, 250, 0.9) !important;
+                    }
+                    /* Dark mode for hover tooltips */
+                    .hoverlayer .hovertext {
+                        background-color: rgba(30, 30, 30, 0.95) !important;
+                        border-color: rgba(60, 60, 60, 0.95) !important;
+                    }
+                    .hoverlayer .hovertext path {
+                        fill: rgba(30, 30, 30, 0.95) !important;
+                        stroke: rgba(60, 60, 60, 0.95) !important;
+                    }
+                    .hoverlayer .hovertext text {
+                        fill: rgba(250, 250, 250, 0.95) !important;
+                    }
+                    g.hovertext path {
+                        fill: rgba(30, 30, 30, 0.95) !important;
+                        stroke: rgba(60, 60, 60, 0.95) !important;
+                    }
+                    g.hovertext text {
+                        fill: rgba(250, 250, 250, 0.95) !important;
+                    }
+                </style>
+                """
+
+                # Inject custom hover JavaScript
+                hover_js = """
+                <script>
+                document.addEventListener('DOMContentLoaded', function() {
+                    var plotDiv = document.querySelector('.plotly-graph-div');
+                    if (!plotDiv) return;
+
+                    var origNodeColors = null;
+                    var origLinkColors = null;
+
+                    function dimColor(color) {
+                        if (color.startsWith('rgba')) {
+                            return color.replace(/,[\\s]*[\\d.]+\\)/, ', 0.15)');
+                        } else if (color.startsWith('rgb')) {
+                            return color.replace('rgb', 'rgba').replace(')', ', 0.15)');
+                        }
+                        return color;
+                    }
+
+                    function dimTextElements(connectedNodes) {
+                        // Find all text elements in the SVG (node labels)
+                        var textElements = plotDiv.querySelectorAll('.sankey-node text');
+
+                        textElements.forEach(function(textEl, idx) {
+                            if (connectedNodes.has(idx)) {
+                                // Keep connected nodes bright
+                                textEl.style.opacity = '1';
+                                textEl.style.fill = 'rgba(250, 250, 250, 0.9)';
+                            } else {
+                                // Dim unconnected nodes
+                                textEl.style.opacity = '0.15';
+                                textEl.style.fill = 'rgba(250, 250, 250, 0.9)';
+                            }
+                        });
+                    }
+
+                    function restoreTextElements() {
+                        var textElements = plotDiv.querySelectorAll('.sankey-node text');
+                        textElements.forEach(function(textEl) {
+                            textEl.style.opacity = '1';
+                            textEl.style.fill = 'rgba(250, 250, 250, 0.9)';
+                        });
+                    }
+
+                    function getConnectedElements(nodeIdx, sources, targets) {
+                        var connectedNodes = new Set([nodeIdx]);
+                        var connectedLinks = new Set();
+
+                        sources.forEach(function(src, idx) {
+                            if (src === nodeIdx) {
+                                connectedNodes.add(targets[idx]);
+                                connectedLinks.add(idx);
+                            }
+                        });
+
+                        targets.forEach(function(tgt, idx) {
+                            if (tgt === nodeIdx) {
+                                connectedNodes.add(sources[idx]);
+                                connectedLinks.add(idx);
+                            }
+                        });
+
+                        return { nodes: connectedNodes, links: connectedLinks };
+                    }
+
+                    plotDiv.on('plotly_hover', function(data) {
+                        if (!data.points || !data.points[0]) return;
+
+                        var point = data.points[0];
+                        if (point.pointNumber === undefined) return;
+
+                        var sankeyData = plotDiv.data[0];
+                        if (!origNodeColors) {
+                            origNodeColors = sankeyData.node.color.slice();
+                            origLinkColors = sankeyData.link.color.slice();
+                        }
+
+                        var nodeIdx = point.pointNumber;
+                        var connected = getConnectedElements(
+                            nodeIdx,
+                            sankeyData.link.source,
+                            sankeyData.link.target
+                        );
+
+                        var newNodeColors = origNodeColors.map(function(color, idx) {
+                            return connected.nodes.has(idx) ? color : dimColor(color);
+                        });
+
+                        var newLinkColors = origLinkColors.map(function(color, idx) {
+                            return connected.links.has(idx) ? color : dimColor(color);
+                        });
+
+                        Plotly.restyle(plotDiv, {
+                            'node.color': [newNodeColors],
+                            'link.color': [newLinkColors]
+                        }, [0]);
+
+                        // Dim text elements for unconnected nodes
+                        dimTextElements(connected.nodes);
+                    });
+
+                    plotDiv.on('plotly_unhover', function() {
+                        if (origNodeColors && origLinkColors) {
+                            Plotly.restyle(plotDiv, {
+                                'node.color': [origNodeColors],
+                                'link.color': [origLinkColors]
+                            }, [0]);
+
+                            // Restore text elements
+                            restoreTextElements();
+                        }
+                    });
+                });
+                </script>
+                """
+
+                # Inject the CSS and JavaScript before the closing head and body tags
+                fig_html_with_styling = fig_html.replace('</head>', dark_mode_css + '</head>')
+                fig_html_with_hover = fig_html_with_styling.replace('</body>', hover_js + '</body>')
+
+                # Display using components.html
+                components.html(fig_html_with_hover, height=750, scrolling=False)
 
                 # Show detailed breakdown in expanders
                 col1, col2, col3 = st.columns(3)

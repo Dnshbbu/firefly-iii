@@ -180,22 +180,22 @@ def create_sankey_with_destinations(
         targets.append(cat_idx)
         values.append(amount)
 
-    # Colors
-    income_colors = ['rgba(74, 222, 128, 0.7)'] * num_income
-    total_income_color = ['rgba(59, 130, 246, 0.8)']
-    remaining_color = ['rgba(34, 197, 94, 0.8)'] if remaining > 0 else ['rgba(239, 68, 68, 0.8)']
-    total_expenses_color = ['rgba(251, 146, 60, 0.8)']
-    destination_colors = ['rgba(255, 193, 7, 0.7)'] * num_destinations
-    category_colors = ['rgba(248, 113, 113, 0.7)'] * len(category_labels)
+    # Colors - using higher base opacity for better hover contrast
+    income_colors = ['rgba(74, 222, 128, 0.85)'] * num_income
+    total_income_color = ['rgba(59, 130, 246, 0.9)']
+    remaining_color = ['rgba(34, 197, 94, 0.9)'] if remaining > 0 else ['rgba(239, 68, 68, 0.9)']
+    total_expenses_color = ['rgba(251, 146, 60, 0.9)']
+    destination_colors = ['rgba(255, 193, 7, 0.85)'] * num_destinations
+    category_colors = ['rgba(248, 113, 113, 0.85)'] * len(category_labels)
 
     node_colors = income_colors + total_income_color + remaining_color + total_expenses_color + destination_colors + category_colors
 
-    # Link colors
-    income_link_colors = ['rgba(74, 222, 128, 0.3)'] * num_income
-    remaining_link_color = ['rgba(34, 197, 94, 0.4)'] if remaining > 0 else []
-    total_expenses_link_color = ['rgba(251, 146, 60, 0.3)']
-    dest_link_colors = ['rgba(255, 193, 7, 0.3)'] * num_destinations
-    cat_link_colors = ['rgba(248, 113, 113, 0.3)'] * len(filtered_mapping)
+    # Link colors - slightly more transparent for visual hierarchy
+    income_link_colors = ['rgba(74, 222, 128, 0.4)'] * num_income
+    remaining_link_color = ['rgba(34, 197, 94, 0.5)'] if remaining > 0 else []
+    total_expenses_link_color = ['rgba(251, 146, 60, 0.4)']
+    dest_link_colors = ['rgba(255, 193, 7, 0.4)'] * num_destinations
+    cat_link_colors = ['rgba(248, 113, 113, 0.4)'] * len(filtered_mapping)
 
     link_colors = income_link_colors + remaining_link_color + total_expenses_link_color + dest_link_colors + cat_link_colors
 
@@ -237,7 +237,7 @@ def create_sankey_with_destinations(
             y_pos = 0.5
         node_y.append(y_pos)
 
-    # Create figure
+    # Create figure with hover interactions
     fig = go.Figure(data=[go.Sankey(
         arrangement='snap',
         node=dict(
@@ -247,22 +247,34 @@ def create_sankey_with_destinations(
             label=all_labels,
             color=node_colors,
             x=node_x,
-            y=node_y
+            y=node_y,
+            hovertemplate='%{label}<extra></extra>',
+            customdata=list(range(len(all_labels)))
         ),
         link=dict(
             source=sources,
             target=targets,
             value=values,
-            color=link_colors
+            color=link_colors,
+            hovertemplate='%{source.label} → %{target.label}<br>€%{value:,.0f}<extra></extra>'
         ),
-        textfont=dict(size=10, family='Arial, sans-serif')
+        textfont=dict(size=10, family='Arial, sans-serif'),
+        valueformat='.0f',
+        valuesuffix=' EUR'
     )])
 
     fig.update_layout(
         title=title,
         height=height,
         margin=dict(t=60, b=40, l=40, r=40),
-        font=dict(size=11, family='Arial, sans-serif')
+        font=dict(size=11, family='Arial, sans-serif'),
+        hoverlabel=dict(
+            bgcolor="rgba(255, 255, 255, 0.95)",
+            font_size=12,
+            font_family="Arial"
+        ),
+        # This enables better hover interactions
+        hovermode='closest'
     )
 
     return fig
