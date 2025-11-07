@@ -276,33 +276,34 @@ def generate_d3_sankey_html(data: dict, title: str, height: int = 700) -> str:
 
         .node rect {{
             cursor: pointer;
-            stroke: #fff;
+            stroke: rgba(0, 0, 0, 0.3);
             stroke-width: 2px;
         }}
 
         .node text {{
             pointer-events: none;
             font-size: 11px;
-            fill: rgba(250, 250, 250, 0.95);
-            text-shadow: 0 1px 2px rgba(0,0,0,0.3);
+            fill: rgba(255, 255, 255, 0.95);
+            text-shadow: 0 1px 3px rgba(0,0,0,0.8);
+            font-weight: 500;
         }}
 
         .link {{
             fill: none;
-            stroke-opacity: 0.4;
+            stroke-opacity: 0.6;
             cursor: pointer;
         }}
 
         .link:hover {{
-            stroke-opacity: 0.6;
+            stroke-opacity: 0.8;
         }}
 
         .link.highlighted {{
-            stroke-opacity: 0.7 !important;
+            stroke-opacity: 0.9 !important;
         }}
 
         .link.dimmed {{
-            stroke-opacity: 0.1 !important;
+            stroke-opacity: 0.2 !important;
         }}
 
         .node.highlighted rect {{
@@ -425,6 +426,16 @@ def generate_d3_sankey_html(data: dict, title: str, height: int = 700) -> str:
             category: '#f87171'       // Red
         }};
 
+        // Much darker color scheme for links (more suitable for dark mode)
+        const linkColors = {{
+            income: '#0f7a3a',        // Much darker green
+            total_income: '#1e3a8a',  // Much darker blue
+            remaining: '#0d6e30',     // Much darker green
+            total_expenses: '#9a3412', // Much darker orange
+            destination: '#a16207',   // Much darker yellow
+            category: '#991b1b'       // Much darker red
+        }};
+
         const margin = {{top: 10, right: 10, bottom: 10, left: 10}};
         let svg, g, zoom, sankey, link, node;
 
@@ -501,6 +512,7 @@ def generate_d3_sankey_html(data: dict, title: str, height: int = 700) -> str:
 
             // Color scale
             const color = d => colors[d.type] || '#999';
+            const linkColor = d => linkColors[d.type] || '#666';
 
             // Add links
             link = g.append("g")
@@ -511,7 +523,7 @@ def generate_d3_sankey_html(data: dict, title: str, height: int = 700) -> str:
                 .append("path")
                 .attr("class", "link")
                 .attr("d", d3.sankeyLinkHorizontal())
-                .attr("stroke", d => color(d.source))
+                .attr("stroke", d => linkColor(d.source))
                 .attr("stroke-width", d => Math.max(1, d.width));
 
             // Add nodes
@@ -536,12 +548,15 @@ def generate_d3_sankey_html(data: dict, title: str, height: int = 700) -> str:
                 .attr("y", d => (d.y1 + d.y0) / 2)
                 .attr("dy", "0.35em")
                 .attr("text-anchor", d => d.x0 < width / 2 ? "start" : "end")
+                .style("fill", "#f3f4f6")
+                .style("font-weight", "600")
                 .text(d => d.name)
                 .append("tspan")
                 .attr("x", d => d.x0 < width / 2 ? d.x1 + 6 : d.x0 - 6)
                 .attr("dy", "1.2em")
-                .attr("fill-opacity", 0.8)
+                .style("fill", "#60a5fa")
                 .style("font-size", "10px")
+                .style("font-weight", "500")
                 .text(d => `€${{d.amount.toLocaleString('en-IE', {{maximumFractionDigits: 0}})}} (${{d.percentage.toFixed(1)}}%)`);
 
             // Hover interactions
