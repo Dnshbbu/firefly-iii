@@ -8,6 +8,7 @@ yarn-error.log
 /.ci/php-cs-fixer/vendor
 coverage.xml
 output.txt
+venv-wsl/
 
 # ignore generated files.
 public/build

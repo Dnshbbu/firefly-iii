@@ -279,6 +279,39 @@ if uploaded_file is not None:
 
         elif bank_type == "T212":
 
+            # Column management - Allow removal of extra columns
+            st.markdown("**Column Management**")
+
+            # Expected columns for T212 (base format)
+            expected_columns = ['Action', 'Time', 'ISIN', 'Ticker', 'Name', 'Notes', 'ID',
+                              'No. of shares', 'Price / share', 'Currency (Price / share)',
+                              'Exchange rate', 'Total', 'Currency (Total)',
+                              'Withholding tax', 'Currency (Withholding tax)',
+                              'Merchant name', 'Merchant category']
+
+            current_columns = df.columns.tolist()
+            extra_columns = [col for col in current_columns if col not in expected_columns]
+
+            columns_to_remove = []
+            if extra_columns:
+                st.info(f"⚠️ Detected {len(extra_columns)} unexpected column(s): {', '.join(extra_columns)}")
+                st.markdown("**Select columns to remove:**")
+
+                for col in extra_columns:
+                    if st.checkbox(f"Remove '{col}'", value=True, key=f"remove_{col}"):
+                        columns_to_remove.append(col)
+
+            # Also allow removing any column if user wants
+            with st.expander("Advanced: Remove any column", expanded=False):
+                st.markdown("*Select additional columns to remove (use with caution)*")
+                remaining_cols = [col for col in current_columns if col not in columns_to_remove]
+                for col in remaining_cols:
+                    if st.checkbox(f"Remove '{col}'", value=False, key=f"remove_advanced_{col}"):
+                        if col not in columns_to_remove:
+                            columns_to_remove.append(col)
+
+            st.markdown("---")
+
             rule1 = st.checkbox(
                 "Format dates to m/d/Y (e.g., 9/13/2025)",
                 value=True,
@@ -288,6 +321,11 @@ if uploaded_file is not None:
             # Apply preprocessing
             processed_df = df.copy()
             applied_rules = []
+
+            # Remove selected columns
+            if columns_to_remove:
+                processed_df = processed_df.drop(columns=columns_to_remove)
+                applied_rules.append(f"Column removal: Removed {len(columns_to_remove)} column(s): {', '.join(columns_to_remove)}")
 
             if rule1:
                 # Convert dates - they should already be in m/d/Y format, but ensure consistency

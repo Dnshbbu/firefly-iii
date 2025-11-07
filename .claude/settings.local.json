@@ -64,7 +64,11 @@
       "Bash(docker run:*)",
       "Bash(pip install:*)",
       "Bash(find:*)",
-      "Bash(./venv/Scripts/python.exe:*)"
+      "Bash(./venv/Scripts/python.exe:*)",
+      "Bash(python3.11:*)",
+      "Bash(sudo apt update:*)",
+      "Bash(sudo apt install:*)",
+      "Bash(uv pip install:*)"
     ],
     "deny": [],
     "ask": []
