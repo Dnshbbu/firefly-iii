@@ -459,28 +459,23 @@ def generate_d3_sankey_html(data: dict, title: str, height: int = 700) -> str:
         }}
 
         #details-panel {{
-            margin-top: 25px;
-            padding: 20px;
-            background: rgba(15, 23, 42, 0.7);
-            border: 1px solid rgba(148, 163, 184, 0.25);
-            border-radius: 10px;
-            backdrop-filter: blur(6px);
+            margin-top: 20px;
+            padding: 0;
             color: #f8fafc;
         }}
 
-        #details-panel h3 {{
-            margin: 0;
+        .panel-grid {{
+            display: flex;
+            flex-wrap: wrap;
+            gap: 16px;
         }}
 
-        #details-panel p {{
-            margin: 4px 0 0 0;
-            color: #cbd5f5;
-            font-size: 0.9rem;
+        .panel-grid > * {{
+            flex: 1 1 420px;
         }}
 
         .details-content {{
-            margin-top: 15px;
-            background: rgba(15, 23, 42, 0.35);
+            background: rgba(15, 23, 42, 0.55);
             border: 1px solid rgba(148, 163, 184, 0.2);
             border-radius: 8px;
             padding: 12px 16px;
@@ -595,11 +590,11 @@ def generate_d3_sankey_html(data: dict, title: str, height: int = 700) -> str:
         }}
 
         .trend-panel {{
-            margin-top: 18px;
-            padding: 16px 18px;
-            background: rgba(8, 25, 48, 0.75);
-            border: 1px solid rgba(148, 163, 184, 0.25);
-            border-radius: 10px;
+            padding: 12px 16px;
+            background: rgba(8, 25, 48, 0.65);
+            border: 1px solid rgba(148, 163, 184, 0.2);
+            border-radius: 8px;
+            min-height: 120px;
         }}
 
         .trend-header {{
@@ -717,20 +712,18 @@ def generate_d3_sankey_html(data: dict, title: str, height: int = 700) -> str:
     </div>
 
     <div id="details-panel">
-        <div class="details-header">
-            <h3>🔍 Transaction Drilldown</h3>
-            <p>Click any node to inspect its underlying transactions. Aggregated nodes expand into their member sources, accounts, or categories.</p>
-        </div>
-        <div id="details-content" class="details-content">
-            <div class="empty-state">
-                <div class="state-title">Ready to explore</div>
-                <p>Select a node in the Sankey diagram to view detailed transactions.</p>
+        <div class="panel-grid">
+            <div id="details-content" class="details-content">
+                <div class="empty-state">
+                    <div class="state-title">Transactions</div>
+                    <p>Select a node in the Sankey diagram to view detailed transactions.</p>
+                </div>
             </div>
-        </div>
-        <div id="trend-panel" class="trend-panel">
-            <div class="empty-state">
-                <div class="state-title">Trend insights</div>
-                <p>Pick a node and the chart will visualize its monthly totals for the selected trend range.</p>
+            <div id="trend-panel" class="trend-panel">
+                <div class="empty-state">
+                    <div class="state-title">Trend insights</div>
+                    <p>Pick a node and the chart will visualize its monthly totals for the selected trend range.</p>
+                </div>
             </div>
         </div>
     </div>
