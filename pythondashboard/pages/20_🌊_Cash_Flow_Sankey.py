@@ -263,8 +263,8 @@ top_n_destination = st.sidebar.slider(
 top_n_expense = st.sidebar.slider(
     "Top Expense Categories",
     min_value=5,
-    max_value=30,
-    value=15,
+    max_value=100,
+    value=30,
     step=1,
     help="Number of top expense categories to display"
 )
