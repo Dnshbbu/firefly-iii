@@ -456,6 +456,12 @@ def generate_d3_sankey_html(data: dict, title: str, height: int = 700) -> str:
 
             svg.call(zoom);
 
+            // Set initial zoom to be slightly zoomed out (90% scale)
+            const initialTransform = d3.zoomIdentity
+                .translate(margin.left, margin.top)
+                .scale(0.90);
+            svg.call(zoom.transform, initialTransform);
+
             // Zoom control functions
             d3.select("#zoom-in").on("click", () => {{
                 svg.transition().duration(300).call(zoom.scaleBy, 1.3);
@@ -466,7 +472,7 @@ def generate_d3_sankey_html(data: dict, title: str, height: int = 700) -> str:
             }});
 
             d3.select("#zoom-reset").on("click", () => {{
-                svg.transition().duration(300).call(zoom.transform, d3.zoomIdentity.translate(margin.left, margin.top));
+                svg.transition().duration(300).call(zoom.transform, initialTransform);
             }});
 
             // Create Sankey generator
