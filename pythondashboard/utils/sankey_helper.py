@@ -54,6 +54,7 @@ def create_sankey_with_destinations(
                 income_source_col: ['Other Income'],
                 income_amount_col: [other_income]
             })], ignore_index=True)
+    top_income = top_income.reset_index(drop=True)
 
     # Top destination accounts
     top_destinations = destination_df.nlargest(top_n_destination, destination_amount_col).copy()
@@ -64,6 +65,7 @@ def create_sankey_with_destinations(
                 destination_account_col: ['Other Destinations'],
                 destination_amount_col: [other_dest]
             })], ignore_index=True)
+    top_destinations = top_destinations.reset_index(drop=True)
 
     # Top categories from mapping
     category_totals = destination_category_mapping_df.groupby(category_col)[mapping_amount_col].sum().reset_index()
@@ -76,6 +78,7 @@ def create_sankey_with_destinations(
                 category_col: ['Other Categories'],
                 'total': [other_cat]
             })], ignore_index=True)
+    top_categories = top_categories.reset_index(drop=True)
 
     # Calculate totals
     total_income = top_income[income_amount_col].sum()
@@ -151,6 +154,8 @@ def create_sankey_with_destinations(
     # Filter mapping to only include top destinations and top categories
     top_dest_names = set(top_destinations[destination_account_col].tolist())
     top_cat_names = set(top_categories[category_col].tolist())
+    dest_index_map = {name: idx for idx, name in enumerate(top_destinations[destination_account_col].tolist())}
+    cat_index_map = {name: idx for idx, name in enumerate(top_categories[category_col].tolist())}
 
     filtered_mapping = destination_category_mapping_df[
         destination_category_mapping_df[destination_account_col].isin(top_dest_names) &
@@ -164,8 +169,12 @@ def create_sankey_with_destinations(
         amount = row[mapping_amount_col]
 
         # Find indices
-        dest_idx = first_dest_idx + top_destinations[top_destinations[destination_account_col] == dest_name].index[0]
-        cat_idx = first_category_idx + top_categories[top_categories[category_col] == cat_name].index[0]
+        dest_pos = dest_index_map.get(dest_name)
+        cat_pos = cat_index_map.get(cat_name)
+        if dest_pos is None or cat_pos is None:
+            continue
+        dest_idx = first_dest_idx + dest_pos
+        cat_idx = first_category_idx + cat_pos
 
         sources.append(dest_idx)
         targets.append(cat_idx)
