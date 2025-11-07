@@ -358,16 +358,59 @@ def generate_d3_sankey_html(data: dict, title: str, height: int = 700) -> str:
         .zoom-btn:active {{
             transform: scale(0.95);
         }}
+
+        #chart-container {{
+            position: relative;
+        }}
+
+        #chart-container:fullscreen {{
+            background-color: #0e1117;
+            padding: 20px;
+            width: 100vw;
+            height: 100vh;
+            overflow: auto;
+        }}
+
+        #chart-container:-webkit-full-screen {{
+            background-color: #0e1117;
+            padding: 20px;
+            width: 100vw;
+            height: 100vh;
+            overflow: auto;
+        }}
+
+        #chart-container:-moz-full-screen {{
+            background-color: #0e1117;
+            padding: 20px;
+            width: 100vw;
+            height: 100vh;
+            overflow: auto;
+        }}
+
+        #chart-container:fullscreen #chart {{
+            height: calc(100vh - 100px);
+        }}
+
+        #chart-container:-webkit-full-screen #chart {{
+            height: calc(100vh - 100px);
+        }}
+
+        #chart-container:-moz-full-screen #chart {{
+            height: calc(100vh - 100px);
+        }}
     </style>
 </head>
 <body>
-    <h2>{title}</h2>
-    <div id="zoom-controls">
-        <button class="zoom-btn" id="zoom-in" title="Zoom In">+</button>
-        <button class="zoom-btn" id="zoom-out" title="Zoom Out">−</button>
-        <button class="zoom-btn" id="zoom-reset" title="Reset Zoom">⟲</button>
+    <div id="chart-container">
+        <h2>{title}</h2>
+        <div id="zoom-controls">
+            <button class="zoom-btn" id="zoom-in" title="Zoom In">+</button>
+            <button class="zoom-btn" id="zoom-out" title="Zoom Out">−</button>
+            <button class="zoom-btn" id="zoom-reset" title="Reset Zoom">⟲</button>
+            <button class="zoom-btn" id="fullscreen-toggle" title="Toggle Fullscreen">⛶</button>
+        </div>
+        <div id="chart"></div>
     </div>
-    <div id="chart"></div>
 
     <script>
         const data = {data_json};
@@ -382,166 +425,230 @@ def generate_d3_sankey_html(data: dict, title: str, height: int = 700) -> str:
             category: '#f87171'       // Red
         }};
 
-        // Setup
         const margin = {{top: 10, right: 10, bottom: 10, left: 10}};
-        const width = document.getElementById('chart').clientWidth - margin.left - margin.right;
-        const height = {height} - margin.top - margin.bottom;
+        let svg, g, zoom, sankey, link, node;
 
-        const svg = d3.select("#chart")
-            .append("svg")
-            .attr("width", width + margin.left + margin.right)
-            .attr("height", height + margin.top + margin.bottom);
+        function drawChart() {{
+            // Clear existing chart
+            d3.select("#chart").selectAll("*").remove();
 
-        // Create a group for zoom/pan transformations
-        const g = svg.append("g")
-            .attr("transform", `translate(${{margin.left}},${{margin.top}})`);
+            // Get current dimensions
+            const chartElement = document.getElementById('chart');
+            const width = chartElement.clientWidth - margin.left - margin.right;
+            const height = chartElement.clientHeight - margin.top - margin.bottom;
 
-        // Setup zoom behavior
-        const zoom = d3.zoom()
-            .scaleExtent([0.1, 4])  // Allow zoom from 10% to 400%
-            .on("zoom", (event) => {{
-                g.attr("transform", event.transform);
-            }});
+            // Setup SVG
+            svg = d3.select("#chart")
+                .append("svg")
+                .attr("width", width + margin.left + margin.right)
+                .attr("height", height + margin.top + margin.bottom);
 
-        svg.call(zoom);
+            // Create a group for zoom/pan transformations
+            g = svg.append("g")
+                .attr("transform", `translate(${{margin.left}},${{margin.top}})`);
 
-        // Zoom control functions
-        d3.select("#zoom-in").on("click", () => {{
-            svg.transition().duration(300).call(zoom.scaleBy, 1.3);
-        }});
-
-        d3.select("#zoom-out").on("click", () => {{
-            svg.transition().duration(300).call(zoom.scaleBy, 0.7);
-        }});
-
-        d3.select("#zoom-reset").on("click", () => {{
-            svg.transition().duration(300).call(zoom.transform, d3.zoomIdentity.translate(margin.left, margin.top));
-        }});
-
-        // Create Sankey generator
-        const sankey = d3.sankey()
-            .nodeWidth(30)
-            .nodePadding(20)
-            .extent([[1, 1], [width - 1, height - 1]])
-            .nodeId(d => d.index)
-            .nodeAlign(d3.sankeyLeft)
-            .nodeSort((a, b) => {{
-                // Sort nodes by amount descending (highest at top)
-                // This preserves the order we set in the data
-                return b.amount - a.amount;
-            }});
-
-        // Add index to nodes
-        data.nodes.forEach((node, i) => {{
-            node.index = i;
-        }});
-
-        // Generate Sankey layout
-        const {{nodes, links}} = sankey({{
-            nodes: data.nodes.map(d => Object.assign({{}}, d)),
-            links: data.links.map(d => Object.assign({{}}, d))
-        }});
-
-        // Color scale
-        const color = d => colors[d.type] || '#999';
-
-        // Add links
-        const link = g.append("g")
-            .attr("class", "links")
-            .selectAll("path")
-            .data(links)
-            .enter()
-            .append("path")
-            .attr("class", "link")
-            .attr("d", d3.sankeyLinkHorizontal())
-            .attr("stroke", d => color(d.source))
-            .attr("stroke-width", d => Math.max(1, d.width));
-
-        // Add nodes
-        const node = g.append("g")
-            .attr("class", "nodes")
-            .selectAll("g")
-            .data(nodes)
-            .enter()
-            .append("g")
-            .attr("class", "node");
-
-        node.append("rect")
-            .attr("x", d => d.x0)
-            .attr("y", d => d.y0)
-            .attr("height", d => d.y1 - d.y0)
-            .attr("width", d => d.x1 - d.x0)
-            .attr("fill", d => color(d));
-
-        // Add labels
-        node.append("text")
-            .attr("x", d => d.x0 < width / 2 ? d.x1 + 6 : d.x0 - 6)
-            .attr("y", d => (d.y1 + d.y0) / 2)
-            .attr("dy", "0.35em")
-            .attr("text-anchor", d => d.x0 < width / 2 ? "start" : "end")
-            .text(d => d.name)
-            .append("tspan")
-            .attr("x", d => d.x0 < width / 2 ? d.x1 + 6 : d.x0 - 6)
-            .attr("dy", "1.2em")
-            .attr("fill-opacity", 0.8)
-            .style("font-size", "10px")
-            .text(d => `€${{d.amount.toLocaleString('en-IE', {{maximumFractionDigits: 0}})}} (${{d.percentage.toFixed(1)}}%)`);
-
-        // Hover interactions
-        function highlightConnected(d, isNode) {{
-            const connectedNodes = new Set();
-            const connectedLinks = new Set();
-
-            if (isNode) {{
-                connectedNodes.add(d.index);
-
-                // Find all connected links and nodes
-                links.forEach(link => {{
-                    if (link.source.index === d.index) {{
-                        connectedLinks.add(link);
-                        connectedNodes.add(link.target.index);
-                    }}
-                    if (link.target.index === d.index) {{
-                        connectedLinks.add(link);
-                        connectedNodes.add(link.source.index);
-                    }}
+            // Setup zoom behavior
+            zoom = d3.zoom()
+                .scaleExtent([0.1, 4])  // Allow zoom from 10% to 400%
+                .on("zoom", (event) => {{
+                    g.attr("transform", event.transform);
                 }});
-            }} else {{
-                connectedLinks.add(d);
-                connectedNodes.add(d.source.index);
-                connectedNodes.add(d.target.index);
+
+            svg.call(zoom);
+
+            // Zoom control functions
+            d3.select("#zoom-in").on("click", () => {{
+                svg.transition().duration(300).call(zoom.scaleBy, 1.3);
+            }});
+
+            d3.select("#zoom-out").on("click", () => {{
+                svg.transition().duration(300).call(zoom.scaleBy, 0.7);
+            }});
+
+            d3.select("#zoom-reset").on("click", () => {{
+                svg.transition().duration(300).call(zoom.transform, d3.zoomIdentity.translate(margin.left, margin.top));
+            }});
+
+            // Create Sankey generator
+            sankey = d3.sankey()
+                .nodeWidth(30)
+                .nodePadding(20)
+                .extent([[1, 1], [width - 1, height - 1]])
+                .nodeId(d => d.index)
+                .nodeAlign(d3.sankeyLeft)
+                .nodeSort((a, b) => {{
+                    // Sort nodes by amount descending (highest at top)
+                    // This preserves the order we set in the data
+                    return b.amount - a.amount;
+                }});
+
+            // Add index to nodes
+            data.nodes.forEach((node, i) => {{
+                node.index = i;
+            }});
+
+            // Generate Sankey layout
+            const {{nodes, links}} = sankey({{
+                nodes: data.nodes.map(d => Object.assign({{}}, d)),
+                links: data.links.map(d => Object.assign({{}}, d))
+            }});
+
+            // Color scale
+            const color = d => colors[d.type] || '#999';
+
+            // Add links
+            link = g.append("g")
+                .attr("class", "links")
+                .selectAll("path")
+                .data(links)
+                .enter()
+                .append("path")
+                .attr("class", "link")
+                .attr("d", d3.sankeyLinkHorizontal())
+                .attr("stroke", d => color(d.source))
+                .attr("stroke-width", d => Math.max(1, d.width));
+
+            // Add nodes
+            node = g.append("g")
+                .attr("class", "nodes")
+                .selectAll("g")
+                .data(nodes)
+                .enter()
+                .append("g")
+                .attr("class", "node");
+
+            node.append("rect")
+                .attr("x", d => d.x0)
+                .attr("y", d => d.y0)
+                .attr("height", d => d.y1 - d.y0)
+                .attr("width", d => d.x1 - d.x0)
+                .attr("fill", d => color(d));
+
+            // Add labels
+            node.append("text")
+                .attr("x", d => d.x0 < width / 2 ? d.x1 + 6 : d.x0 - 6)
+                .attr("y", d => (d.y1 + d.y0) / 2)
+                .attr("dy", "0.35em")
+                .attr("text-anchor", d => d.x0 < width / 2 ? "start" : "end")
+                .text(d => d.name)
+                .append("tspan")
+                .attr("x", d => d.x0 < width / 2 ? d.x1 + 6 : d.x0 - 6)
+                .attr("dy", "1.2em")
+                .attr("fill-opacity", 0.8)
+                .style("font-size", "10px")
+                .text(d => `€${{d.amount.toLocaleString('en-IE', {{maximumFractionDigits: 0}})}} (${{d.percentage.toFixed(1)}}%)`);
+
+            // Hover interactions
+            function highlightConnected(d, isNode) {{
+                const connectedNodes = new Set();
+                const connectedLinks = new Set();
+
+                if (isNode) {{
+                    connectedNodes.add(d.index);
+
+                    // Find all connected links and nodes
+                    links.forEach(link => {{
+                        if (link.source.index === d.index) {{
+                            connectedLinks.add(link);
+                            connectedNodes.add(link.target.index);
+                        }}
+                        if (link.target.index === d.index) {{
+                            connectedLinks.add(link);
+                            connectedNodes.add(link.source.index);
+                        }}
+                    }});
+                }} else {{
+                    connectedLinks.add(d);
+                    connectedNodes.add(d.source.index);
+                    connectedNodes.add(d.target.index);
+                }}
+
+                // Apply highlighting
+                node.classed("highlighted", n => connectedNodes.has(n.index))
+                    .classed("dimmed", n => !connectedNodes.has(n.index));
+
+                link.classed("highlighted", l => connectedLinks.has(l))
+                    .classed("dimmed", l => !connectedLinks.has(l));
             }}
 
-            // Apply highlighting
-            node.classed("highlighted", n => connectedNodes.has(n.index))
-                .classed("dimmed", n => !connectedNodes.has(n.index));
+            function resetHighlight() {{
+                node.classed("highlighted", false).classed("dimmed", false);
+                link.classed("highlighted", false).classed("dimmed", false);
+            }}
 
-            link.classed("highlighted", l => connectedLinks.has(l))
-                .classed("dimmed", l => !connectedLinks.has(l));
+            // Node hover
+            node
+                .on("mouseover", function(event, d) {{
+                    highlightConnected(d, true);
+                }})
+                .on("mouseout", function() {{
+                    resetHighlight();
+                }});
+
+            // Link hover
+            link
+                .on("mouseover", function(event, d) {{
+                    highlightConnected(d, false);
+                }})
+                .on("mouseout", function() {{
+                    resetHighlight();
+                }});
         }}
 
-        function resetHighlight() {{
-            node.classed("highlighted", false).classed("dimmed", false);
-            link.classed("highlighted", false).classed("dimmed", false);
+        // Fullscreen functionality
+        const chartContainer = document.getElementById('chart-container');
+        const fullscreenBtn = document.getElementById('fullscreen-toggle');
+
+        fullscreenBtn.addEventListener('click', () => {{
+            if (!document.fullscreenElement) {{
+                // Enter fullscreen
+                if (chartContainer.requestFullscreen) {{
+                    chartContainer.requestFullscreen();
+                }} else if (chartContainer.webkitRequestFullscreen) {{
+                    chartContainer.webkitRequestFullscreen();
+                }} else if (chartContainer.mozRequestFullScreen) {{
+                    chartContainer.mozRequestFullScreen();
+                }} else if (chartContainer.msRequestFullscreen) {{
+                    chartContainer.msRequestFullscreen();
+                }}
+            }} else {{
+                // Exit fullscreen
+                if (document.exitFullscreen) {{
+                    document.exitFullscreen();
+                }} else if (document.webkitExitFullscreen) {{
+                    document.webkitExitFullscreen();
+                }} else if (document.mozCancelFullScreen) {{
+                    document.mozCancelFullScreen();
+                }} else if (document.msExitFullscreen) {{
+                    document.msExitFullscreen();
+                }}
+            }}
+        }});
+
+        // Update button icon and redraw chart on fullscreen state change
+        document.addEventListener('fullscreenchange', handleFullscreenChange);
+        document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
+        document.addEventListener('mozfullscreenchange', handleFullscreenChange);
+        document.addEventListener('MSFullscreenChange', handleFullscreenChange);
+
+        function handleFullscreenChange() {{
+            if (document.fullscreenElement || document.webkitFullscreenElement ||
+                document.mozFullScreenElement || document.msFullscreenElement) {{
+                fullscreenBtn.textContent = '⛶';  // Exit fullscreen icon
+                fullscreenBtn.title = 'Exit Fullscreen';
+            }} else {{
+                fullscreenBtn.textContent = '⛶';  // Enter fullscreen icon
+                fullscreenBtn.title = 'Toggle Fullscreen';
+            }}
+
+            // Redraw chart after a short delay to allow CSS transitions
+            setTimeout(() => {{
+                drawChart();
+            }}, 100);
         }}
 
-        // Node hover
-        node
-            .on("mouseover", function(event, d) {{
-                highlightConnected(d, true);
-            }})
-            .on("mouseout", function() {{
-                resetHighlight();
-            }});
-
-        // Link hover
-        link
-            .on("mouseover", function(event, d) {{
-                highlightConnected(d, false);
-            }})
-            .on("mouseout", function() {{
-                resetHighlight();
-            }});
+        // Initial draw
+        drawChart();
     </script>
 </body>
 </html>
