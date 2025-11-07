@@ -594,6 +594,79 @@ def generate_d3_sankey_html(data: dict, title: str, height: int = 700) -> str:
             color: #f8fafc;
         }}
 
+        .trend-panel {{
+            margin-top: 18px;
+            padding: 16px 18px;
+            background: rgba(8, 25, 48, 0.75);
+            border: 1px solid rgba(148, 163, 184, 0.25);
+            border-radius: 10px;
+        }}
+
+        .trend-header {{
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-bottom: 10px;
+        }}
+
+        .trend-header .label {{
+            font-size: 0.8rem;
+            color: #a5b4fc;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }}
+
+        .trend-header .value {{
+            font-size: 1rem;
+            color: #7dd3fc;
+        }}
+
+        .trend-metrics {{
+            display: flex;
+            gap: 16px;
+            font-size: 0.85rem;
+        }}
+
+        .trend-metrics span {{
+            display: block;
+            color: #cbd5f5;
+        }}
+
+        .trend-metrics strong {{
+            font-size: 1rem;
+            color: #f8fafc;
+        }}
+
+        .trend-chart {{
+            width: 100%;
+            min-height: 260px;
+        }}
+
+        .trend-chart svg {{
+            width: 100%;
+            height: 260px;
+        }}
+
+        .trend-chart .bar {{
+            fill: rgba(56, 189, 248, 0.85);
+        }}
+
+        .trend-chart .bar:hover {{
+            fill: rgba(56, 189, 248, 1);
+        }}
+
+        .trend-chart .axis text {{
+            fill: #cbd5f5;
+            font-size: 11px;
+        }}
+
+        .trend-chart .axis path,
+        .trend-chart .axis line {{
+            stroke: rgba(148, 163, 184, 0.4);
+        }}
+
         #chart-container:fullscreen {{
             background-color: #0e1117;
             padding: 20px;
@@ -654,13 +727,22 @@ def generate_d3_sankey_html(data: dict, title: str, height: int = 700) -> str:
                 <p>Select a node in the Sankey diagram to view detailed transactions.</p>
             </div>
         </div>
+        <div id="trend-panel" class="trend-panel">
+            <div class="empty-state">
+                <div class="state-title">Trend insights</div>
+                <p>Pick a node and the chart will visualize its monthly totals for the selected trend range.</p>
+            </div>
+        </div>
     </div>
 
     <script>
         const data = {data_json};
         const transactions = data.transactions || [];
+        const trendTransactions = data.trend_transactions || [];
         const nodeFilters = data.node_filters || {{}};
+        const trendRange = data.trend_range || null;
         const MAX_ROWS = 150;
+        const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
         // Color scheme
         const colors = {{
@@ -704,11 +786,23 @@ def generate_d3_sankey_html(data: dict, title: str, height: int = 700) -> str:
             }}).format(amount);
         }};
 
+        const formatAxisCurrency = (value) => {{
+            const amount = Number(value || 0);
+            const absAmount = Math.abs(amount);
+            if (absAmount >= 1000000) {{
+                return `€${{(amount / 1000000).toFixed(1)}}M`;
+            }}
+            if (absAmount >= 1000) {{
+                return `€${{(amount / 1000).toFixed(1)}}k`;
+            }}
+            return `€${{Math.round(amount)}}`;
+        }};
+
         const getNodeKey = (node) => `${{node.type}}::${{node.name}}`;
 
-        function filterTransactions(meta) {{
-            if (!transactions.length) return [];
-            let results = transactions.slice();
+        function filterTransactions(meta, dataset = transactions) {{
+            if (!dataset.length) return [];
+            let results = dataset.slice();
 
             if (meta.type_filter) {{
                 results = results.filter(txn => txn.type === meta.type_filter);
@@ -806,6 +900,163 @@ def generate_d3_sankey_html(data: dict, title: str, height: int = 700) -> str:
             `;
         }}
 
+        function renderTrendChart(node, meta) {{
+            const container = document.getElementById('trend-panel');
+            if (!container) return;
+
+            const rangeLabel = trendRange
+                ? `${{trendRange.label}} • ${{trendRange.start}} → ${{trendRange.end}}`
+                : 'Selected trend range';
+
+            if (meta.is_virtual) {{
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <div class="state-title">${{escapeHtml(node.name)}}</div>
+                        <p>${{escapeHtml(meta.description || 'Derived nodes do not contain individual transactions.')}}</p>
+                    </div>
+                `;
+                return;
+            }}
+
+            if (!trendTransactions.length) {{
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <div class="state-title">${{escapeHtml(node.name)}}</div>
+                        <p>No trend data is available for the selected range.</p>
+                    </div>
+                `;
+                return;
+            }}
+
+            const nodeTrendTxns = filterTransactions(meta, trendTransactions);
+
+            if (!nodeTrendTxns.length) {{
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <div class="state-title">${{escapeHtml(node.name)}}</div>
+                        <p>No transactions found for this node in the trend period (${{rangeLabel}}).</p>
+                    </div>
+                `;
+                return;
+            }}
+
+            const monthlyMap = new Map();
+            nodeTrendTxns.forEach(txn => {{
+                if (!txn.date) {{
+                    return;
+                }}
+                const parsed = new Date(txn.date);
+                if (Number.isNaN(parsed.getTime())) {{
+                    return;
+                }}
+                const key = `${{parsed.getFullYear()}}-${{parsed.getMonth()}}`;
+                const value = Math.abs(Number(txn.amount || 0));
+                monthlyMap.set(key, (monthlyMap.get(key) || 0) + value);
+            }});
+
+            if (monthlyMap.size === 0) {{
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <div class="state-title">${{escapeHtml(node.name)}}</div>
+                        <p>No valid monthly data available for trend visualization.</p>
+                    </div>
+                `;
+                return;
+            }}
+
+            const dataPoints = Array.from(monthlyMap.entries()).map(([key, value]) => {{
+                const [yearStr, monthStr] = key.split('-');
+                const year = Number(yearStr);
+                const monthIndex = Number(monthStr);
+                const date = new Date(year, monthIndex, 1);
+                const label = `${{MONTH_NAMES[monthIndex]}} ${{String(year).slice(-2)}}`;
+                return {{ key, value, date, label }};
+            }}).sort((a, b) => a.date - b.date);
+
+            const total = dataPoints.reduce((acc, item) => acc + item.value, 0);
+            const avg = total / dataPoints.length;
+            const bestMonth = dataPoints.reduce((best, item) => (!best || item.value > best.value) ? item : best, null);
+
+            container.innerHTML = `
+                <div class="trend-header">
+                    <div>
+                        <div class="label">Trend Range</div>
+                        <div class="value">${{escapeHtml(rangeLabel)}}</div>
+                    </div>
+                    <div class="trend-metrics">
+                        <div><span>Total</span><strong>${{formatCurrency(total)}}</strong></div>
+                        <div><span>Avg / Month</span><strong>${{formatCurrency(avg)}}</strong></div>
+                        <div><span>Best Month</span><strong>${{bestMonth ? escapeHtml(bestMonth.label) : '—'}}</strong></div>
+                    </div>
+                </div>
+                <div id="trend-chart" class="trend-chart"></div>
+            `;
+
+            const chartContainer = document.getElementById('trend-chart');
+            if (!chartContainer) return;
+
+            const chartMargin = {{ top: 10, right: 10, bottom: 40, left: 60 }};
+            const containerWidth = chartContainer.clientWidth || 720;
+            const containerHeight = 260;
+            const innerWidth = containerWidth - chartMargin.left - chartMargin.right;
+            const innerHeight = containerHeight - chartMargin.top - chartMargin.bottom;
+
+            const svg = d3.select(chartContainer)
+                .append('svg')
+                .attr('width', containerWidth)
+                .attr('height', containerHeight);
+
+            const chartGroup = svg.append('g')
+                .attr('transform', `translate(${{chartMargin.left}}, ${{chartMargin.top}})`);
+
+            const x = d3.scaleBand()
+                .domain(dataPoints.map(d => d.label))
+                .range([0, innerWidth])
+                .padding(0.25);
+
+            const maxValue = d3.max(dataPoints, d => d.value) || 0;
+            const y = d3.scaleLinear()
+                .domain([0, maxValue * 1.1 || 1])
+                .range([innerHeight, 0])
+                .nice();
+
+            const xAxis = d3.axisBottom(x);
+            chartGroup.append('g')
+                .attr('class', 'axis axis-x')
+                .attr('transform', `translate(0, ${{innerHeight}})`)
+                .call(xAxis)
+                .selectAll('text')
+                .attr('transform', 'rotate(-35)')
+                .style('text-anchor', 'end');
+
+            const yAxis = d3.axisLeft(y).ticks(5).tickFormat(formatAxisCurrency);
+            chartGroup.append('g')
+                .attr('class', 'axis axis-y')
+                .call(yAxis);
+
+            chartGroup.selectAll('.bar')
+                .data(dataPoints)
+                .enter()
+                .append('rect')
+                .attr('class', 'bar')
+                .attr('x', d => x(d.label))
+                .attr('width', x.bandwidth())
+                .attr('y', d => y(d.value))
+                .attr('height', d => innerHeight - y(d.value));
+
+            chartGroup.selectAll('.bar-label')
+                .data(dataPoints)
+                .enter()
+                .append('text')
+                .attr('class', 'bar-label')
+                .attr('x', d => x(d.label) + x.bandwidth() / 2)
+                .attr('y', d => Math.min(y(d.value) - 6, innerHeight - 4))
+                .attr('text-anchor', 'middle')
+                .attr('fill', '#f8fafc')
+                .attr('font-size', '10px')
+                .text(d => formatCurrency(d.value));
+        }}
+
         function handleNodeClick(nodeData) {{
             const meta = nodeFilters[getNodeKey(nodeData)];
             if (!meta) {{
@@ -818,9 +1069,19 @@ def generate_d3_sankey_html(data: dict, title: str, height: int = 700) -> str:
                         </div>
                     `;
                 }}
+                const trendContainer = document.getElementById('trend-panel');
+                if (trendContainer) {{
+                    trendContainer.innerHTML = `
+                        <div class="empty-state">
+                            <div class="state-title">${{escapeHtml(nodeData.name)}}</div>
+                            <p>Trend data is unavailable for this node.</p>
+                        </div>
+                    `;
+                }}
                 return;
             }}
             renderTransactions(nodeData, meta);
+            renderTrendChart(nodeData, meta);
         }}
 
         function drawChart() {{

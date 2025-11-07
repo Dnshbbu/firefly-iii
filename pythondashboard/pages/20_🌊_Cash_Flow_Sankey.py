@@ -1,8 +1,9 @@
 import streamlit as st
 import pandas as pd
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date
 import sys
 from pathlib import Path
+from typing import Optional, Tuple
 
 # Add parent directory to path to import utils
 sys.path.append(str(Path(__file__).parent.parent))
@@ -17,6 +18,91 @@ from utils.calculations import (
 )
 from utils.navigation import render_sidebar_navigation
 from utils.config import get_firefly_url, get_firefly_token
+
+
+def resolve_date_range(preset: str, today: datetime) -> Tuple[Optional[datetime], Optional[datetime]]:
+    """Return start/end datetimes for the given preset. Custom returns (None, None)."""
+    first_day_of_month = datetime(today.year, today.month, 1)
+
+    if preset == "Last 7 Days":
+        return today - timedelta(days=7), today
+    if preset == "Last 30 Days":
+        return today - timedelta(days=30), today
+    if preset == "Last 3 Months":
+        return today - timedelta(days=90), today
+    if preset == "Last 6 Months":
+        return today - timedelta(days=180), today
+    if preset == "Last 12 Months":
+        return today - timedelta(days=365), today
+    if preset == "Last Exact 3 Months":
+        if today.month <= 3:
+            start = datetime(today.year - 1, today.month + 9, 1)
+            if today.month > 1:
+                end = datetime(today.year, today.month - 1, 1) - timedelta(days=1)
+            else:
+                end = datetime(today.year - 1, 12, 31)
+        else:
+            start = datetime(today.year, today.month - 3, 1)
+            end = datetime(today.year, today.month, 1) - timedelta(days=1)
+        return start, end
+    if preset == "Last Exact 6 Months":
+        if today.month <= 6:
+            start = datetime(today.year - 1, today.month + 6, 1)
+            if today.month > 1:
+                end = datetime(today.year, today.month - 1, 1) - timedelta(days=1)
+            else:
+                end = datetime(today.year - 1, 12, 31)
+        else:
+            start = datetime(today.year, today.month - 6, 1)
+            end = datetime(today.year, today.month, 1) - timedelta(days=1)
+        return start, end
+    if preset == "Last Exact 12 Months":
+        start = datetime(today.year - 1, today.month, 1)
+        end = datetime(today.year, today.month, 1) - timedelta(days=1)
+        return start, end
+    if preset == "Current Month":
+        return first_day_of_month, today
+    if preset == "Current Quarter":
+        quarter = (today.month - 1) // 3
+        return datetime(today.year, quarter * 3 + 1, 1), today
+    if preset == "Current Year":
+        return datetime(today.year, 1, 1), today
+    if preset == "Last Month":
+        if today.month == 1:
+            start = datetime(today.year - 1, 12, 1)
+            end = first_day_of_month - timedelta(days=1)
+        else:
+            start = datetime(today.year, today.month - 1, 1)
+            end = first_day_of_month - timedelta(days=1)
+        return start, end
+    if preset == "Last Quarter":
+        quarter = (today.month - 1) // 3
+        if quarter == 0:
+            start = datetime(today.year - 1, 10, 1)
+            end = datetime(today.year - 1, 12, 31)
+        else:
+            start = datetime(today.year, (quarter - 1) * 3 + 1, 1)
+            end = datetime(today.year, quarter * 3, 1) - timedelta(days=1)
+        return start, end
+    if preset == "Last Year":
+        return datetime(today.year - 1, 1, 1), datetime(today.year - 1, 12, 31)
+    if preset == "Year to Date":
+        return datetime(today.year, 1, 1), today
+    if preset == "Custom":
+        return None, None
+    # Default fallback
+    return today - timedelta(days=90), today
+
+
+def normalize_transaction_labels(df: pd.DataFrame) -> pd.DataFrame:
+    """Ensure key label columns have readable fallback values."""
+    if df.empty:
+        return df
+
+    df['source_name'] = df['source_name'].fillna('Unknown').replace('', 'Unknown')
+    df['destination_name'] = df['destination_name'].fillna('Unknown').replace('', 'Unknown')
+    df['category_name'] = df['category_name'].fillna('Uncategorized').replace('', 'Uncategorized')
+    return df
 
 # Page configuration
 st.set_page_config(
@@ -160,84 +246,74 @@ preset_range = st.sidebar.selectbox(
 )
 
 today = datetime.now()
-first_day_of_month = datetime(today.year, today.month, 1)
+start_date, end_date = resolve_date_range(preset_range, today)
 
-if preset_range == "Last 7 Days":
-    start_date = today - timedelta(days=7)
-    end_date = today
-elif preset_range == "Last 30 Days":
-    start_date = today - timedelta(days=30)
-    end_date = today
-elif preset_range == "Last 3 Months":
-    start_date = today - timedelta(days=90)
-    end_date = today
-elif preset_range == "Last 6 Months":
-    start_date = today - timedelta(days=180)
-    end_date = today
-elif preset_range == "Last 12 Months":
-    start_date = today - timedelta(days=365)
-    end_date = today
-elif preset_range == "Last Exact 3 Months":
-    # Get complete months only (e.g., if today is Oct 26, show Jul 1 - Sep 30)
-    if today.month <= 3:
-        start_date = datetime(today.year - 1, today.month + 9, 1)
-        end_date = datetime(today.year, today.month - 1, 1) - timedelta(days=1) if today.month > 1 else datetime(today.year - 1, 12, 31)
-    else:
-        start_date = datetime(today.year, today.month - 3, 1)
-        end_date = datetime(today.year, today.month, 1) - timedelta(days=1)
-elif preset_range == "Last Exact 6 Months":
-    # Get complete months only
-    if today.month <= 6:
-        start_date = datetime(today.year - 1, today.month + 6, 1)
-        end_date = datetime(today.year, today.month - 1, 1) - timedelta(days=1) if today.month > 1 else datetime(today.year - 1, 12, 31)
-    else:
-        start_date = datetime(today.year, today.month - 6, 1)
-        end_date = datetime(today.year, today.month, 1) - timedelta(days=1)
-elif preset_range == "Last Exact 12 Months":
-    # Get complete months only (previous 12 full months)
-    start_date = datetime(today.year - 1, today.month, 1)
-    end_date = datetime(today.year, today.month, 1) - timedelta(days=1)
-elif preset_range == "Current Month":
-    start_date = first_day_of_month
-    end_date = today
-elif preset_range == "Current Quarter":
-    quarter = (today.month - 1) // 3
-    start_date = datetime(today.year, quarter * 3 + 1, 1)
-    end_date = today
-elif preset_range == "Current Year":
-    start_date = datetime(today.year, 1, 1)
-    end_date = today
-elif preset_range == "Last Month":
-    if today.month == 1:
-        start_date = datetime(today.year - 1, 12, 1)
-        end_date = first_day_of_month - timedelta(days=1)
-    else:
-        start_date = datetime(today.year, today.month - 1, 1)
-        end_date = first_day_of_month - timedelta(days=1)
-elif preset_range == "Last Quarter":
-    quarter = (today.month - 1) // 3
-    if quarter == 0:
-        start_date = datetime(today.year - 1, 10, 1)
-        end_date = datetime(today.year - 1, 12, 31)
-    else:
-        start_date = datetime(today.year, (quarter - 1) * 3 + 1, 1)
-        end_date = datetime(today.year, quarter * 3, 1) - timedelta(days=1)
-elif preset_range == "Last Year":
-    start_date = datetime(today.year - 1, 1, 1)
-    end_date = datetime(today.year - 1, 12, 31)
-elif preset_range == "Year to Date":
-    start_date = datetime(today.year, 1, 1)
-    end_date = today
-else:  # Custom
+if start_date is None or end_date is None:
     col1, col2 = st.sidebar.columns(2)
     with col1:
-        start_date = st.date_input("Start Date", today - timedelta(days=90))
+        start_input = st.date_input(
+            "Start Date",
+            (today - timedelta(days=90)).date(),
+            key="cash_flow_main_start"
+        )
     with col2:
-        end_date = st.date_input("End Date", today)
+        end_input = st.date_input(
+            "End Date",
+            today.date(),
+            key="cash_flow_main_end"
+        )
+    if isinstance(start_input, date):
+        start_date = datetime.combine(start_input, datetime.min.time())
+    else:
+        start_date = start_input
+    if isinstance(end_input, date):
+        end_date = datetime.combine(end_input, datetime.min.time())
+    else:
+        end_date = end_input
 
 # Convert to string format
 start_date_str = start_date.strftime('%Y-%m-%d')
 end_date_str = end_date.strftime('%Y-%m-%d')
+
+# Trend range controls
+st.sidebar.header("📈 Trend Range")
+trend_preset_range = st.sidebar.selectbox(
+    "Trend Period",
+    ["Last 7 Days", "Last 30 Days", "Last 3 Months", "Last 6 Months", "Last 12 Months",
+     "Last Exact 3 Months", "Last Exact 6 Months", "Last Exact 12 Months",
+     "Current Month", "Current Quarter", "Current Year",
+     "Last Month", "Last Quarter", "Last Year", "Year to Date", "Custom"],
+    index=2,
+    key="trend_period_selector"
+)
+
+trend_start_date, trend_end_date = resolve_date_range(trend_preset_range, today)
+
+if trend_start_date is None or trend_end_date is None:
+    trend_col1, trend_col2 = st.sidebar.columns(2)
+    with trend_col1:
+        trend_start_input = st.date_input(
+            "Trend Start",
+            (today - timedelta(days=365)).date(),
+            key="trend_start_custom"
+        )
+    with trend_col2:
+        trend_end_input = st.date_input(
+            "Trend End",
+            today.date(),
+            key="trend_end_custom"
+        )
+    if isinstance(trend_start_input, date):
+        trend_start_date = datetime.combine(trend_start_input, datetime.min.time())
+    else:
+        trend_start_date = trend_start_input
+    if isinstance(trend_end_input, date):
+        trend_end_date = datetime.combine(trend_end_input, datetime.min.time())
+    else:
+        trend_end_date = trend_end_input
+
+trend_start_date_str = trend_start_date.strftime('%Y-%m-%d')
+trend_end_date_str = trend_end_date.strftime('%Y-%m-%d')
 
 # Sankey diagram configuration
 st.sidebar.header("🎨 Diagram Settings")
@@ -298,14 +374,16 @@ try:
 
             # Separate transfers from income/expenses
             df_filtered = df[df['type'].isin(['deposit', 'withdrawal'])].copy()
+            df_filtered = normalize_transaction_labels(df_filtered)
 
-            # Normalize key text fields so drilldowns match what the Sankey displays
-            df_filtered['source_name'] = df_filtered['source_name'].fillna('Unknown')
-            df_filtered['source_name'] = df_filtered['source_name'].replace('', 'Unknown')
-            df_filtered['destination_name'] = df_filtered['destination_name'].fillna('Unknown')
-            df_filtered['destination_name'] = df_filtered['destination_name'].replace('', 'Unknown')
-            df_filtered['category_name'] = df_filtered['category_name'].fillna('Uncategorized')
-            df_filtered['category_name'] = df_filtered['category_name'].replace('', 'Uncategorized')
+            # Prepare dataset for trend analysis (can reuse filtered data when ranges match)
+            if trend_start_date_str == start_date_str and trend_end_date_str == end_date_str:
+                trend_df_filtered = df_filtered.copy()
+            else:
+                trend_transactions_data = fetch_transactions(client, trend_start_date_str, trend_end_date_str)
+                trend_df = client.parse_transaction_data(trend_transactions_data)
+                trend_df_filtered = trend_df[trend_df['type'].isin(['deposit', 'withdrawal'])].copy()
+                trend_df_filtered = normalize_transaction_labels(trend_df_filtered)
 
             if df_filtered.empty:
                 st.warning("No income or expense transactions found in the selected date range.")
@@ -360,20 +438,41 @@ try:
                     ['id', 'date', 'type', 'source_name', 'destination_name', 'category_name', 'description', 'amount']
                 ].copy()
 
-                if not transactions_view.empty:
-                    if pd.api.types.is_datetime64_any_dtype(transactions_view['date']):
-                        transactions_view['date'] = transactions_view['date'].dt.tz_localize(None)
+                trend_transactions_view = trend_df_filtered[
+                    ['id', 'date', 'type', 'source_name', 'destination_name', 'category_name', 'description', 'amount']
+                ].copy()
+
+                def _prepare_transactions_view(view_df: pd.DataFrame) -> pd.DataFrame:
+                    if view_df.empty:
+                        return view_df
+
+                    if pd.api.types.is_datetime64_any_dtype(view_df['date']):
+                        view_df['date'] = view_df['date'].dt.tz_localize(None)
                     else:
-                        transactions_view['date'] = pd.to_datetime(transactions_view['date'], utc=True)
-                        transactions_view['date'] = transactions_view['date'].dt.tz_localize(None)
+                        view_df['date'] = pd.to_datetime(view_df['date'], utc=True)
+                        view_df['date'] = view_df['date'].dt.tz_localize(None)
 
-                    transactions_view['date'] = transactions_view['date'].dt.strftime('%Y-%m-%d')
-                    transactions_view['description'] = transactions_view['description'].fillna('')
-                    transactions_view['amount'] = transactions_view['amount'].astype(float)
+                    view_df['date'] = view_df['date'].dt.strftime('%Y-%m-%d')
+                    view_df['description'] = view_df['description'].fillna('')
+                    view_df['amount'] = view_df['amount'].astype(float)
+                    return view_df
 
-                    sankey_data['transactions'] = transactions_view.to_dict(orient='records')
-                else:
-                    sankey_data['transactions'] = []
+                transactions_view_prepared = _prepare_transactions_view(transactions_view)
+                trend_transactions_view_prepared = _prepare_transactions_view(trend_transactions_view)
+
+                sankey_data['transactions'] = (
+                    transactions_view_prepared.to_dict(orient='records')
+                    if not transactions_view_prepared.empty else []
+                )
+                sankey_data['trend_transactions'] = (
+                    trend_transactions_view_prepared.to_dict(orient='records')
+                    if not trend_transactions_view_prepared.empty else []
+                )
+                sankey_data['trend_range'] = {
+                    'label': trend_preset_range,
+                    'start': trend_start_date_str,
+                    'end': trend_end_date_str
+                }
 
                 # Generate D3 Sankey HTML
                 import streamlit.components.v1 as components
@@ -385,7 +484,7 @@ try:
                 )
 
                 # Display using components.html (extra height so the drilldown table is fully visible)
-                components.html(sankey_html, height=1100, scrolling=True)
+                components.html(sankey_html, height=1250, scrolling=True)
                 st.caption("Tip: Click any node in the Sankey to populate the transaction drilldown panel below the chart.")
 
                 # Show detailed breakdown in expanders
