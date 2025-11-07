@@ -316,18 +316,6 @@ try:
             st.markdown("### 🌊 Complete Cash Flow Visualization")
 
             if not income_sources.empty and not category_spending.empty:
-                st.info(f"""
-                **How to read this diagram:**
-                - **Left (Green nodes)**: Your income sources
-                - **Middle (Blue node)**: Total Income - where all your income flows together
-                - **Right (Red nodes)**: Your expense categories
-                - **Right (Green node)**: Remaining amount (Income - Expenses)
-
-                This three-tier diagram shows the complete picture:
-                1. All income sources flow into **Total Income**
-                2. **Total Income** then splits into all expense categories
-                3. What's left after expenses is shown as **Remaining**
-                """)
 
                 fig_sankey = create_sankey_diagram(
                     income_df=income_sources,
