@@ -283,7 +283,7 @@ trend_preset_range = st.sidebar.selectbox(
      "Last Exact 3 Months", "Last Exact 6 Months", "Last Exact 12 Months",
      "Current Month", "Current Quarter", "Current Year",
      "Last Month", "Last Quarter", "Last Year", "Year to Date", "Custom"],
-    index=2,
+    index=10,
     key="trend_period_selector"
 )
 

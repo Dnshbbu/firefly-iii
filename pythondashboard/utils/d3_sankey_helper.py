@@ -968,7 +968,6 @@ def generate_d3_sankey_html(data: dict, title: str, height: int = 700) -> str:
 
             const total = dataPoints.reduce((acc, item) => acc + item.value, 0);
             const avg = total / dataPoints.length;
-            const bestMonth = dataPoints.reduce((best, item) => (!best || item.value > best.value) ? item : best, null);
 
             container.innerHTML = `
                 <div class="trend-header">
@@ -979,7 +978,6 @@ def generate_d3_sankey_html(data: dict, title: str, height: int = 700) -> str:
                     <div class="trend-metrics">
                         <div><span>Total</span><strong>${{formatCurrency(total)}}</strong></div>
                         <div><span>Avg / Month</span><strong>${{formatCurrency(avg)}}</strong></div>
-                        <div><span>Best Month</span><strong>${{bestMonth ? escapeHtml(bestMonth.label) : '—'}}</strong></div>
                     </div>
                 </div>
                 <div id="trend-chart" class="trend-chart"></div>
