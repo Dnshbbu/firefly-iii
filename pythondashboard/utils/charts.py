@@ -1042,17 +1042,6 @@ def create_category_comparison_chart(
         textposition='outside'
     ))
 
-    # Line for month-over-month change percentage
-    fig.add_trace(go.Scatter(
-        x=df['month'].dt.strftime('%b %Y'),
-        y=df['change_pct'],
-        name='MoM Change %',
-        mode='lines+markers',
-        line=dict(color='#60a5fa', width=2),
-        marker=dict(size=8),
-        yaxis='y2'
-    ))
-
     # Calculate y-axis range to accommodate outside text labels
     max_value = df['amount'].max()
     y_max = max_value * 1.15  # Add 15% padding for labels
@@ -1064,21 +1053,10 @@ def create_category_comparison_chart(
             title='Amount (€)',
             range=[0, y_max]
         ),
-        yaxis2=dict(
-            title='Change (%)',
-            overlaying='y',
-            side='right'
-        ),
         height=height,
-        margin=dict(t=80, b=50, l=50, r=80),
+        margin=dict(t=80, b=50, l=50, r=20),
         hovermode='x unified',
-        legend=dict(
-            orientation="h",
-            yanchor="bottom",
-            y=1.02,
-            xanchor="right",
-            x=1
-        )
+        showlegend=False
     )
 
     return fig
