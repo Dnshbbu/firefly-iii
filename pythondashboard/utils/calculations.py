@@ -398,7 +398,7 @@ def calculate_budget_performance(
     end_date: str
 ) -> pd.DataFrame:
     """
-    Calculate budget performance (budgeted vs. spent vs. remaining).
+    Calculate budget performance (budgeted vs. spent vs. remaining) with pro-rata calculations.
 
     Args:
         budgets_data: List of budget dictionaries from API
@@ -415,17 +415,41 @@ def calculate_budget_performance(
 
     budget_performance = []
 
+    # Parse the selected date range
+    range_start = datetime.strptime(start_date, '%Y-%m-%d')
+    range_end = datetime.strptime(end_date, '%Y-%m-%d')
+
     for budget in budgets_data:
         budget_id = budget.get('id')
         budget_name = budget.get('attributes', {}).get('name', 'Unknown')
 
-        # Get budget limit for this period
+        # Get budget limit for this period with pro-rata calculation
         limits = budget_limits_data.get(budget_id, [])
         budgeted_amount = 0.0
 
         for limit in limits:
             limit_attrs = limit.get('attributes', {})
-            budgeted_amount += float(limit_attrs.get('amount', 0))
+            limit_start = limit_attrs.get('start')
+            limit_end = limit_attrs.get('end')
+            limit_amount = float(limit_attrs.get('amount', 0))
+
+            # Check if this limit overlaps with our selected period
+            if limit_start and limit_end:
+                # Parse limit dates (handle both ISO format with timezone and simple date format)
+                limit_start_date = datetime.strptime(limit_start, '%Y-%m-%dT%H:%M:%S%z').replace(tzinfo=None) if 'T' in limit_start else datetime.strptime(limit_start, '%Y-%m-%d')
+                limit_end_date = datetime.strptime(limit_end, '%Y-%m-%dT%H:%M:%S%z').replace(tzinfo=None) if 'T' in limit_end else datetime.strptime(limit_end, '%Y-%m-%d')
+
+                # Check for overlap between limit period and selected period
+                if limit_start_date <= range_end and limit_end_date >= range_start:
+                    # Calculate the overlap proportion
+                    overlap_start = max(limit_start_date, range_start)
+                    overlap_end = min(limit_end_date, range_end)
+                    overlap_days = (overlap_end - overlap_start).days + 1
+                    total_limit_days = (limit_end_date - limit_start_date).days + 1
+
+                    # Prorate the budget amount based on overlap
+                    prorated_amount = (limit_amount * overlap_days) / total_limit_days if total_limit_days > 0 else limit_amount
+                    budgeted_amount += prorated_amount
 
         # Calculate spent amount from transactions
         if not transactions_df.empty:
