@@ -346,35 +346,65 @@ This directory contains everything needed for preprocessing and importing bank s
 **Directory Structure:**
 ```
 pythondashboard/
-├── app.py                    # Streamlit CSV preprocessor application
+├── Home.py                   # Main dashboard home page
+├── app.py                    # Legacy standalone CSV preprocessor (deprecated)
 ├── requirements.txt          # Python dependencies
 ├── README.md                 # Detailed documentation
+├── pages/                    # 20+ Streamlit dashboard pages
+│   ├── 1_📊_Net_Worth.py
+│   ├── 2_📄_CSV_Preprocessor.py
+│   ├── 3_📈_Cash_Flow.py
+│   └── ... (17 more pages)
+├── utils/                    # Shared utility modules
 ├── statements/               # Bank statement CSV files (organized by bank)
 │   ├── AIB/
 │   ├── Revolut/
 │   ├── Revolut_CC/
 │   └── T212/
 └── import-configs/           # Firefly III Data Importer configuration files
-    ├── AIB_import_config_v1.json
-    ├── Revolut_import_config_v1.json, v2.json
-    ├── Revolut_CC_import_config_v1.json
+    ├── AIB_import_config_v1.json, v2.json
+    ├── Revolut_Personal_import_config_v2.json, v3.json, v4.json
+    ├── Revolut_CC_import_config_v1.json, v2.json, v3.json
     └── T212_import_config_v*.json
 ```
 
-**Streamlit CSV Preprocessor:**
+**Streamlit Dashboard:**
 
-The Streamlit app automatically detects bank types and applies transformation rules to clean CSV files before importing into Firefly III.
+A comprehensive 20+ page dashboard for managing Firefly III data, including:
+- Net Worth tracking and visualization
+- Cash Flow analysis with Sankey diagrams
+- Budget management and forecasting
+- Category analysis and management
+- Account views (Asset, Revenue, Expense)
+- Bills and recurring transaction management
+- Savings forecasts and piggy banks
+- **CSV Preprocessor** - Automatically detects bank types and cleans CSV files
+- PDF table extraction
+- Transaction rules management
 
-**IMPORTANT:** Use this preprocessor BEFORE importing CSVs to:
+**IMPORTANT:** Use the CSV Preprocessor page BEFORE importing CSVs to:
 - Remove duplicate/internal transactions
 - Standardize date formats to match import configurations
 - Clean data to prevent import errors
 
 **Quick Start:**
+
+**Windows (PowerShell):**
+```powershell
+cd pythondashboard
+python -m venv venv
+.\venv\Scripts\activate.ps1
+pip install -r requirements.txt
+streamlit run Home.py
+```
+
+**Linux/macOS/WSL:**
 ```bash
 cd pythondashboard
+python3 -m venv venv
+source venv/bin/activate
 pip install -r requirements.txt
-streamlit run app.py
+streamlit run Home.py
 # Opens at http://localhost:8501
 ```
 
@@ -394,10 +424,13 @@ All CSV files and import configurations have been consolidated into the `pythond
 **Recommended Workflow:**
 1. Export CSV from your bank/service
 2. Save to `pythondashboard/statements/<BankName>/` directory
-3. **Run Streamlit preprocessor:** `cd pythondashboard && streamlit run app.py`
-4. Upload CSV, review preprocessing rules, download processed file
-5. Use matching configuration from `pythondashboard/import-configs/` in the Data Importer
-6. Import via Data Importer web interface at `http://localhost:81`
+3. **Start the dashboard:**
+   - Windows: `cd pythondashboard && .\venv\Scripts\activate.ps1 && streamlit run Home.py`
+   - Linux/WSL: `cd pythondashboard && source venv/bin/activate && streamlit run Home.py`
+4. Navigate to **📄 CSV Preprocessor** page in the sidebar
+5. Upload CSV, review preprocessing rules and validation, download processed file
+6. Use matching configuration from `pythondashboard/import-configs/` in the Data Importer
+7. Import via Data Importer web interface at `http://localhost:81`
 
 **For detailed information** about import configurations, CSV formats, and preprocessing rules, see:
 → **[pythondashboard/README.md](pythondashboard/README.md)**

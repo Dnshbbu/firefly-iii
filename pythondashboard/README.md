@@ -2,13 +2,41 @@
 
 A comprehensive Streamlit-based dashboard for managing and visualizing your Firefly III personal finance data.
 
-This directory provides multiple tools for managing your Firefly III instance:
-1. **Net Worth Dashboard** - Real-time visualization of your financial position via Firefly III API
-2. **CSV Preprocessor** - Clean and prepare bank statement CSV files for import
-3. **Cash Flow Dashboard** - Track income and expenses over time
-4. **Budget Dashboard** - Monitor budget usage and limits
-5. **Categories Dashboard** - Analyze spending by category
-6. **Rules Management** - Export, view, delete, and import transaction rules
+This directory provides 20+ interactive dashboard pages for complete financial management:
+
+**Overview & Analytics:**
+- 📊 Net Worth Dashboard - Real-time visualization of your financial position
+- 📈 Cash Flow Analysis - Track income and expenses over time
+- 🌊 Cash Flow Sankey - Interactive D3-based flow visualization
+
+**Budget & Spending:**
+- 💰 Budget Overview - Monitor budget usage and limits
+- 💵 Budget Management - Create and configure budgets
+- 📅 Budget Timeline - Timeline visualization of budget performance
+
+**Categories & Transactions:**
+- 🏷️ Categories Overview - Analyze spending by category
+- 🔧 Category Management - Create and manage categories
+- 🔍 Category Details - Detailed category breakdowns
+- 🏷️ Transaction Tags - Tag-based transaction filtering
+
+**Accounts:**
+- 🏦 Asset Accounts - Track bank accounts, investments, and assets
+- 💰 Revenue Accounts - Monitor income sources
+- 💸 Expense Accounts - Analyze expense destinations
+
+**Bills & Recurring:**
+- 📅 Bills Management - Track and forecast recurring bills
+- 📋 Rules Management - Export, view, delete, and import transaction rules
+
+**Savings & Goals:**
+- 🐷 Piggy Banks - Manage savings goals
+- 🚀 Savings Forecast - Project future savings and goals
+
+**Data Tools:**
+- 📄 CSV Preprocessor - Clean and prepare bank statement CSV files
+- 📄 PDF Table Extractor - Extract tables from PDF bank statements
+- 📄 CSV Combiner - Merge multiple CSV files
 
 All CSV preprocessing tools, bank statement files, and import configurations are consolidated in one place for easy management.
 
@@ -22,7 +50,7 @@ All CSV preprocessing tools, bank statement files, and import configurations are
 - **Export Capabilities** - Download account data as CSV
 - **Filtering Options** - Filter by account type, active status, and balance
 
-### 📋 Rules Management (NEW!)
+### 📋 Rules Management
 - **Export Rules** - Download all rules as JSON for backup or migration
 - **View Rules** - Browse all rules with filtering and search capabilities
 - **Delete Rules** - Remove multiple rules with confirmation safeguards
@@ -30,6 +58,61 @@ All CSV preprocessing tools, bank statement files, and import configurations are
 - **Duplicate Detection** - Skip importing rules with matching titles
 - **Detailed View** - Inspect triggers, actions, and raw JSON for each rule
 - **Batch Operations** - Handle multiple rules at once
+
+### 💵 Budget Management
+- **Create Budgets** - Set up new budgets with auto-limits
+- **Configure Limits** - Set monthly, quarterly, or yearly budget limits
+- **Edit/Delete** - Modify or remove existing budgets
+- **Auto-limit Calculation** - Automatically calculate limits from historical spending
+
+### 🔧 Category Management
+- **Create Categories** - Add new spending categories
+- **Edit Categories** - Update category names and details
+- **Delete Categories** - Remove unused categories
+- **Category Overview** - View all categories with transaction counts
+
+### 🏦 Account Views
+- **Asset Accounts** - Bank accounts, cash, investments overview
+- **Revenue Accounts** - Income source tracking and analysis
+- **Expense Accounts** - Spending destination tracking
+- **Account Balances** - Current balances and account details
+- **Interactive Charts** - Visual account breakdowns
+
+### 📅 Bills Management
+- **Track Bills** - Monitor recurring bills and payments
+- **Bill Forecasting** - Predict upcoming bill payments
+- **Payment History** - View past bill payment records
+- **Bill Analytics** - Analyze bill payment patterns
+
+### 🐷 Piggy Banks
+- **Savings Goals** - Create and track savings targets
+- **Progress Tracking** - Monitor savings goal progress
+- **Add/Remove Money** - Update piggy bank balances
+- **Goal Analytics** - Visualize savings achievements
+
+### 🚀 Savings Forecast
+- **Future Projections** - Forecast savings based on current trends
+- **Goal Achievement** - Estimate when savings goals will be met
+- **Scenario Analysis** - Test different savings scenarios
+- **Visual Forecasts** - Interactive charts showing projections
+
+### 📄 PDF Table Extractor
+- **Extract Tables** - Pull transaction tables from PDF bank statements
+- **Auto-detection** - Automatically detect table structures
+- **Export CSV** - Convert extracted tables to CSV format
+- **Preview Tables** - Review extracted data before export
+
+### 📄 CSV Combiner
+- **Merge Files** - Combine multiple CSV files into one
+- **Format Handling** - Smart handling of different CSV formats
+- **Deduplication** - Remove duplicate transactions
+- **Export Combined** - Download merged CSV file
+
+### 🌊 Cash Flow Sankey
+- **D3 Visualization** - Interactive Sankey diagrams for cash flow
+- **Income to Expense** - Visual flow from revenue to spending
+- **Category Flows** - See money movement between categories
+- **Customizable** - Filter by date range and account types
 
 ### 📄 CSV Preprocessing
 - Upload CSV files from your bank statements
@@ -43,31 +126,69 @@ All CSV preprocessing tools, bank statement files, and import configurations are
 
 ## Installation
 
-1. Install dependencies:
+1. Create and activate a Python virtual environment:
+
+**Windows (PowerShell):**
+```powershell
+cd C:\Users\StdUser\Desktop\MyProjects\firefly-iii\pythondashboard
+python -m venv venv
+.\venv\Scripts\activate.ps1
+```
+
+**Linux/macOS/WSL:**
 ```bash
-cd pythondashboard
+cd /mnt/c/Users/StdUser/Desktop/MyProjects/firefly-iii/pythondashboard
+python3 -m venv venv
+source venv/bin/activate
+```
+
+2. Install dependencies:
+```bash
 pip install -r requirements.txt
 ```
+
+3. Configure environment (optional):
+```bash
+# Copy the example environment file
+cp .env.example .env
+
+# Edit .env and add your Firefly III credentials
+# FIREFLY_URL=http://your-firefly-instance
+# FIREFLY_TOKEN=your-personal-access-token
+```
+
+**Note:** You can also configure API credentials directly in the dashboard sidebar instead of using `.env`
 
 ## Usage
 
 ### Starting the Dashboard
 
-1. Start the Streamlit application:
+**Windows (PowerShell):**
+```powershell
+cd C:\Users\StdUser\Desktop\MyProjects\firefly-iii\pythondashboard
+.\venv\Scripts\activate.ps1
+streamlit run .\Home.py
+```
+
+**Linux/macOS/WSL:**
 ```bash
-cd pythondashboard
+cd /mnt/c/Users/StdUser/Desktop/MyProjects/firefly-iii/pythondashboard
+source venv/bin/activate
 streamlit run Home.py
 ```
 
-2. Open your browser to the URL shown (usually `http://localhost:8501`)
+The dashboard will open in your browser at `http://localhost:8501`
 
-3. Use the sidebar to navigate between:
-   - **📊 Net Worth** - View your financial dashboard
-   - **📄 CSV Preprocessor** - Prepare CSV files for import
-   - **📈 Cash Flow** - Track income and expenses
-   - **💰 Budget** - Monitor budget usage
-   - **🏷️ Categories** - Analyze spending by category
-   - **📋 Rules Management** - Manage transaction rules
+### Navigation
+
+Use the collapsible sidebar to navigate between dashboard pages organized by category:
+- **Overview & Analytics** - Net Worth, Cash Flow, Sankey diagrams
+- **Budget & Spending** - Budget tracking, management, and timelines
+- **Categories & Transactions** - Category analysis, management, and transaction tags
+- **Accounts** - Asset, Revenue, and Expense account views
+- **Bills & Recurring** - Bills management and transaction rules
+- **Savings & Goals** - Piggy banks and savings forecasts
+- **Data Tools** - CSV preprocessing, PDF extraction, and file combining
 
 ### Using the Rules Management Page
 
@@ -135,17 +256,21 @@ streamlit run Home.py
 
 ### Preprocessing CSV Files
 
-1. Navigate to the **CSV Preprocessor** page using the sidebar
+1. Navigate to the **📄 CSV Preprocessor** page using the sidebar navigation
 
 2. Upload a CSV file from the `statements/<BankName>/` folder
 
 3. Review the detected bank type and preprocessing rules
 
-5. Toggle rules on/off as needed
+4. The system will validate your CSV structure against the matching import configuration
+
+5. Toggle preprocessing rules on/off as needed
 
 6. Download the processed CSV file
 
 7. Import the processed file into Firefly III using the Data Importer with the matching configuration from `import-configs/`
+
+**Note:** The CSV Preprocessor is integrated into the main dashboard. The standalone `app.py` file is kept for legacy purposes but is no longer the recommended way to run the preprocessor.
 
 ### Importing into Firefly III
 
@@ -223,33 +348,95 @@ When adding new features or bank types, maintain the compact design by:
 
 To add preprocessing rules for a new bank:
 
-1. Open `app.py`
-2. Add bank detection logic based on CSV column names (around line 130)
-3. Add preprocessing rules similar to existing bank examples
+1. Open `pages/2_📄_CSV_Preprocessor.py`
+2. Add bank detection logic based on CSV column names in the bank type detection section
+3. Add preprocessing rules similar to existing bank examples (Revolut, T212, AIB, Revolut CC)
 4. Follow the compact design patterns (see Design Principles above)
-5. Test with sample CSV files
+5. Create a matching import configuration JSON file in `import-configs/`
+6. Test with sample CSV files
+
+**Legacy Note:** The original standalone `app.py` file contains similar logic but is no longer actively maintained. All new features should be added to the integrated CSV Preprocessor page.
 
 ## Project Structure
 
 ```
 pythondashboard/
-├── app.py                    # Main Streamlit application
-├── requirements.txt          # Python dependencies
-├── README.md                 # This file
-├── statements/               # Bank statement CSV files (organized by bank)
-│   ├── AIB/                  # AIB bank statements
-│   ├── Revolut/              # Revolut current account exports
-│   ├── Revolut_CC/           # Revolut Credit Card exports
-│   └── T212/                 # Trading 212 transaction history
-└── import-configs/           # Firefly III Data Importer configurations
-    ├── AIB_import_config_v1.json
-    ├── Revolut_import_config_v1.json
-    ├── Revolut_import_config_v2.json
-    ├── Revolut_CC_import_config_v1.json
-    ├── T212_import_config_v3.json
-    ├── T212_import_config_v4.json
-    ├── T212_import_config_v5_OK.json
-    └── T212_import_config_v6.json
+├── Home.py                          # Main dashboard home page with navigation
+├── app.py                           # Legacy CSV preprocessor (standalone version)
+├── firefly_api.py                   # Complete Firefly III API client
+├── import_config_validator.py       # Import configuration validation
+├── requirements.txt                 # Python dependencies
+├── README.md                        # This file
+├── .env.example                     # Environment variable template
+├── .env                             # Environment configuration (API credentials)
+├── dashboard.db                     # SQLite database for caching
+│
+├── pages/                           # Streamlit dashboard pages (20 pages)
+│   ├── 1_📊_Net_Worth.py
+│   ├── 2_📄_CSV_Preprocessor.py
+│   ├── 3_📈_Cash_Flow.py
+│   ├── 4_💰_Budget.py
+│   ├── 5_🏷️_Categories.py
+│   ├── 6_📋_Rules_Management.py
+│   ├── 7_🔧_Category_Management.py
+│   ├── 8_💰_Revenue_Accounts.py
+│   ├── 9_💸_Expense_Accounts.py
+│   ├── 10_🏦_Asset_Accounts.py
+│   ├── 11_💵_Budget_Management.py
+│   ├── 12_📅_Bills_Management.py
+│   ├── 13_🐷_Piggy_Banks_Management.py
+│   ├── 14_📅_Budget_Timeline.py
+│   ├── 15_🔍_Category_Details.py
+│   ├── 16_🚀_Savings_Forecast.py
+│   ├── 17_🏷️_Transaction_Tags.py
+│   ├── 18_📄_PDF_Table_Extractor.py
+│   ├── 19_📄_CSV_Combiner.py
+│   └── 20_🌊_Cash_Flow_Sankey.py
+│
+├── utils/                           # Shared utility modules
+│   ├── __init__.py
+│   ├── api_client.py                # API client utilities
+│   ├── calculations.py              # Financial calculations (budgets, forecasts)
+│   ├── charts.py                    # Plotly chart generation
+│   ├── config.py                    # Configuration management
+│   ├── database.py                  # SQLite database operations
+│   ├── d3_sankey_helper.py          # D3.js Sankey diagram generation
+│   ├── navigation.py                # Collapsible sidebar navigation
+│   └── sankey_helper.py             # Alternative Sankey utilities
+│
+├── statements/                      # Bank statement CSV files (organized by bank)
+│   ├── AIB/                         # AIB bank statements
+│   ├── Revolut/                     # Revolut current account exports
+│   ├── Revolut_CC/                  # Revolut Credit Card exports (includes pdf/)
+│   └── T212/                        # Trading 212 transaction history
+│
+├── import-configs/                  # Firefly III Data Importer configurations
+│   ├── AIB_import_config_v1.json, v2.json
+│   ├── Revolut_Personal_import_config_v2.json, v3.json, v4.json
+│   ├── Revolut_CC_import_config_v1.json, v2.json, v3.json
+│   ├── T212_All_import_config_v6.json
+│   └── T212_onlyTransactions_import_config_OK_v5.json
+│
+├── firefly-configs/                 # Exported Firefly III configurations
+│   ├── categories/                  # Category exports
+│   ├── rules/                       # Transaction rule exports
+│   └── exports_*/                   # Timestamped data exports
+│
+├── Docs/                            # Technical documentation
+│   ├── BUDGET_IMPLEMENTATION.md
+│   ├── CASH_FLOW_IMPLEMENTATION.md
+│   ├── CATEGORY_IMPLEMENTATION.md
+│   ├── D3_SANKEY_MIGRATION.md
+│   ├── DASHBOARD_ROADMAP.md
+│   ├── DOCKER_BUILD_GUIDE.md
+│   ├── DOCKER_IMPLEMENTATION_REVIEW.md
+│   ├── FIREFLY_SETUP_GUIDE.md
+│   └── SAVINGS_FORECAST_IMPLEMENTATION.md
+│
+├── .streamlit/                      # Streamlit configuration
+│   └── config.toml                  # Custom navigation and toolbar settings
+│
+└── venv/                            # Python virtual environment (created during setup)
 ```
 
 ### Import Configurations
@@ -277,10 +464,66 @@ The `statements/` directory is organized by bank/service for easy file managemen
 - Use the Streamlit preprocessor to clean the files
 - Processed files are typically named with `_processed.csv` suffix
 
+## Architecture & Design
+
+### Modular Structure
+The dashboard follows a modular architecture with:
+- **20 specialized pages** - Each page focuses on a specific financial management aspect
+- **Shared utilities** - Common functionality in the `utils/` module
+- **API integration** - Complete Firefly III API client (`firefly_api.py`)
+- **Database caching** - SQLite database for performance optimization
+
+### Key Components
+
+**Firefly API Client (`firefly_api.py`):**
+Complete Python client for Firefly III REST API with methods for:
+- Account operations (list, create, update, delete)
+- Transaction/journal management
+- Budget and category operations
+- Rules management
+- Bills, piggy banks, and recurring transactions
+- Data export functionality
+
+**Utils Module:**
+- `calculations.py` - Financial calculations (budgets, forecasts, pro-rata)
+- `charts.py` - Plotly chart generation
+- `database.py` - SQLite operations
+- `d3_sankey_helper.py` - D3.js Sankey visualizations
+- `navigation.py` - Collapsible sidebar navigation
+
+### Custom Navigation
+The dashboard uses a custom collapsible sidebar navigation (built with `utils/navigation.py`):
+- Organized by functional categories
+- Collapsible sections for better space utilization
+- Persistent state across page navigation
+- Dark mode optimized
+
+### Dependencies
+The dashboard requires the following Python packages:
+- **streamlit** (>=1.35.0) - Web dashboard framework
+- **pandas** (2.2.0) - Data manipulation and analysis
+- **requests** (2.31.0) - HTTP library for API calls
+- **plotly** (5.18.0) - Interactive charting library
+- **streamlit-plotly-events** (0.0.6) - Plotly event handling in Streamlit
+- **python-dotenv** (1.0.0) - Environment variable management
+- **pdfplumber** (0.11.0) - PDF table extraction
+
+## Technical Documentation
+
+Comprehensive implementation guides are available in the `Docs/` directory:
+- **BUDGET_IMPLEMENTATION.md** - Budget feature architecture
+- **CASH_FLOW_IMPLEMENTATION.md** - Cash flow calculations
+- **CATEGORY_IMPLEMENTATION.md** - Category management
+- **D3_SANKEY_MIGRATION.md** - Sankey diagram implementation
+- **SAVINGS_FORECAST_IMPLEMENTATION.md** - Savings forecasting algorithms
+- **DASHBOARD_ROADMAP.md** - Feature roadmap and planned enhancements
+
 ## Future Development
 
-The dashboard is designed to be extensible. Future tabs will include:
-- Firefly III API integration
-- Real-time budget tracking
-- Spending analytics
-- Custom reports and visualizations
+The dashboard continues to evolve. Planned enhancements include:
+- Advanced reporting and analytics
+- Custom dashboard widgets
+- Data import automation
+- Multi-currency support improvements
+- Enhanced forecasting models
+- Mobile-responsive layouts
