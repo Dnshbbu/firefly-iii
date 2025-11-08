@@ -256,13 +256,17 @@ def create_pie_chart(
         labels=df[labels],
         values=df[values],
         hole=hole,
-        marker=dict(colors=colors or px.colors.qualitative.Set3)
+        marker=dict(colors=colors or px.colors.qualitative.Set3),
+        textposition='inside',  # Move text inside to prevent cutoff
+        automargin=True
     )])
 
     fig.update_layout(
         title=title,
         height=height,
-        margin=dict(t=50, b=20, l=20, r=20)
+        margin=dict(t=80, b=60, l=60, r=60),  # Increased margins significantly
+        uniformtext_minsize=8,
+        uniformtext_mode='hide'  # Hide text that doesn't fit
     )
 
     return fig
