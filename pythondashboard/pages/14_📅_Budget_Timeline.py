@@ -485,7 +485,7 @@ def create_monthly_breakdown_table(monthly_df: pd.DataFrame) -> pd.DataFrame:
     df = monthly_df.copy()
 
     # Return data as-is, formatting will be handled by st.dataframe column_config
-    return df[['month_full', 'budgeted', 'spent', 'remaining', 'deviation', 'deviation_pct', 'status']]
+    return df[['month_full', 'budgeted', 'spent', 'remaining', 'deviation_pct', 'status']]
 
 
 def get_per_budget_monthly_data(
@@ -1073,8 +1073,8 @@ try:
 
         st.markdown("---")
 
-        # === SECTION 4: Budget Gauges ===
-        st.markdown("### 🎯 Budget Utilization Overview")
+        # === SECTION 4: Individual Budget Charts ===
+        st.markdown("### 📊 Individual Budget Performance")
 
         # Get per-budget monthly data
         budget_monthly_data = get_per_budget_monthly_data(
@@ -1086,6 +1086,36 @@ try:
         )
 
         # Filter out budgets with no data
+        active_budgets = {name: df for name, df in budget_monthly_data.items()
+                         if df['budgeted'].sum() > 0 or df['spent'].sum() > 0}
+
+        if active_budgets:
+            # Display charts in a grid (3 per row)
+            budget_names = list(active_budgets.keys())
+            charts_per_row = 3
+
+            for i in range(0, len(budget_names), charts_per_row):
+                cols = st.columns(charts_per_row)
+
+                for j in range(charts_per_row):
+                    idx = i + j
+                    if idx < len(budget_names):
+                        budget_name = budget_names[idx]
+                        budget_df = active_budgets[budget_name]
+
+                        with cols[j]:
+                            fig = create_small_budget_chart(budget_name, budget_df, today.month)
+                            st.plotly_chart(fig, config={'displayModeBar': False, 'responsive': True})
+        else:
+            st.info("No budget data available for the selected period.")
+
+        st.markdown("---")
+
+        # === SECTION 5: Budget Gauges ===
+        st.markdown("### 🎯 Budget Utilization Overview")
+
+        # active_budgets already calculated above
+        # Filter out budgets with no data (redundant but kept for clarity)
         active_budgets = {name: df for name, df in budget_monthly_data.items()
                          if df['budgeted'].sum() > 0 or df['spent'].sum() > 0}
 
@@ -1129,36 +1159,6 @@ try:
 
         st.markdown("---")
 
-        # === SECTION 5: Individual Budget Charts ===
-        st.markdown("### 📊 Individual Budget Performance")
-
-        # active_budgets already calculated above
-        # Filter out budgets with no data (redundant but kept for clarity)
-        active_budgets = {name: df for name, df in budget_monthly_data.items()
-                         if df['budgeted'].sum() > 0 or df['spent'].sum() > 0}
-
-        if active_budgets:
-            # Display charts in a grid (3 per row)
-            budget_names = list(active_budgets.keys())
-            charts_per_row = 3
-
-            for i in range(0, len(budget_names), charts_per_row):
-                cols = st.columns(charts_per_row)
-
-                for j in range(charts_per_row):
-                    idx = i + j
-                    if idx < len(budget_names):
-                        budget_name = budget_names[idx]
-                        budget_df = active_budgets[budget_name]
-
-                        with cols[j]:
-                            fig = create_small_budget_chart(budget_name, budget_df, today.month)
-                            st.plotly_chart(fig, config={'displayModeBar': False, 'responsive': True})
-        else:
-            st.info("No budget data available for the selected period.")
-
-        st.markdown("---")
-
         # === SECTION 6: Monthly Breakdown Table ===
         st.markdown("### 📋 Monthly Breakdown")
 
@@ -1186,7 +1186,6 @@ try:
                 'budgeted': st.column_config.NumberColumn('Budgeted', format="€%.2f"),
                 'spent': st.column_config.NumberColumn('Spent', format="€%.2f"),
                 'remaining': st.column_config.NumberColumn('Remaining', format="€%.2f"),
-                'deviation': st.column_config.NumberColumn('Deviation', format="€%.2f"),
                 'deviation_pct': st.column_config.NumberColumn('Deviation %', format="%.1f%%"),
                 'status': 'Status'
             },
