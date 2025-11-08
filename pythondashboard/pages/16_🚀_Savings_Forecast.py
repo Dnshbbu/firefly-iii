@@ -101,9 +101,15 @@ db = get_database()
 if 'savings_loaded' not in st.session_state:
     st.session_state.savings_loaded = True
     st.session_state.savings_list = db.get_all_savings()
+    # Auto-mark matured savings on first load
+    db.mark_matured_savings()
 elif 'force_reload' in st.session_state and st.session_state.force_reload:
     st.session_state.savings_list = db.get_all_savings()
     st.session_state.force_reload = False
+
+# Initialize show_matured toggle state
+if 'show_matured' not in st.session_state:
+    st.session_state.show_matured = False
 
 # Currency configuration - Using INR only
 CURRENCY_SYMBOL = '₹'
@@ -300,12 +306,23 @@ def generate_timeline_data(savings_list, *, rate_shock_pct: float = 0.0, inflati
 # Title
 st.title("🚀 Savings Forecast & Roadmap")
 
-# Add refresh button - compact
-col1, col2 = st.columns([1, 5])
+# Add refresh button and toggle for matured FDs - compact
+col1, col2, col3 = st.columns([1, 2, 3])
 with col1:
     if st.button("🔄 Refresh"):
+        # Mark matured savings before refresh
+        db.mark_matured_savings()
         st.rerun()
 with col2:
+    show_matured = st.toggle(
+        "Show Matured FDs",
+        value=st.session_state.show_matured,
+        help="Toggle to show/hide completed/matured fixed deposits"
+    )
+    if show_matured != st.session_state.show_matured:
+        st.session_state.show_matured = show_matured
+        st.rerun()
+with col3:
     st.caption(f"Track your savings goals and projected returns | Last updated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
 
 # Sidebar for adding/editing savings
@@ -577,6 +594,10 @@ with st.sidebar:
             # Update in database
             if 'id' in editing_saving:
                 db.update_saving(editing_saving['id'], saving_data)
+
+                # Mark matured savings (in case maturity date was changed to the past)
+                db.mark_matured_savings()
+
                 st.success(f"✅ Updated {saving_name}!")
 
                 # Clear editing state and reload
@@ -712,6 +733,10 @@ with st.sidebar:
                 }
 
                 saving_id = db.add_saving(saving_data)
+
+                # Mark matured savings (in case the new saving is already past maturity)
+                db.mark_matured_savings()
+
                 st.success(f"✅ Added {saving_name}!")
 
                 # Reload from database
@@ -860,32 +885,58 @@ with st.sidebar:
                     }
 
                     saving_id = db.add_saving(saving_data)
+
+                    # Mark matured savings (in case the new saving is already past maturity)
+                    db.mark_matured_savings()
+
                     st.success(f"✅ Added {saving_name}!")
 
                     # Reload from database
                     st.session_state.force_reload = True
                     st.rerun()
 
+# Filter savings based on matured toggle
+all_savings = st.session_state.savings_list
+if st.session_state.show_matured:
+    # Show all savings (both active and matured)
+    filtered_savings = all_savings
+else:
+    # Show only active savings
+    filtered_savings = [s for s in all_savings if s.get('is_active', True)]
+
+# Count stats
+active_count = len([s for s in all_savings if s.get('is_active', True)])
+matured_count = len([s for s in all_savings if not s.get('is_active', True)])
+
 # Main content
-if st.session_state.savings_list:
+if filtered_savings:
     st.markdown("---")
 
     # Summary metrics
-    st.markdown("### 📊 Portfolio Summary")
+    col_header1, col_header2 = st.columns([3, 1])
+    with col_header1:
+        st.markdown("### 📊 Portfolio Summary")
+    with col_header2:
+        # Show status badge
+        if matured_count > 0:
+            if st.session_state.show_matured:
+                st.markdown(f'<div style="text-align: right; padding: 0.3rem;"><span style="background-color: rgba(74, 222, 128, 0.2); color: #4ade80; padding: 0.2rem 0.5rem; border-radius: 0.3rem; font-size: 0.75rem;">✓ Showing {matured_count} matured</span></div>', unsafe_allow_html=True)
+            else:
+                st.markdown(f'<div style="text-align: right; padding: 0.3rem;"><span style="background-color: rgba(248, 113, 113, 0.2); color: #f87171; padding: 0.2rem 0.5rem; border-radius: 0.3rem; font-size: 0.75rem;">{matured_count} matured hidden</span></div>', unsafe_allow_html=True)
 
-    # Calculate totals
-    total_principal = sum(s['principal'] for s in st.session_state.savings_list)
-    total_maturity = sum(s['maturity_value'] for s in st.session_state.savings_list)
-    total_contributions = sum(s.get('total_contributions', 0.0) for s in st.session_state.savings_list)
-    total_monthly_contrib = sum(s.get('monthly_contribution', 0.0) for s in st.session_state.savings_list)
+    # Calculate totals from filtered savings
+    total_principal = sum(s['principal'] for s in filtered_savings)
+    total_maturity = sum(s['maturity_value'] for s in filtered_savings)
+    total_contributions = sum(s.get('total_contributions', 0.0) for s in filtered_savings)
+    total_monthly_contrib = sum(s.get('monthly_contribution', 0.0) for s in filtered_savings)
     # Use interest_earned from each saving (handles both cumulative and payout FDs correctly)
-    total_interest = sum(s.get('interest_earned', 0.0) for s in st.session_state.savings_list)
+    total_interest = sum(s.get('interest_earned', 0.0) for s in filtered_savings)
     avg_return = (total_interest / total_principal * 100) if total_principal > 0 else 0
-    num_savings = len(st.session_state.savings_list)
+    num_savings = len(filtered_savings)
 
-    # Maturities in next 12 months
+    # Maturities in next 12 months (from filtered savings)
     next_12m = datetime.now() + relativedelta(years=1)
-    maturities_12m = sum(s['maturity_value'] for s in st.session_state.savings_list if s['maturity_date'] <= next_12m)
+    maturities_12m = sum(s['maturity_value'] for s in filtered_savings if s['maturity_date'] <= next_12m)
 
     col1, col2, col3, col4, col5, col6, col7, col8 = st.columns(8)
     col1.metric("Total Invested", format_currency_short(total_principal))
@@ -902,8 +953,8 @@ if st.session_state.savings_list:
     # Key dates section - compact
     st.markdown("### 📅 Key Dates & Milestones")
 
-    # Sort savings by maturity date
-    sorted_savings = sorted(st.session_state.savings_list, key=lambda x: x['maturity_date'])
+    # Sort filtered savings by maturity date
+    sorted_savings = sorted(filtered_savings, key=lambda x: x['maturity_date'])
 
     # Get next 3 upcoming maturities
     upcoming_3 = sorted_savings[:3]
@@ -924,7 +975,7 @@ if st.session_state.savings_list:
 
     with col2:
         # Longest duration saving
-        longest = max(st.session_state.savings_list, key=lambda x: (x['maturity_date'] - x['start_date']).days)
+        longest = max(filtered_savings, key=lambda x: (x['maturity_date'] - x['start_date']).days)
         duration_years = (longest['maturity_date'] - longest['start_date']).days / 365.25
         col2.metric(
             "Longest Term",
@@ -934,7 +985,7 @@ if st.session_state.savings_list:
 
     with col3:
         # Highest interest earning
-        highest_interest = max(st.session_state.savings_list, key=lambda x: x['interest_earned'])
+        highest_interest = max(filtered_savings, key=lambda x: x['interest_earned'])
         col3.metric(
             "Highest Interest",
             f"{highest_interest['name'][:15]}...",
@@ -943,7 +994,7 @@ if st.session_state.savings_list:
 
     with col4:
         # Weighted average rate
-        total_weighted = sum(s['principal'] * s['rate'] for s in st.session_state.savings_list)
+        total_weighted = sum(s['principal'] * s['rate'] for s in filtered_savings)
         weighted_avg_rate = (total_weighted / total_principal * 100) if total_principal > 0 else 0
         col4.metric(
             "Weighted Avg Rate",
@@ -965,9 +1016,9 @@ if st.session_state.savings_list:
         with col_w3:
             show_real = st.toggle("Show Real Terms (Inflation-adjusted)", value=False)
 
-    # Generate timeline data (scenario-aware)
+    # Generate timeline data (scenario-aware) using filtered savings
     timeline_data = generate_timeline_data(
-        st.session_state.savings_list,
+        filtered_savings,
         rate_shock_pct=rate_shock,
         inflation_pct=inflation_rate,
         real_terms=show_real
@@ -985,19 +1036,23 @@ if st.session_state.savings_list:
 
     # Color legend for easy tracking across charts
     st.markdown("**🎨 Savings Color Legend:**")
-    legend_cols = st.columns(min(len(st.session_state.savings_list), 6))
-    for idx, saving in enumerate(st.session_state.savings_list[:6]):  # Show first 6
+    legend_cols = st.columns(min(len(filtered_savings), 6))
+    for idx, saving in enumerate(filtered_savings[:6]):  # Show first 6
         color_obj = saving.get('color', get_color_for_saving(idx))
+        # Add status indicator for matured savings
+        is_matured = not saving.get('is_active', True)
+        status_badge = ' <span style="color: #4ade80; font-size: 0.65rem;">✓ MATURED</span>' if is_matured else ''
+
         with legend_cols[idx]:
             st.markdown(
                 f'<div style="display: inline-block; width: 12px; height: 12px; background-color: {color_obj["hex"]}; '
-                f'border-radius: 2px; margin-right: 4px;"></div>'
-                f'<span style="font-size: 0.75rem;">{saving["name"][:20]}</span>',
+                f'border-radius: 2px; margin-right: 4px;{" opacity: 0.5;" if is_matured else ""}"></div>'
+                f'<span style="font-size: 0.75rem;{" opacity: 0.6;" if is_matured else ""}">{saving["name"][:20]}{status_badge}</span>',
                 unsafe_allow_html=True
             )
 
-    if len(st.session_state.savings_list) > 6:
-        st.caption(f"+ {len(st.session_state.savings_list) - 6} more (see chart legends)")
+    if len(filtered_savings) > 6:
+        st.caption(f"+ {len(filtered_savings) - 6} more (see chart legends)")
 
     st.markdown("---")
 
@@ -1011,13 +1066,17 @@ if st.session_state.savings_list:
         fig = go.Figure()
 
         # Add stacked area chart for each saving
-        for idx, saving in enumerate(st.session_state.savings_list):
+        for idx, saving in enumerate(filtered_savings):
             color_obj = saving.get('color', get_color_for_saving(idx))
+            is_matured = not saving.get('is_active', True)
 
             # Convert hex to rgba with reduced opacity for softer appearance
             rgb = color_obj['rgb']
-            fill_color = f'rgba({rgb[0]}, {rgb[1]}, {rgb[2]}, 0.6)'  # 60% opacity
-            line_color = f'rgba({rgb[0]}, {rgb[1]}, {rgb[2]}, 0.8)'  # 80% opacity
+            # Reduce opacity further for matured savings
+            fill_opacity = 0.3 if is_matured else 0.6
+            line_opacity = 0.4 if is_matured else 0.8
+            fill_color = f'rgba({rgb[0]}, {rgb[1]}, {rgb[2]}, {fill_opacity})'
+            line_color = f'rgba({rgb[0]}, {rgb[1]}, {rgb[2]}, {line_opacity})'
 
             fig.add_trace(go.Scatter(
                 x=df_timeline['Date'],
@@ -1092,8 +1151,9 @@ if st.session_state.savings_list:
         shapes = []
         annotations = []
 
-        for idx, saving in enumerate(st.session_state.savings_list):
+        for idx, saving in enumerate(filtered_savings):
             color_obj = saving.get('color', get_color_for_saving(idx))
+            is_matured = not saving.get('is_active', True)
 
             # Add maturity marker (scatter point)
             maturity_point = df_timeline[df_timeline['Date'] == saving['maturity_date']]
@@ -1225,11 +1285,11 @@ if st.session_state.savings_list:
 
         fig_bars = go.Figure()
 
-        savings_names = [s['name'] for s in st.session_state.savings_list]
-        principals = [s['principal'] for s in st.session_state.savings_list]
+        savings_names = [s['name'] for s in filtered_savings]
+        principals = [s['principal'] for s in filtered_savings]
         # Recompute interest if what-if scenario is active (approximate using maturity date)
         interests = []
-        for s in st.session_state.savings_list:
+        for s in filtered_savings:
             # Check if this is a payout FD (non-cumulative)
             has_payout = s.get('has_payout', False)
 
@@ -1251,10 +1311,12 @@ if st.session_state.savings_list:
 
         # Create softer colors with opacity for the bars
         colors_rgba = []
-        for i, s in enumerate(st.session_state.savings_list):
+        for i, s in enumerate(filtered_savings):
             color_obj = s.get('color', get_color_for_saving(i))
             rgb = color_obj['rgb']
-            colors_rgba.append(f'rgba({rgb[0]}, {rgb[1]}, {rgb[2]}, 0.7)')  # 70% opacity
+            is_matured = not s.get('is_active', True)
+            opacity = 0.4 if is_matured else 0.7  # Lower opacity for matured
+            colors_rgba.append(f'rgba({rgb[0]}, {rgb[1]}, {rgb[2]}, {opacity})')
 
         fig_bars.add_trace(go.Bar(
             name='Principal',
@@ -1333,7 +1395,7 @@ if st.session_state.savings_list:
         st.markdown("**🪜 Maturity Ladder**")
         # Build per-saving principal and interest at maturity (scenario-aware) with individual colors
         ladder_rows = []
-        for idx, s in enumerate(st.session_state.savings_list):
+        for idx, s in enumerate(filtered_savings):
             # Check if this is a payout FD (non-cumulative)
             has_payout = s.get('has_payout', False)
 
@@ -1622,7 +1684,7 @@ if st.session_state.savings_list:
     with c2:
         st.markdown("**📊 Allocation by Type**")
         alloc_rows = []
-        for s in st.session_state.savings_list:
+        for s in filtered_savings:
             alloc_rows.append({'Type': s['type'], 'Amount': s['principal'] + s.get('total_contributions', 0.0)})
         alloc_df = pd.DataFrame(alloc_rows)
         if not alloc_df.empty:
@@ -1678,7 +1740,12 @@ if st.session_state.savings_list:
             # Get entry mode with fallback for old entries
             entry_mode = saving.get('entry_mode', 'Manual')  # Default to Manual for old entries
 
+            # Determine status
+            is_matured = not saving.get('is_active', True)
+            status = '✓ Matured' if is_matured else '🟢 Active'
+
             table_data.append({
+                'Status': status,
                 'Name': saving['name'],
                 'Type': saving['type'],
                 'Entry Mode': entry_mode,
@@ -1709,19 +1776,31 @@ if st.session_state.savings_list:
                 selection_mode="multi-row"
             )
 
-            # Edit, Copy, or Delete selected rows
+            # Edit, Copy, Toggle Status, or Delete selected rows
             if event.selection.rows:
                 if len(event.selection.rows) == 1:
-                    # Single selection - allow edit, copy, or delete
-                    col1, col2, col3, col4 = st.columns([2, 1, 1, 1])
+                    # Single selection - allow edit, copy, toggle status, or delete
+                    selected_saving = st.session_state.savings_list[event.selection.rows[0]]
+                    is_active = selected_saving.get('is_active', True)
+                    toggle_label = "🔄 Mark Active" if not is_active else "✓ Mark Matured"
+
+                    col1, col2, col3, col4, col5 = st.columns([2, 1, 1, 1, 1])
                     with col1:
                         st.info(f"✓ Selected 1 saving")
                     with col2:
-                        if st.button("✏️ Edit", type="primary", width="stretch"):
+                        if st.button("✏️ Edit", type="primary", key="btn_edit"):
                             st.session_state.editing_index = event.selection.rows[0]
                             st.rerun()
                     with col3:
-                        if st.button("📋 Copy", type="secondary", width="stretch"):
+                        if st.button(toggle_label, type="secondary", key="btn_toggle"):
+                            # Toggle status
+                            if 'id' in selected_saving:
+                                db.toggle_saving_status(selected_saving['id'])
+                                st.session_state.force_reload = True
+                                st.success(f"✅ Status toggled!")
+                                st.rerun()
+                    with col4:
+                        if st.button("📋 Copy", type="secondary", key="btn_copy"):
                             # Copy the selected saving
                             saving_to_copy = st.session_state.savings_list[event.selection.rows[0]]
                             
@@ -1752,13 +1831,16 @@ if st.session_state.savings_list:
                             
                             # Add to database
                             db.add_saving(copied_data)
-                            
+
+                            # Mark matured savings (in case the copied saving is already past maturity)
+                            db.mark_matured_savings()
+
                             # Reload from database
                             st.session_state.force_reload = True
                             st.success(f"✅ Copied {saving_to_copy['name']}!")
                             st.rerun()
-                    with col4:
-                        if st.button("🗑️ Delete", type="secondary", width="stretch"):
+                    with col5:
+                        if st.button("🗑️ Delete", type="secondary", key="btn_delete"):
                             # Delete from database
                             saving_to_delete = st.session_state.savings_list[event.selection.rows[0]]
                             if 'id' in saving_to_delete:

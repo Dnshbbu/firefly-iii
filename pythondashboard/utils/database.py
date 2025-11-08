@@ -78,6 +78,16 @@ class Database:
         except sqlite3.OperationalError:
             pass  # Column already exists
 
+        try:
+            cursor.execute("ALTER TABLE savings ADD COLUMN is_active INTEGER DEFAULT 1")
+        except sqlite3.OperationalError:
+            pass  # Column already exists
+
+        try:
+            cursor.execute("ALTER TABLE savings ADD COLUMN entry_mode TEXT DEFAULT 'Calculator'")
+        except sqlite3.OperationalError:
+            pass  # Column already exists
+
         conn.commit()
         conn.close()
 
@@ -104,8 +114,9 @@ class Database:
                 monthly_contribution, total_contributions,
                 maturity_value, interest_earned,
                 color_index, color_data, has_payout, payout_frequency, notes,
+                is_active, entry_mode,
                 created_at, updated_at
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """, (
             saving_data['name'],
             saving_data['type'],
@@ -124,6 +135,8 @@ class Database:
             1 if saving_data.get('has_payout', False) else 0,
             saving_data.get('payout_frequency', 4),
             saving_data.get('notes', ''),
+            1 if saving_data.get('is_active', True) else 0,
+            saving_data.get('entry_mode', 'Calculator'),
             now,
             now
         ))
@@ -171,6 +184,8 @@ class Database:
                 'has_payout': bool(row['has_payout']) if 'has_payout' in row.keys() else False,
                 'payout_frequency': row['payout_frequency'] if 'payout_frequency' in row.keys() else 4,
                 'notes': row['notes'] if 'notes' in row.keys() else '',
+                'is_active': bool(row['is_active']) if 'is_active' in row.keys() else True,
+                'entry_mode': row['entry_mode'] if 'entry_mode' in row.keys() else 'Calculator',
                 'created_at': row['created_at'],
                 'updated_at': row['updated_at']
             }
@@ -216,6 +231,8 @@ class Database:
             'has_payout': bool(row['has_payout']) if 'has_payout' in row.keys() else False,
             'payout_frequency': row['payout_frequency'] if 'payout_frequency' in row.keys() else 4,
             'notes': row['notes'] if 'notes' in row.keys() else '',
+            'is_active': bool(row['is_active']) if 'is_active' in row.keys() else True,
+            'entry_mode': row['entry_mode'] if 'entry_mode' in row.keys() else 'Calculator',
             'created_at': row['created_at'],
             'updated_at': row['updated_at']
         }
@@ -242,6 +259,7 @@ class Database:
                 monthly_contribution = ?, total_contributions = ?,
                 maturity_value = ?, interest_earned = ?,
                 color_index = ?, color_data = ?, has_payout = ?, payout_frequency = ?, notes = ?,
+                is_active = ?, entry_mode = ?,
                 updated_at = ?
             WHERE id = ?
         """, (
@@ -262,6 +280,8 @@ class Database:
             1 if saving_data.get('has_payout', False) else 0,
             saving_data.get('payout_frequency', 4),
             saving_data.get('notes', ''),
+            1 if saving_data.get('is_active', True) else 0,
+            saving_data.get('entry_mode', 'Calculator'),
             now,
             saving_id
         ))
@@ -323,6 +343,57 @@ class Database:
         conn.close()
 
         return result['count']
+
+    def toggle_saving_status(self, saving_id: int) -> bool:
+        """Toggle the active status of a saving
+
+        Args:
+            saving_id: ID of the saving to toggle
+
+        Returns:
+            True if toggle successful, False otherwise
+        """
+        conn = self.get_connection()
+        cursor = conn.cursor()
+
+        now = datetime.now().isoformat()
+
+        cursor.execute("""
+            UPDATE savings SET
+                is_active = CASE WHEN is_active = 1 THEN 0 ELSE 1 END,
+                updated_at = ?
+            WHERE id = ?
+        """, (now, saving_id))
+
+        success = cursor.rowcount > 0
+        conn.commit()
+        conn.close()
+
+        return success
+
+    def mark_matured_savings(self) -> int:
+        """Mark all savings that have passed their maturity date as inactive
+
+        Returns:
+            Number of savings marked as matured
+        """
+        conn = self.get_connection()
+        cursor = conn.cursor()
+
+        now = datetime.now().isoformat()
+
+        cursor.execute("""
+            UPDATE savings SET
+                is_active = 0,
+                updated_at = ?
+            WHERE maturity_date <= ? AND is_active = 1
+        """, (now, now))
+
+        count = cursor.rowcount
+        conn.commit()
+        conn.close()
+
+        return count
 
 
 # Singleton instance
